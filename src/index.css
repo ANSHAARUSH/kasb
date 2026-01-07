@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-soft-black: #171717;
+  --color-off-white: #F5F5F7;
+  --color-accent-blue: #007AFF;
+  --color-accent-indigo: #5856D6;
+
+  --font-sans: 'Inter', sans-serif;
+}
+
+@layer base {
+
+  html,
+  body {
+    @apply h-full;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 64px;
+    /* Account for fixed navbar height */
+  }
+
+  body {
+    @apply bg-white text-soft-black antialiased font-sans selection:bg-gray-200 selection:text-black;
+  }
+}
+
+/* Utilities */
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility glass {
+  @apply bg-white/70 backdrop-blur-md border border-white/20;
+}
+
+@utility glass-dark {
+  @apply bg-black/50 backdrop-blur-md border border-white/10;
+}
+
+@utility skeleton {
+  @apply animate-pulse bg-gray-200 rounded-lg;
+}
