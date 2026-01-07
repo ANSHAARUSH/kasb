@@ -34,7 +34,7 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <ChatProvider>
-          <Router>
+          <Router basename="/kasb">
             <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
               <AuthEventHandler />
               <Routes>
