@@ -20,6 +20,7 @@ const StartupCheatSheetPage = lazy(() => import("./pages/dashboard/StartupCheatS
 const InvestorProfile = lazy(() => import("./pages/dashboard/InvestorProfile").then(m => ({ default: m.InvestorProfile })))
 const StartupProfile = lazy(() => import("./pages/dashboard/StartupProfile").then(m => ({ default: m.StartupProfile })))
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
+const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
 
 import { AuthProvider } from "./context/AuthContext"
 import { ToastProvider } from "./components/ui/use-toast"
@@ -45,6 +46,7 @@ function App() {
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/update-password" element={<UpdatePassword />} />
+                  <Route path="/pricing" element={<PricingPage />} />
                   {/* Placeholders for public links */}
                   <Route path="/about" element={<Navigate to="/#about-us" replace />} />
                   <Route path="/features" element={<Navigate to="/#features" replace />} />
@@ -53,7 +55,7 @@ function App() {
 
 
 
-                // ... imports ...
+
 
                 {/* Admin Route (Standalone) - Protected */}
                 <Route path="/admin" element={

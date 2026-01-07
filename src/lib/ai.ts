@@ -463,3 +463,89 @@ export async function generateInvestorSummary(
         throw new Error("Failed to generate investor summary with AI");
     }
 }
+
+export async function generateValuationInsights(
+    startup: any,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing");
+
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+
+    const prompt = `
+    Analyze the following startup data and provide investment valuation insights.
+    
+    Startup: ${startup.name}
+    Stage: ${startup.metrics.stage}
+    Traction: ${startup.metrics.traction}
+    Revenue: ${startup.revenue || "Not provided"}
+    Industry: ${startup.industry || "Not provided"}
+    
+    Provide a professional analysis covering:
+    1. Estimated Valuation Range (based on similar market multiples)
+    2. Key Value Drivers
+    3. Potential Valuation Risks
+    4. Recommendations for Next Round
+    
+    TONE: Conservative, analytical, and data-driven.
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.3-70b-versatile",
+        });
+
+        return completion.choices[0].message.content?.trim() || "Failed to generate valuation insights.";
+    } catch (error: unknown) {
+        console.error("AI Valuation Error:", error);
+        throw new Error("AI Valuation Analysis failed");
+    }
+}
+
+export async function reviewPitchDeck(
+    deckText: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing");
+
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+
+    const prompt = `
+    Critically review the following pitch deck content (extracted text) from an investor's perspective.
+    
+    Content: ${deckText}
+    
+    Provide structured feedback:
+    1. Clarity & Storytelling (1-10)
+    2. Market Opportunity Analysis
+    3. Competitive Advantage Evidence
+    4. Missing Key Information
+    5. Specific "Slide-by-Slide" Improvement Suggestions
+    
+    TONE: Blunt, constructive, and oriented towards maximizing chance of investment.
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.3-70b-versatile",
+        });
+
+        return completion.choices[0].message.content?.trim() || "Failed to review pitch deck.";
+    } catch (error: unknown) {
+        console.error("AI Review Error:", error);
+        throw new Error("AI Pitch Deck Review failed");
+    }
+}
+

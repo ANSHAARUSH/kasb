@@ -6,6 +6,8 @@ import { useState, useEffect } from "react"
 import { getConnectionStatus, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { Lock } from "lucide-react"
 
 interface InvestorDetailProps {
     investor: Investor | null
@@ -28,6 +30,14 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
         }
         checkStatus()
     }, [user, investor?.id])
+
+    const canView = subscriptionManager.canViewProfile() || connStatus?.status === 'accepted'
+
+    useEffect(() => {
+        if (investor?.id && canView) {
+            subscriptionManager.trackView()
+        }
+    }, [investor?.id, canView])
 
     const handleDisconnect = async () => {
         if (!user || !investor) return
@@ -166,6 +176,27 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
                                 </div>
                             </section>
                         </div>
+
+                        {/* Upgrade Overlay for restricted profiles */}
+                        {!canView && (
+                            <div className="absolute inset-0 z-[60] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+                                <div className="h-20 w-20 rounded-3xl bg-gray-100 flex items-center justify-center mb-6">
+                                    <Lock className="h-10 w-10 text-gray-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold mb-2">Investor Profile Locked</h3>
+                                <p className="text-gray-500 max-w-xs mb-8">
+                                    Unlock premium investor profiles and direct contact features with a professional plan.
+                                </p>
+                                <div className="flex flex-col gap-3 w-full max-w-xs">
+                                    <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => window.location.href = '#/pricing'}>
+                                        View Plans
+                                    </Button>
+                                    <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">
+                                        Maybe later
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Sticky Action Footer */}
                         <div className="flex-none p-6 border-t border-gray-100 bg-white safe-area-bottom">

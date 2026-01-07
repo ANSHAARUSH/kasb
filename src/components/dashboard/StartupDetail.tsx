@@ -6,6 +6,9 @@ import { useState, useEffect } from "react"
 import { getConnectionStatus, disconnectConnection, sendConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { Lock, BarChart3 } from "lucide-react"
+import { generateValuationInsights } from "../../lib/ai"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -27,6 +30,8 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [isConnecting, setIsConnecting] = useState(false)
     const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
     const [imgError, setImgError] = useState(false)
+    const [valuationInsights, setValuationInsights] = useState<string | null>(null)
+    const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
 
     useEffect(() => {
         if (!user || !startup?.id) return
@@ -39,7 +44,15 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             setConnStatus(status)
         }
         checkStatus()
-    }, [user, startup?.id, triggerUpdate, startup?.logo]) // Added startup.logo to deps
+    }, [user, startup?.id, triggerUpdate, startup?.logo])
+
+    const canView = subscriptionManager.canViewProfile() || connStatus?.status === 'accepted'
+
+    useEffect(() => {
+        if (startup?.id && canView) {
+            subscriptionManager.trackView()
+        }
+    }, [startup?.id, canView])
 
     const handleConnect = async () => {
         if (!user || !startup) return
@@ -73,6 +86,22 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             toast("Failed to disconnect", "error")
         } finally {
             setIsDisconnecting(false)
+        }
+    }
+
+    const handleGenerateValuation = async () => {
+        setIsGeneratingValuation(true)
+        try {
+            // In a real app, this would check for a paid add-on or Growth/Pro tier
+            const apiKey = localStorage.getItem('kasb_ai_key') || "gsk_..."
+            const insights = await generateValuationInsights(startup, apiKey)
+            setValuationInsights(insights)
+            toast("Valuation insights generated", "success")
+        } catch (error) {
+            console.error(error)
+            toast("Generation failed", "error")
+        } finally {
+            setIsGeneratingValuation(false)
         }
     }
 
@@ -190,21 +219,67 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                             <p className="text-xl font-bold">{startup.metrics.valuation}</p>
                         </div>
                     </div>
+
+                    {/* AI Valuation Insights Add-on */}
+                    <div className="mt-6">
+                        {!valuationInsights ? (
+                            <Button
+                                variant="outline"
+                                onClick={handleGenerateValuation}
+                                disabled={isGeneratingValuation}
+                                className="w-full rounded-2xl border-dashed border-2 hover:bg-gray-50 h-14"
+                            >
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                {isGeneratingValuation ? "Analyzing Market Data..." : "Get AI Valuation Insights"}
+                                {!subscriptionManager.hasFeature('Valuation') && (
+                                    <span className="ml-2 text-[10px] bg-black text-white px-2 py-0.5 rounded-full">UPGRADE</span>
+                                )}
+                            </Button>
+                        ) : (
+                            <div className="p-6 rounded-2xl bg-gray-900 text-white animate-in zoom-in-95 duration-300">
+                                <div className="flex items-center gap-2 mb-3 text-gray-400">
+                                    <Sparkles className="h-4 w-4" />
+                                    <span className="text-xs font-bold uppercase tracking-widest">Market Valuation Analysis</span>
+                                </div>
+                                <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-line leading-relaxed">
+                                    {valuationInsights}
+                                </div>
+                                <p className="mt-4 text-[10px] text-gray-500 italic">
+                                    * This is an AI-generated estimate based on provided metrics and typical sector multiples.
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </section>
 
                 {/* Professional Investor Summary (AI Generated) */}
                 {startup.summaryStatus === 'final' && startup.aiSummary && (
-                    <section className="bg-amber-50/30 -mx-6 px-6 py-8 border-y border-amber-100/50">
+                    <section className="bg-amber-50/30 -mx-6 px-6 py-8 border-y border-amber-100/50 relative overflow-hidden">
                         <div className="flex items-center gap-2 mb-4">
                             <Sparkles className="h-5 w-5 text-amber-600" />
                             <h3 className="text-lg font-bold text-amber-900">Professional Investor Summary</h3>
                         </div>
-                        <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+
+                        <div className={`prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-line font-medium ${!subscriptionManager.hasFeature('Advanced AI') ? 'blur-sm select-none' : ''}`}>
                             {startup.aiSummary}
                         </div>
-                        <p className="mt-4 text-[10px] text-amber-600/60 font-medium uppercase tracking-widest">
-                            Generated from structured founder inputs • Verified by Kasb.AI
-                        </p>
+
+                        {!subscriptionManager.hasFeature('Advanced AI') && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] p-6 text-center">
+                                <Lock className="h-8 w-8 text-amber-600 mb-2" />
+                                <p className="text-sm font-bold text-amber-900">Growth Tier Required</p>
+                                <p className="text-xs text-amber-700 mt-1">Upgrade to unlock full AI-generated insights.</p>
+                                <Button variant="outline" size="sm" className="mt-4 rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => window.location.href = '#/pricing'}>
+                                    View Plans
+                                </Button>
+                            </div>
+                        )}
+
+                        {subscriptionManager.hasFeature('Advanced AI') && (
+                            <p className="mt-4 text-[10px] text-amber-600/60 font-medium uppercase tracking-widest">
+                                Generated from structured founder inputs • Verified by Kasb.AI
+                            </p>
+                        )}
                     </section>
                 )}
 
@@ -234,6 +309,27 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                     </section>
                 )}
             </div>
+
+            {/* Upgrade Overlay for restricted profiles */}
+            {!canView && (
+                <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
+                    <div className="h-20 w-20 rounded-3xl bg-gray-100 flex items-center justify-center mb-6">
+                        <Lock className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">Profile Locked</h3>
+                    <p className="text-gray-500 max-w-xs mb-8">
+                        You've reached your monthly profile view limit. Upgrade your plan to discover more opportunities.
+                    </p>
+                    <div className="flex flex-col gap-3 w-full max-w-xs">
+                        <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => window.location.href = '#/pricing'}>
+                            View Plans
+                        </Button>
+                        <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">
+                            Maybe later
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Sticky Action Footer */}
             <div className="flex-none p-6 border-t border-gray-100 bg-white">
