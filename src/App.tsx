@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AdminRoute } from "./components/admin/AdminRoute"
 import { PublicLayout } from "./layouts/PublicLayout"
 import { DashboardLayout } from "./layouts/DashboardLayout"
@@ -34,7 +34,7 @@ function App() {
     <AuthProvider>
       <ToastProvider>
         <ChatProvider>
-          <Router basename="/kasb">
+          <Router>
             <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
               <AuthEventHandler />
               <Routes>
