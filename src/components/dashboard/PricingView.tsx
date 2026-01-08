@@ -9,7 +9,7 @@ interface PricingViewProps {
     showNavbar?: boolean
 }
 
-export function PricingView({ defaultView = 'investor', showNavbar = false }: PricingViewProps) {
+export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
     const [region, setRegion] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
