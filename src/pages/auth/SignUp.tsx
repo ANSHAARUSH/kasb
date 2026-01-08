@@ -139,7 +139,7 @@ export function SignUp() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: window.location.origin,
+                    emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
                     data: metadata
                 }
             })
@@ -187,7 +187,7 @@ export function SignUp() {
                                     type: 'signup',
                                     email,
                                     options: {
-                                        emailRedirectTo: window.location.origin
+                                        emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`
                                     }
                                 })
                                 if (error) setError(error.message)
