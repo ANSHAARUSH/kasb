@@ -29,7 +29,7 @@ export function SideNav() {
         <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 flex-col border-r border-gray-100 bg-white md:flex">
             <div className="flex h-20 items-center px-6 border-b border-gray-50">
                 <Link to="/" className="flex items-center gap-2.5">
-                    <img src="/logo.jpg" alt="Logo" className="h-8 w-auto rounded-md" />
+                    <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-8 w-auto rounded-md" />
                     <span className="text-xl font-bold tracking-tight text-black">Kasb.AI</span>
                 </Link>
             </div>

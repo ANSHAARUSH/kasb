@@ -32,7 +32,7 @@ export function DashboardLayout() {
                 <header className="sticky top-0 z-10 flex items-center border-b border-white/10 bg-black px-6 py-4">
                     <div className="flex-1 flex justify-center">
                         <div className="flex items-center gap-2.5">
-                            <img src="/logo.jpg" alt="Logo" className="h-7 w-auto rounded-md" />
+                            <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-7 w-auto rounded-md" />
                             <span className="text-lg font-bold text-white tracking-tight">Kasb.AI</span>
                         </div>
                     </div>
@@ -55,7 +55,7 @@ export function DashboardLayout() {
                 <header className="sticky top-0 z-40 flex items-center bg-black border-b border-white/10 px-6 py-4">
                     <div className="flex-1 md:hidden">
                         <div className="flex items-center gap-2.5">
-                            <img src="/logo.jpg" alt="Logo" className="h-7 w-auto rounded-md" />
+                            <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-7 w-auto rounded-md" />
                             <span className="text-lg font-bold text-white tracking-tight">Kasb.AI</span>
                         </div>
                     </div>
