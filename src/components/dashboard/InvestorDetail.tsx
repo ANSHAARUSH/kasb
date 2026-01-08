@@ -3,6 +3,7 @@ import type { Investor } from "../../data/mockData"
 import { X, Briefcase, TrendingUp, UserMinus } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { getConnectionStatus, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
@@ -17,6 +18,7 @@ interface InvestorDetailProps {
 
 export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDetailProps) {
     const { user } = useAuth()
+    const navigate = useNavigate()
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
@@ -188,7 +190,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
                                     Unlock premium investor profiles and direct contact features with a professional plan.
                                 </p>
                                 <div className="flex flex-col gap-3 w-full max-w-xs">
-                                    <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => window.location.href = '#/pricing'}>
+                                    <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => navigate('/dashboard/pricing')}>
                                         View Plans
                                     </Button>
                                     <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">

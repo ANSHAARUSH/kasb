@@ -10,6 +10,7 @@ export interface InvestorProfileData {
     funds_available: string
     investments_count: number
     bio: string
+    location?: string
     email_verified?: boolean
     show_in_feed?: boolean
     adhaar_number?: string

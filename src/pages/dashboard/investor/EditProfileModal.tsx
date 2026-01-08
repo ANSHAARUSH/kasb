@@ -4,6 +4,7 @@ import { ImageUploadInput } from "../../../components/ui/ImageUploadInput"
 import { Modal } from "../../../components/ui/modal"
 import { useState, useEffect } from "react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
+import { COUNTRIES } from "../../../lib/locationData"
 
 interface EditProfileModalProps {
     isOpen: boolean
@@ -48,6 +49,41 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
                         value={editForm.title || ''}
                         onChange={e => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                     />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Location</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <select
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950"
+                            value={editForm.location?.split(', ')[1] || ''}
+                            onChange={e => {
+                                const country = e.target.value
+                                const currentState = editForm.location?.split(', ')[0] || ''
+                                setEditForm(prev => ({ ...prev, location: `${currentState}, ${country}` }))
+                            }}
+                        >
+                            <option value="">Select Country...</option>
+                            {COUNTRIES.map(c => (
+                                <option key={c.name} value={c.name}>{c.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950"
+                            value={editForm.location?.split(', ')[0] || ''}
+                            onChange={e => {
+                                const state = e.target.value
+                                const currentCountry = editForm.location?.split(', ')[1] || ''
+                                setEditForm(prev => ({ ...prev, location: `${state}, ${currentCountry}` }))
+                            }}
+                            disabled={!editForm.location?.split(', ')[1]}
+                        >
+                            <option value="">Select State...</option>
+                            {COUNTRIES.find(c => c.name === editForm.location?.split(', ')[1])?.states.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="space-y-2">

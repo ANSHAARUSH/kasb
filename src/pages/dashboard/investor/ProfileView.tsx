@@ -32,6 +32,10 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                 </CardHeader>
                 <CardContent className="grid gap-6 md:grid-cols-2 pt-6">
                     <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                        <p className="text-sm text-gray-500">Location</p>
+                        <p className="text-xl font-bold">{investor.location || 'Not set'}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                         <p className="text-sm text-gray-500">Funds Available</p>
                         <p className="text-2xl font-bold text-green-600">{investor.funds_available || 'Not set'}</p>
                     </div>

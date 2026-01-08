@@ -8,6 +8,7 @@ import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section } from "../../
 import { cn } from "../../../lib/utils"
 import { Sparkles, Loader2 } from "lucide-react"
 import { refineProblemStatement, generateInvestorSummary } from "../../../lib/ai"
+import { COUNTRIES } from "../../../lib/locationData"
 
 interface EditProfileModalProps {
     isOpen: boolean
@@ -240,7 +241,39 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
                                             {q.label}
                                             {q.required && <span className="text-red-500 ml-1">*</span>}
                                         </label>
-                                        {q.type === 'textarea' ? (
+                                        {q.id === 'location' ? (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <select
+                                                    className="w-full rounded-xl border-gray-200 focus:border-black focus:ring-black p-3 text-sm"
+                                                    value={answers[section.id]?.[q.id]?.split(', ')[1] || ''}
+                                                    onChange={e => {
+                                                        const country = e.target.value
+                                                        const currentState = answers[section.id]?.[q.id]?.split(', ')[0] || ''
+                                                        handleAnswerChange(section.id, q.id, `${currentState}, ${country}`)
+                                                    }}
+                                                >
+                                                    <option value="">Select Country...</option>
+                                                    {COUNTRIES.map(c => (
+                                                        <option key={c.name} value={c.name}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    className="w-full rounded-xl border-gray-200 focus:border-black focus:ring-black p-3 text-sm"
+                                                    value={answers[section.id]?.[q.id]?.split(', ')[0] || ''}
+                                                    onChange={e => {
+                                                        const state = e.target.value
+                                                        const currentCountry = answers[section.id]?.[q.id]?.split(', ')[1] || ''
+                                                        handleAnswerChange(section.id, q.id, `${state}, ${currentCountry}`)
+                                                    }}
+                                                    disabled={!answers[section.id]?.[q.id]?.split(', ')[1]}
+                                                >
+                                                    <option value="">Select State...</option>
+                                                    {COUNTRIES.find(c => c.name === answers[section.id]?.[q.id]?.split(', ')[1])?.states.map(s => (
+                                                        <option key={s} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ) : q.type === 'textarea' ? (
                                             <textarea
                                                 className="w-full rounded-xl border-gray-200 focus:border-black focus:ring-black min-h-[100px] p-3 text-sm"
                                                 value={answers[section.id]?.[q.id] || ''}

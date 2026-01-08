@@ -3,6 +3,7 @@ import type { Startup } from "../../data/mockData"
 import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { getConnectionStatus, disconnectConnection, sendConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
@@ -24,6 +25,7 @@ interface StartupDetailProps {
 
 export function StartupDetail({ startup, onClose, onDisconnect, onResize, currentSize = 'default', triggerUpdate, onConnectionChange }: StartupDetailProps) {
     const { user } = useAuth()
+    const navigate = useNavigate()
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
@@ -269,7 +271,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 <Lock className="h-8 w-8 text-amber-600 mb-2" />
                                 <p className="text-sm font-bold text-amber-900">Growth Tier Required</p>
                                 <p className="text-xs text-amber-700 mt-1">Upgrade to unlock full AI-generated insights.</p>
-                                <Button variant="outline" size="sm" className="mt-4 rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => window.location.href = '#/pricing'}>
+                                <Button variant="outline" size="sm" className="mt-4 rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => navigate('/dashboard/pricing')}>
                                     View Plans
                                 </Button>
                             </div>
@@ -321,7 +323,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                         You've reached your monthly profile view limit. Upgrade your plan to discover more opportunities.
                     </p>
                     <div className="flex flex-col gap-3 w-full max-w-xs">
-                        <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => window.location.href = '#/pricing'}>
+                        <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => navigate('/dashboard/pricing')}>
                             View Plans
                         </Button>
                         <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">

@@ -21,6 +21,7 @@ const InvestorProfile = lazy(() => import("./pages/dashboard/InvestorProfile").t
 const StartupProfile = lazy(() => import("./pages/dashboard/StartupProfile").then(m => ({ default: m.StartupProfile })))
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
 const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
+const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
 
 import { AuthProvider } from "./context/AuthContext"
 import { ToastProvider } from "./components/ui/use-toast"
@@ -84,6 +85,7 @@ function App() {
                   <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
 
                   {/* Shared Routes - Keep for fallbacks or generic access */}
+                  <Route path="pricing" element={<DashboardPricing />} />
                   <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
                 </Route>
 
