@@ -54,14 +54,22 @@ export function StartupProfile() {
                     <h1 className="text-4xl font-extrabold tracking-tight">Profile</h1>
                     <p className="text-gray-400 mt-1 font-medium">Manage your startup identity</p>
                 </div>
-                <Button
-                    onClick={() => setIsEditOpen(true)}
-                    variant="outline"
-                    className="rounded-2xl gap-2 hover:bg-black hover:text-white transition-all border-gray-200"
-                >
-                    <Pencil className="h-4 w-4" />
-                    Edit Profile
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => signOut()}
+                        variant="outline"
+                        className="rounded-2xl font-bold border-gray-200"
+                    >
+                        Sign Out
+                    </Button>
+                    <Button
+                        onClick={() => setIsEditOpen(true)}
+                        className="bg-black text-white hover:bg-gray-800 rounded-2xl font-bold gap-2"
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Edit Profile
+                    </Button>
+                </div>
             </div>
 
             <ProfileView startup={startup} onRequestReview={requestReview} onMarkAsLive={markAsLive} />
