@@ -124,7 +124,9 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                 }}
                             />
                         ) : (
-                            <span className="text-2xl">{investor.avatar || (investor.name?.charAt(0).toUpperCase() || '?')}</span>
+                            <span className="text-2xl">
+                                {(investor.avatar && investor.avatar.length <= 2) ? investor.avatar : (investor.name?.charAt(0).toUpperCase() || '?')}
+                            </span>
                         )}
                     </div>
                     <div className="flex-1">

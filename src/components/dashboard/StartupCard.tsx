@@ -146,7 +146,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                 />
                             ) : (
                                 <span className="font-bold text-gray-500">
-                                    {startup.logo || (startup.name?.charAt(0).toUpperCase() || '?')}
+                                    {(startup.logo && startup.logo.length <= 2) ? startup.logo : (startup.name?.charAt(0).toUpperCase() || '?')}
                                 </span>
                             )}
                         </div>

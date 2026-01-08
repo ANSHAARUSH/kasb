@@ -53,7 +53,7 @@ export function ProfileView({ startup, onRequestReview, onMarkAsLive }: ProfileV
                                 />
                             ) : (
                                 <span>
-                                    {startup.logo || (startup.name?.charAt(0).toUpperCase() || '?')}
+                                    {(startup.logo && startup.logo.length <= 2) ? startup.logo : (startup.name?.charAt(0).toUpperCase() || '?')}
                                 </span>
                             )}
                         </div>

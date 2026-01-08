@@ -19,7 +19,7 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                         <img src={investor.avatar} alt={investor.name} className="h-20 w-20 rounded-full object-cover bg-gray-100" />
                     ) : (
                         <div className="h-20 w-20 rounded-full bg-black text-white flex items-center justify-center text-2xl font-bold">
-                            {investor.name?.[0] || '?'}
+                            {(investor.avatar && investor.avatar.length <= 2) ? investor.avatar : (investor.name?.[0]?.toUpperCase() || '?')}
                         </div>
                     )}
                     <div>
