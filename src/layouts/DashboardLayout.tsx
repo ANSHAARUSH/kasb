@@ -1,6 +1,7 @@
 import { BottomNav } from "../components/layout/BottomNav"
 import { SideNav } from "../components/layout/SideNav"
 import { NotificationBell } from "../components/layout/NotificationBell"
+import { UsageBell } from "../components/layout/UsageBell"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useEffect } from "react"
@@ -60,7 +61,8 @@ export function DashboardLayout() {
                         </div>
                     </div>
                     <div className="flex-1 hidden md:block" /> {/* Spacer */}
-                    <div className="flex-none">
+                    <div className="flex-none flex items-center gap-2">
+                        <UsageBell className="md:hidden" />
                         <NotificationBell />
                     </div>
                 </header>

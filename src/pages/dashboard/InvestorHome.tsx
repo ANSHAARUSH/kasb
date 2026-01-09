@@ -15,7 +15,7 @@ import { useChat } from "../../hooks/useChat"
 import { useDebounce } from "../../hooks/useDebounce"
 import { useSearchParams } from "react-router-dom"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
-import { parseRevenue } from "../../lib/utils"
+import { parseRevenue, cn } from "../../lib/utils"
 import { useStartups } from "../../hooks/useStartups"
 
 export function InvestorHome() {
@@ -226,7 +226,7 @@ export function InvestorHome() {
                 </div>
 
                 {/* Fixed Bottom Search & Filter Bar */}
-                <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
+                <div className="fixed bottom-20 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
                     <div className="max-w-md mx-auto flex items-center gap-2 pointer-events-auto">
                         <div className="flex-1">
                             <SearchInput

@@ -112,7 +112,7 @@ export function StartupHome() {
             <div className="h-24" />
 
             {/* Fixed Bottom Search Bar */}
-            <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 pointer-events-none">
+            <div className="fixed bottom-20 left-0 right-0 z-40 px-4 md:left-64 pointer-events-none">
                 <div className="max-w-md mx-auto pointer-events-auto">
                     <SearchInput
                         value={searchQuery}
