@@ -13,7 +13,7 @@ import { Search, Loader2, Sparkles } from "lucide-react"
 import { getIndustryInsights } from "../../lib/ai"
 import { useToast } from "../../hooks/useToast"
 import { useAuth } from "../../context/AuthContext"
-import { getUserSetting, saveUserSetting, getGlobalConfig } from "../../lib/supabase"
+import { getUserSetting, getGlobalConfig } from "../../lib/supabase"
 
 const TOPICS = [
     {
@@ -113,27 +113,17 @@ export function CheatSheetPage() {
         setIsGenerating(true)
         try {
             let apiKey = import.meta.env.VITE_GROQ_API_KEY
-
             if (!apiKey) {
                 const globalKey = await getGlobalConfig('ai_api_key')
                 if (globalKey) apiKey = globalKey
             }
-
             if (!apiKey && user) {
                 const storedKey = await getUserSetting(user.id, 'ai_api_key')
                 if (storedKey) apiKey = storedKey
             }
 
             if (!apiKey) {
-                apiKey = prompt("Enter Groq/OpenAI API Key (Saved securely to your account):") || ""
-                if (apiKey && user) {
-                    await saveUserSetting(user.id, 'ai_api_key', apiKey)
-                }
-            }
-
-            if (!apiKey) {
-                toast("API Key required", "error")
-                setIsGenerating(false)
+                toast("AI features are not setup. Please contact the administrator.", "error")
                 return
             }
 

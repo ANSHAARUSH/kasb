@@ -83,8 +83,9 @@ export function SignUp() {
             if (!apiKey) {
                 apiKey = await getGlobalConfig('ai_api_key') || ''
             }
+
             if (!apiKey) {
-                toast("AI API Key not configured.", "error")
+                toast("AI features are not setup. Please contact the administrator.", "error")
                 return
             }
 

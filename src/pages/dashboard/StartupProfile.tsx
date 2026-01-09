@@ -5,7 +5,7 @@ import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { ProfileView } from "./startup/ProfileView"
 import { EditProfileModal } from "./startup/EditProfileModal"
 import { DeleteAccountModal } from "../../components/dashboard/DeleteAccountModal"
-import { supabase } from "../../lib/supabase"
+import { getGlobalConfig, getUserSetting, supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { Sparkles, FileText, Loader2 } from "lucide-react"
 import { reviewPitchDeck } from "../../lib/ai"
@@ -14,7 +14,7 @@ import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function StartupProfile() {
     const { startup, loading, saving, updateProfile, requestReview, markAsLive } = useStartupProfile()
-    const { signOut } = useAuth()
+    const { user, signOut } = useAuth()
     const { toast } = useToast()
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -93,7 +93,15 @@ export function StartupProfile() {
                         onClick={async () => {
                             setIsReviewing(true)
                             try {
-                                const apiKey = localStorage.getItem('kasb_ai_key') || "gsk_..."
+                                let apiKey = import.meta.env.VITE_GROQ_API_KEY
+                                if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+                                if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+                                if (!apiKey) {
+                                    toast("AI API Key not configured.", "error")
+                                    return
+                                }
+
                                 // Mock deck text since we don't have a full PDF extractor here yet
                                 const mockDeckText = `Problem: Real estate market is inefficient. Solution: AI matching for properties. Market: $10B. Traction: 100 users. Team: Ex-Google founders.`
                                 const review = await reviewPitchDeck(mockDeckText, apiKey)

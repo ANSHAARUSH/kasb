@@ -3,7 +3,7 @@ import { StartupCard } from "../../components/dashboard/StartupCard"
 import { StartupComparisonView } from "../../components/dashboard/StartupComparisonView"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { supabase, getUserSetting, saveUserSetting, getGlobalConfig } from "../../lib/supabase"
+import { supabase, getUserSetting, getGlobalConfig } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import type { Startup } from "../../data/mockData"
@@ -130,7 +130,7 @@ export function HistoryPage() {
         setIsComparing(true)
 
         try {
-            // Check order: Env Var -> Global Config -> User Settings -> Prompt
+            // Check order: Env Var -> Global Config -> User Settings -> Mock/Fallback
             let apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
 
             if (!apiKey) {
@@ -144,15 +144,7 @@ export function HistoryPage() {
             }
 
             if (!apiKey) {
-                apiKey = prompt("Enter Groq/OpenAI API Key (Saved securely to your account):") || ""
-                if (apiKey && user) {
-                    await saveUserSetting(user.id, 'ai_api_key', apiKey)
-                }
-            }
-
-            if (!apiKey) {
-                toast("API Key required", "error")
-                setIsComparing(false)
+                toast("AI features are not setup. Please contact the administrator.", "error")
                 return
             }
 

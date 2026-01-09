@@ -47,7 +47,7 @@ function extractJSON<T>(text: string): T {
 
 export async function compareStartups(startup1: Startup, startup2: Startup, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
-        throw new Error("API Key is missing");
+        throw new Error("AI services are not configured. Please ensure VITE_GROQ_API_KEY is set in environment variables or the administration settings.");
     }
 
     const openai = new OpenAI({
@@ -100,7 +100,7 @@ export async function compareStartups(startup1: Startup, startup2: Startup, apiK
 }
 export async function compareInvestors(investor1: any, investor2: any, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
-        throw new Error("API Key is missing");
+        throw new Error("API Key is missing for investor comparison.");
     }
 
     const openai = new OpenAI({
@@ -154,7 +154,7 @@ export async function compareInvestors(investor1: any, investor2: any, apiKey: s
 
 export async function getIndustryInsights(industry: string, apiKey: string, baseUrl?: string): Promise<IndustryInsight> {
     if (!apiKey) {
-        throw new Error("API Key is missing");
+        throw new Error("AI Comparison not available. API Key is required.");
     }
 
     const openai = new OpenAI({
@@ -196,15 +196,8 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     }
 }
 export async function analyzeDocument(docType: string, file?: File, apiKey?: string, baseUrl?: string): Promise<{ status: 'verified' | 'flagged'; feedback: string }> {
-    // If no file, use the old mock logic
-    if (!file) {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        const outcomes: { status: 'verified' | 'flagged'; feedback: string }[] = [
-            { status: 'verified', feedback: `AI Analysis: The ${docType} appears authentic.` },
-            { status: 'flagged', feedback: `AI Analysis: Certain sections in the ${docType} seem boilerplate.` }
-        ];
-        return outcomes[Math.random() > 0.8 ? 1 : 0];
-    }
+    if (!file) throw new Error("No file uploaded");
+    if (!apiKey) throw new Error("API Key required for verification");
 
     // New real-world flow
     try {
@@ -373,7 +366,7 @@ export async function callOfficialVerificationService(service: 'NSDL' | 'MCA' | 
 }
 export async function refineProblemStatement(rawProblem: string, apiKey: string, baseUrl?: string): Promise<string> {
     if (!apiKey) {
-        throw new Error("API Key is missing");
+        throw new Error("AI Refinement not available. API Key is missing.");
     }
 
     const openai = new OpenAI({
@@ -411,7 +404,7 @@ export async function generateInvestorSummary(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing");
+    if (!apiKey) throw new Error("API Key is missing for investor summary.");
 
     const openai = new OpenAI({
         apiKey: apiKey,
@@ -469,7 +462,7 @@ export async function generateValuationInsights(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing");
+    if (!apiKey) throw new Error("API Key is missing for valuation insights.");
 
     const openai = new OpenAI({
         apiKey: apiKey,
@@ -513,7 +506,7 @@ export async function reviewPitchDeck(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing");
+    if (!apiKey) throw new Error("API Key is missing for pitch deck review.");
 
     const openai = new OpenAI({
         apiKey: apiKey,

@@ -43,8 +43,7 @@ export function DocumentUploadItem({ item, isDone, onVerified }: DocumentUploadI
             }
 
             if (!apiKey) {
-                toast("AI API Key required for OCR verification.", "error")
-                setVerifying('idle')
+                toast("AI services not configured. Verification unavailable.", "error")
                 return
             }
 

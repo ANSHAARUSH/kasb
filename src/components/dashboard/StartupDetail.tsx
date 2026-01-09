@@ -4,7 +4,7 @@ import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sp
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { getConnectionStatus, disconnectConnection, sendConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import { getConnectionStatus, disconnectConnection, sendConnectionRequest, getGlobalConfig, getUserSetting, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -94,8 +94,15 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const handleGenerateValuation = async () => {
         setIsGeneratingValuation(true)
         try {
-            // In a real app, this would check for a paid add-on or Growth/Pro tier
-            const apiKey = localStorage.getItem('kasb_ai_key') || "gsk_..."
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI features not configured.", "error")
+                return
+            }
+
             const insights = await generateValuationInsights(startup, apiKey)
             setValuationInsights(insights)
             toast("Valuation insights generated", "success")
