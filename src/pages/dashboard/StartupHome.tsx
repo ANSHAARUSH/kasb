@@ -108,11 +108,20 @@ export function StartupHome() {
                 </div>
             )}
 
-            <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Search investors by name, bio, or expertise..."
-            />
+            {/* Bottom spacer */}
+            <div className="h-24" />
+
+            {/* Fixed Bottom Search Bar */}
+            <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 pointer-events-none">
+                <div className="max-w-md mx-auto pointer-events-auto">
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search investors by name, bio, or expertise..."
+                        className="w-full !relative !bottom-0 !px-0 !pb-0"
+                    />
+                </div>
+            </div>
 
             <InvestorDetail
                 investor={detailInvestor}

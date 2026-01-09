@@ -166,31 +166,8 @@ export function InvestorHome() {
                 flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out
                 ${panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'}
             `}>
-                {/* Search & Filters Header */}
+                {/* Filters Header (Minimized) */}
                 <div className="flex-none p-6 pb-2">
-                    <div className="flex items-center gap-4 mb-4">
-                        <div className="flex-1">
-                            <SearchInput
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                placeholder="Search startups..."
-                                className="w-full"
-                            />
-                        </div>
-                        <Button
-                            variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
-                            className="gap-2 shrink-0 bg-white"
-                            onClick={() => setShowFilters(!showFilters)}
-                        >
-                            <SlidersHorizontal className="h-4 w-4" />
-                            <span className="hidden sm:inline">Filters</span>
-                            {activeFilterCount > 0 && (
-                                <span className="ml-1 rounded-full bg-black text-white px-2 py-0.5 text-xs">
-                                    {activeFilterCount}
-                                </span>
-                            )}
-                        </Button>
-                    </div>
                     <FilterPanel
                         isOpen={showFilters}
                         filters={filters}
@@ -244,7 +221,38 @@ export function InvestorHome() {
                             ))
                         )}
                         {/* Bottom spacer */}
-                        <div className="h-10" />
+                        <div className="h-20" />
+                    </div>
+                </div>
+
+                {/* Fixed Bottom Search & Filter Bar */}
+                <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
+                    <div className="max-w-md mx-auto flex items-center gap-2 pointer-events-auto">
+                        <div className="flex-1">
+                            <SearchInput
+                                value={searchQuery}
+                                onChange={setSearchQuery}
+                                placeholder="Search startups..."
+                                className="w-full !relative !bottom-0 !px-0 !pb-0"
+                            />
+                        </div>
+                        <Button
+                            variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
+                            className={cn(
+                                "h-12 w-12 rounded-2xl shadow-xl border-gray-200 shrink-0 bg-white transition-all hover:scale-105 active:scale-95",
+                                (showFilters || activeFilterCount > 0) && "bg-black text-white border-black"
+                            )}
+                            onClick={() => setShowFilters(!showFilters)}
+                        >
+                            <div className="relative">
+                                <SlidersHorizontal className="h-5 w-5" />
+                                {activeFilterCount > 0 && (
+                                    <span className="absolute -top-3 -right-3 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-md ring-2 ring-white">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
+                            </div>
+                        </Button>
                     </div>
                 </div>
             </div>
