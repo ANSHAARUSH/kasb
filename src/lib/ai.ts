@@ -164,21 +164,25 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     });
 
     const prompt = `
-    Provide investment insights for the industry: "${industry}".
+    Provide realistic investment insights for the industry: "${industry}".
     
     Return the output in valid JSON format ONLY, with this structure:
     {
         "title": "${industry}",
         "desc": "A concise (2-3 sentences) definition of the industry and its current relevance.",
         "growthData": [
-            { "country": "India", "value": number between 40-90, "growth": "+XX%" },
-            { "country": "USA", "value": number between 40-90, "growth": "+XX%" },
-            { "country": "Europe", "value": number between 40-90, "growth": "+XX%" },
-            { "country": "SE Asia", "value": number between 40-90, "growth": "+XX%" }
+            { "country": "India", "value": realistic_CAGR_percentage, "growth": "+XX%" },
+            { "country": "USA", "value": realistic_CAGR_percentage, "growth": "+XX%" },
+            { "country": "Europe", "value": realistic_CAGR_percentage, "growth": "+XX%" },
+            { "country": "SE Asia", "value": realistic_CAGR_percentage, "growth": "+XX%" }
         ]
     }
     
-    Ensure India is included and shows strong growth. The 'value' represents a relative market strength percentage.
+    CRITICAL:
+    1. Ensure India is included and shows strong growth relevant to the current market.
+    2. The 'value' must be a NUMBER representing the realistic Compound Annual Growth Rate (CAGR) expected for 2024-2027 (e.g., 25.5).
+    3. The 'growth' must be a formatted string (e.g., "+25.5%").
+    4. Provide realistic data based on current global economic trends for "${industry}".
     `;
 
     try {
