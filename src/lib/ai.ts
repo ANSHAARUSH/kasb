@@ -164,25 +164,26 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     });
 
     const prompt = `
-    Provide realistic investment insights for the industry: "${industry}".
+    Provide realistic and data-driven investment insights for the industry: "${industry}" in the Indian market context.
     
     Return the output in valid JSON format ONLY, with this structure:
     {
         "title": "${industry}",
-        "desc": "A concise (2-3 sentences) definition of the industry and its current relevance.",
+        "desc": "A concise (2-3 sentences) definition of the industry and its current relevance in India.",
         "growthData": [
-            { "country": "India", "value": realistic_CAGR_percentage, "growth": "+XX%" },
-            { "country": "USA", "value": realistic_CAGR_percentage, "growth": "+XX%" },
-            { "country": "Europe", "value": realistic_CAGR_percentage, "growth": "+XX%" },
-            { "country": "SE Asia", "value": realistic_CAGR_percentage, "growth": "+XX%" }
+            { "country": "India", "value": realistic_2024_2030_CAGR_percentage, "growth": "+XX.X%" },
+            { "country": "USA", "value": realistic_CAGR_percentage, "growth": "+XX.X%" },
+            { "country": "Europe", "value": realistic_CAGR_percentage, "growth": "+XX.X%" },
+            { "country": "SE Asia", "value": realistic_CAGR_percentage, "growth": "+XX.X%" }
         ]
     }
     
-    CRITICAL:
-    1. Ensure India is included and shows strong growth relevant to the current market.
-    2. The 'value' must be a NUMBER representing the realistic Compound Annual Growth Rate (CAGR) expected for 2024-2027 (e.g., 25.5).
-    3. The 'growth' must be a formatted string (e.g., "+25.5%").
-    4. Provide realistic data based on current global economic trends for "${industry}".
+    STRICT GUIDELINES:
+    1. Focus on the 2024-2030 forecast period.
+    2. The 'value' must be a NUMBER representing the realistic Compound Annual Growth Rate (CAGR) (e.g., 22.5).
+    3. The 'growth' must be the formatted string (e.g., "+22.5%").
+    4. Ensure India shows realistic strong growth based on current market reports for "${industry}".
+    6. Ensure the response is strictly JSON.
     `;
 
     try {
@@ -225,7 +226,7 @@ export async function analyzeDocument(docType: string, file?: File, apiKey?: str
             };
         }
 
-        return { status: 'verified', feedback: `OCR processed ${docType} successfully. Extracted: ${Object.keys(ocr.extractedFields).join(', ')}` };
+        return { status: 'verified', feedback: `OCR processed ${docType} successfully.Extracted: ${Object.keys(ocr.extractedFields).join(', ')} ` };
     } catch (err: unknown) {
         console.error("Verification error:", err);
         const message = err instanceof Error ? err.message : String(err);
@@ -233,7 +234,7 @@ export async function analyzeDocument(docType: string, file?: File, apiKey?: str
             status: 'flagged',
             feedback: message.includes('API key')
                 ? "Invalid API Key. Please check your AI settings."
-                : `Verification failed: ${message || 'Unknown error'}`
+                : `Verification failed: ${message || 'Unknown error'} `
         };
     }
 }
@@ -279,13 +280,13 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
         const prompt = `
         Analyze the provided image of a document of type: "${docType}".
         Extract:
-        - For PAN: pan_number, name.
+    - For PAN: pan_number, name.
         - For Incorporation: cin, company_name.
         - For Aadhaar: aadhaar_number, name.
         
-        Return ONLY a JSON object. No intro. No markdown blocks.
+        Return ONLY a JSON object.No intro.No markdown blocks.
         Result:
-        `;
+    `;
 
         const response = await openai.chat.completions.create({
             model: "llama-3.2-11b-vision-preview",
@@ -297,7 +298,7 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
                         {
                             type: "image_url",
                             image_url: {
-                                url: `data:${file.type};base64,${base64Image}`,
+                                url: `data:${file.type}; base64, ${base64Image} `,
                             },
                         },
                     ],
@@ -325,7 +326,7 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
         const completion = await openai.chat.completions.create({
             messages: [{
                 role: "user",
-                content: `Simulate OCR extraction for ${docType}. Return JSON with realistic fields.`
+                content: `Simulate OCR extraction for ${docType}.Return JSON with realistic fields.`
             }],
             model: "llama-3.3-70b-versatile",
         });
@@ -353,7 +354,7 @@ export async function callOfficialVerificationService(service: 'NSDL' | 'MCA' | 
     if (service === 'MCA') {
         const cin = data.cin || data.CIN;
         if (cin && cin.length >= 21) {
-            return { status: 'verified', message: `MCA records confirmed: ${data.company_name || 'The company'} is registered under CIN ${cin}. Status: ACTIVE.` };
+            return { status: 'verified', message: `MCA records confirmed: ${data.company_name || 'The company'} is registered under CIN ${cin}.Status: ACTIVE.` };
         }
         return { status: 'failed', message: "MCA: Could not match the provided CIN in our database. Please ensure it is a 21-digit Corporate Identification Number." };
     }
@@ -380,13 +381,13 @@ export async function refineProblemStatement(rawProblem: string, apiKey: string,
     });
 
     const prompt = `
-    Refine the following startup problem statement into a powerful, concise one-line value proposition.
-    
-    Formula: "helps (who) achieves (outcome) by (unique method)"
+    Refine the following startup problem statement into a powerful, concise one - line value proposition.
+
+        Formula: "helps (who) achieves (outcome) by (unique method)"
     
     Raw Statement: "${rawProblem}"
     
-    Return ONLY the refined one-line statement. No other text, no intro, no "Refined:".
+    Return ONLY the refined one - line statement.No other text, no intro, no "Refined:".
     `;
 
     try {
@@ -417,29 +418,29 @@ export async function generateInvestorSummary(
     });
 
     const prompt = `
-    TASK: Convert the following structured startup questionnaire answers into a professional investor-ready summary.
-    
-    CONTEXT:
+    TASK: Convert the following structured startup questionnaire answers into a professional investor - ready summary.
+
+        CONTEXT:
     Startup Stage: ${stage}
     Data: ${JSON.stringify(answers)}
 
-    CORE PRINCIPLES (STRICT ADHERENCE REQUIRED):
-    1. Use ONLY provided information. Do not infer, assume, or fabricate facts.
+    CORE PRINCIPLES(STRICT ADHERENCE REQUIRED):
+    1. Use ONLY provided information.Do not infer, assume, or fabricate facts.
     2. Omit sections where information is missing.
     3. Preserve founder's intent. Rewrite ONLY for clarity, grammar, and professional structure.
-    4. TONE: Neutral, factual, and investor-appropriate.
-    5. PROHIBITED WORDS: "revolutionary", "game-changing", "world-class", "industry-leading", "next unicorn", "guaranteed", "massive growth", "huge demand". Replace with factual/measurable phrasing.
-    6. STANDARDIZATION: Paragraphs must be concise (max 5 lines). Use bullet points for features/risks. No emojis/slogans.
+    4. TONE: Neutral, factual, and investor - appropriate.
+    5. PROHIBITED WORDS: "revolutionary", "game-changing", "world-class", "industry-leading", "next unicorn", "guaranteed", "massive growth", "huge demand".Replace with factual / measurable phrasing.
+    6. STANDARDIZATION: Paragraphs must be concise(max 5 lines).Use bullet points for features / risks.No emojis / slogans.
 
     SECTION RULES:
-    - Problem: "[Customer segment] face [problem], currently addressed by [existing solutions]. Approach is inadequate due to [limitations], resulting in [impact]."
-    - Product: Describe what it does, then how it works, then key capabilities.
+        - Problem: "[Customer segment] face [problem], currently addressed by [existing solutions]. Approach is inadequate due to [limitations], resulting in [impact]."
+            - Product: Describe what it does, then how it works, then key capabilities.
     - Value Prop: Direct, factual comparisons. "Unlike [alternative], the product offers [difference]."
-    - Market: Use TAM/SAM/SOM exactly. Label as "founder estimates".
-    - Traction: Numeric validation with time context only. No qualitative summaries like "Strong growth".
-    - Risks: Neutral bullet points. No mitigations unless provided.
+        - Market: Use TAM / SAM / SOM exactly.Label as "founder estimates".
+    - Traction: Numeric validation with time context only.No qualitative summaries like "Strong growth".
+    - Risks: Neutral bullet points.No mitigations unless provided.
 
-    OUTPUT: Provide the summary as a structured professional narrative.
+        OUTPUT: Provide the summary as a structured professional narrative.
     `;
 
     try {
@@ -476,20 +477,20 @@ export async function generateValuationInsights(
 
     const prompt = `
     Analyze the following startup data and provide investment valuation insights.
-    
-    Startup: ${startup.name}
+
+        Startup: ${startup.name}
     Stage: ${startup.metrics.stage}
     Traction: ${startup.metrics.traction}
     Revenue: ${startup.revenue || "Not provided"}
     Industry: ${startup.industry || "Not provided"}
     
     Provide a professional analysis covering:
-    1. Estimated Valuation Range (based on similar market multiples)
+    1. Estimated Valuation Range(based on similar market multiples)
     2. Key Value Drivers
     3. Potential Valuation Risks
     4. Recommendations for Next Round
     
-    TONE: Conservative, analytical, and data-driven.
+    TONE: Conservative, analytical, and data - driven.
     `;
 
     try {
@@ -519,17 +520,17 @@ export async function reviewPitchDeck(
     });
 
     const prompt = `
-    Critically review the following pitch deck content (extracted text) from an investor's perspective.
-    
+    Critically review the following pitch deck content(extracted text) from an investor's perspective.
+
     Content: ${deckText}
     
     Provide structured feedback:
-    1. Clarity & Storytelling (1-10)
+    1. Clarity & Storytelling(1 - 10)
     2. Market Opportunity Analysis
     3. Competitive Advantage Evidence
     4. Missing Key Information
     5. Specific "Slide-by-Slide" Improvement Suggestions
-    
+
     TONE: Blunt, constructive, and oriented towards maximizing chance of investment.
     `;
 
