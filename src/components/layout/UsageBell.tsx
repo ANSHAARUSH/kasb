@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Zap, Info } from "lucide-react"
+import { Zap, Info, Eye, Users } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
 import { cn } from "../../lib/utils"
@@ -29,8 +29,24 @@ export function UsageBell({ className }: { className?: string }) {
         }
     }, [])
 
+    const items = [
+        {
+            label: "Profile Views",
+            icon: Eye,
+            current: usage.profileViews,
+            total: limits.profileViews,
+            color: "bg-black"
+        },
+        {
+            label: "Contacts",
+            icon: Users,
+            current: usage.contacts,
+            total: limits.contacts,
+            color: "bg-gray-400"
+        }
+    ]
+
     const profileViewsLeft = limits.profileViews === Infinity ? '∞' : Math.max(0, limits.profileViews - usage.profileViews)
-    const contactsLeft = limits.contacts === Infinity ? '∞' : Math.max(0, limits.contacts - usage.contacts)
 
     return (
         <div className={cn("relative", className)} ref={dropdownRef}>
@@ -59,44 +75,43 @@ export function UsageBell({ className }: { className?: string }) {
                     >
                         <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
                             <Zap className="h-3 w-3 fill-gray-400" />
-                            Remaining Usage
+                            Plan Usage
                         </div>
 
-                        <div className="space-y-3">
-                            <div>
-                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                    <span className="text-gray-500 uppercase tracking-tighter text-[9px]">Profile Views Left</span>
-                                    <span className="text-black">{profileViewsLeft}</span>
-                                </div>
-                                <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: limits.profileViews === Infinity ? '100%' : `${(Math.max(0, limits.profileViews - usage.profileViews) / limits.profileViews) * 100}%` }}
-                                        className="h-full bg-black rounded-full"
-                                    />
-                                </div>
-                            </div>
+                        <div className="space-y-4">
+                            {items.map((item) => {
+                                const isUnlimited = item.total === Infinity
+                                const percentage = isUnlimited ? 0 : Math.min((item.current / item.total) * 100, 100)
 
-                            <div>
-                                <div className="flex justify-between text-[11px] font-bold mb-1">
-                                    <span className="text-gray-500 uppercase tracking-tighter text-[9px]">Contacts Left</span>
-                                    <span className="text-black">{contactsLeft}</span>
-                                </div>
-                                <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: limits.contacts === Infinity ? '100%' : `${(Math.max(0, limits.contacts - usage.contacts) / limits.contacts) * 100}%` }}
-                                        className="h-full bg-gray-400 rounded-full"
-                                    />
-                                </div>
-                            </div>
+                                return (
+                                    <div key={item.label}>
+                                        <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                                            <div className="flex items-center gap-1.5 text-gray-500">
+                                                <item.icon className="h-3 w-3" />
+                                                {item.label}
+                                            </div>
+                                            <span className="text-black">
+                                                {item.current} / {isUnlimited ? "∞" : item.total}
+                                            </span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: isUnlimited ? "100%" : `${percentage}%` }}
+                                                className={cn(
+                                                    "h-full rounded-full transition-all duration-500",
+                                                    isUnlimited ? "bg-gradient-to-r from-gray-400 to-black" : item.color
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                )
+                            })}
                         </div>
 
-                        <div className="mt-4 pt-3 border-t border-gray-100">
-                            <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold uppercase">
-                                <Info className="h-2.5 w-2.5" />
-                                Tier: {tier.replace('_', ' ')}
-                            </div>
+                        <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center px-1">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Current Plan</span>
+                            <span className="text-[10px] font-black uppercase text-black italic">{tier.replace('_', ' ')}</span>
                         </div>
                     </motion.div>
                 )}
