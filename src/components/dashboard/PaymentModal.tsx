@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Check, Loader2, X, CreditCard, ShieldCheck } from "lucide-react"
 import { Button } from "../ui/button"
 import { subscriptionManager, type SubscriptionTier } from "../../lib/subscriptionManager"
+import { useAuth } from "../../context/AuthContext"
+import { supabase } from "../../lib/supabase"
 
 interface PaymentModalProps {
     isOpen: boolean
@@ -16,6 +18,7 @@ interface PaymentModalProps {
 
 export function PaymentModal({ isOpen, onClose, tier }: PaymentModalProps) {
     const [status, setStatus] = useState<'idle' | 'processing' | 'success'>('idle')
+    const { user, role } = useAuth()
 
     useEffect(() => {
         if (!isOpen) {
@@ -24,19 +27,34 @@ export function PaymentModal({ isOpen, onClose, tier }: PaymentModalProps) {
     }, [isOpen])
 
     const handlePayment = async () => {
-        if (!tier) return
+        if (!tier || !user || !role) return
         setStatus('processing')
 
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 2000))
+        try {
+            // Update Supabase
+            const table = role === 'startup' ? 'startups' : 'investors'
+            const { error } = await supabase
+                .from(table)
+                .update({ subscription_tier: tier.id })
+                .eq('id', user.id)
 
-        subscriptionManager.setTier(tier.id)
-        subscriptionManager.resetUsage()
-        setStatus('success')
+            if (error) throw error
 
-        // Final delay before closing
-        await new Promise(resolve => setTimeout(resolve, 1500))
-        window.location.reload() // Refresh to update all UI states
+            // Simulate network delay for UX
+            await new Promise(resolve => setTimeout(resolve, 1500))
+
+            subscriptionManager.setTier(tier.id)
+            subscriptionManager.resetUsage()
+            setStatus('success')
+
+            // Final delay before closing
+            await new Promise(resolve => setTimeout(resolve, 1500))
+            window.location.reload()
+        } catch (error) {
+            console.error('Upgrade error:', error)
+            alert('Failed to upgrade plan. Please try again.')
+            setStatus('idle')
+        }
     }
 
     return (
