@@ -2,17 +2,21 @@ import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Check, Globe, Zap, Sparkles, Building2, UserCircle2 } from "lucide-react"
 import { Button } from "../ui/button"
-import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, REGION_CONFIG, type UserRegion } from "../../lib/subscriptionManager"
+import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, REGION_CONFIG, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
+import { PaymentModal } from "./PaymentModal"
 
 interface PricingViewProps {
     defaultView?: 'investor' | 'startup'
     showNavbar?: boolean
+    lockView?: boolean
 }
 
-export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
+export function PricingView({ defaultView = 'investor', lockView = false }: PricingViewProps) {
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
     const [region, setRegion] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
+    const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number } | null>(null)
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
     useEffect(() => {
         subscriptionManager.setRegion(region)
@@ -20,10 +24,20 @@ export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
 
     const tiers = view === 'startup' ? STARTUP_TIERS : INVESTOR_TIERS
 
+    const handleUpgradeClick = (tier: any) => {
+        if (tier.price === 0) return
+        setSelectedTier({
+            id: tier.id,
+            name: tier.name,
+            price: tier.price
+        })
+        setIsPaymentModalOpen(true)
+    }
+
     return (
         <div className="w-full">
             <main className="container mx-auto px-4 py-8">
-                {/* Header Section */}
+                {/* ... (Header and Controls remain same) ... */}
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -61,51 +75,73 @@ export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
                     </motion.p>
                 </div>
 
-                {/* Controls */}
-                <div className="flex flex-col items-center gap-8 mb-16">
-                    {/* View Switcher */}
-                    <div className="flex p-1 bg-gray-100 rounded-2xl w-full max-w-sm">
-                        <button
-                            onClick={() => setView('investor')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${view === 'investor' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <UserCircle2 className="h-4 w-4" />
-                            For Investors
-                        </button>
-                        <button
-                            onClick={() => setView('startup')}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${view === 'startup' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
-                        >
-                            <Building2 className="h-4 w-4" />
-                            For Startups
-                        </button>
-                    </div>
+                {!lockView && (
+                    <div className="flex flex-col items-center gap-8 mb-16">
+                        <div className="flex p-1 bg-gray-100 rounded-2xl w-full max-w-sm">
+                            <button
+                                onClick={() => setView('investor')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${view === 'investor' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <UserCircle2 className="h-4 w-4" />
+                                For Investors
+                            </button>
+                            <button
+                                onClick={() => setView('startup')}
+                                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${view === 'startup' ? 'bg-white shadow-sm text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                <Building2 className="h-4 w-4" />
+                                For Startups
+                            </button>
+                        </div>
 
-                    {/* Billing Switcher */}
-                    <div className="flex items-center gap-4">
-                        <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-400'}`}>Monthly</span>
-                        <button
-                            onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
-                            className="w-14 h-7 bg-gray-200 rounded-full relative p-1 transition-colors hover:bg-gray-300"
-                        >
-                            <motion.div
-                                animate={{ x: billingCycle === 'monthly' ? 0 : 28 }}
-                                className="w-5 h-5 bg-white rounded-full shadow-sm"
-                            />
-                        </button>
-                        <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-400'}`}>
-                            Yearly <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full text-xs">Save 20%</span>
-                        </span>
+                        <div className="flex items-center gap-4">
+                            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-400'}`}>Monthly</span>
+                            <button
+                                onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
+                                className="w-14 h-7 bg-gray-200 rounded-full relative p-1 transition-colors hover:bg-gray-300"
+                            >
+                                <motion.div
+                                    animate={{ x: billingCycle === 'monthly' ? 0 : 28 }}
+                                    className="w-5 h-5 bg-white rounded-full shadow-sm"
+                                />
+                            </button>
+                            <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-400'}`}>
+                                Yearly <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full text-xs">Save 20%</span>
+                            </span>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {lockView && (
+                    <div className="flex flex-col items-center gap-4 mb-16">
+                        <div className="flex items-center gap-4">
+                            <span className={`text-sm font-medium ${billingCycle === 'monthly' ? 'text-black' : 'text-gray-400'}`}>Monthly</span>
+                            <button
+                                onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
+                                className="w-14 h-7 bg-gray-200 rounded-full relative p-1 transition-colors hover:bg-gray-300"
+                            >
+                                <motion.div
+                                    animate={{ x: billingCycle === 'monthly' ? 0 : 28 }}
+                                    className="w-5 h-5 bg-white rounded-full shadow-sm"
+                                />
+                            </button>
+                            <span className={`text-sm font-medium ${billingCycle === 'yearly' ? 'text-black' : 'text-gray-400'}`}>
+                                Yearly <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full text-xs">Save 20%</span>
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Pricing Grid */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {tiers.map((tier, idx) => {
                         const priceInfo = subscriptionManager.formatPrice(tier.price);
+                        const basePriceNum = parseInt(priceInfo.value.replace(/,/g, ''));
                         const displayPrice = billingCycle === 'yearly'
-                            ? Math.round(parseInt(priceInfo.value.replace(/,/g, '')) * 0.8) // 20% off per month
+                            ? Math.round(basePriceNum * 0.8)
                             : priceInfo.value;
+
+                        const isCurrentTier = subscriptionManager.getTier() === tier.id;
 
                         return (
                             <motion.div
@@ -146,10 +182,11 @@ export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
                                 </ul>
 
                                 <Button
-                                    className={`w-full h-12 rounded-2xl text-base font-bold transition-all ${tier.isPopular ? 'bg-black text-white hover:scale-[1.02]' : 'bg-gray-50 text-black hover:bg-gray-100 hover:scale-[1.02]'}`}
-                                    onClick={() => alert(`Redirecting to payment for ${tier.name}...`)}
+                                    disabled={isCurrentTier}
+                                    className={`w-full h-12 rounded-2xl text-base font-bold transition-all ${isCurrentTier ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : tier.isPopular ? 'bg-black text-white hover:scale-[1.02]' : 'bg-gray-50 text-black hover:bg-gray-100 hover:scale-[1.02]'}`}
+                                    onClick={() => handleUpgradeClick(tier)}
                                 >
-                                    {tier.price === 0 ? 'Get Started' : 'Upgrade Now'}
+                                    {isCurrentTier ? 'Current Plan' : tier.price === 0 ? 'Get Started' : 'Upgrade Now'}
                                 </Button>
                             </motion.div>
                         );
@@ -165,25 +202,29 @@ export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[
-                            { name: 'AI Pitch Deck Review', price: 499, icon: Sparkles },
-                            { name: 'AI Investor Readiness', price: 999, icon: Zap },
-                            { name: 'AI Valuation Insights', price: 1999, icon: Globe },
-                            { name: 'Warm Intro Booster', price: 2999, icon: Sparkles },
-                        ].map((addon, idx) => {
-                            const priceInfo = subscriptionManager.formatPrice(addon.price);
-                            return (
-                                <div key={idx} className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col items-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                                    <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <addon.icon className="h-6 w-6 text-black" />
+                            { name: 'AI Pitch Deck Review', price: 499, icon: Sparkles, roles: ['startup'] },
+                            { name: 'AI Investor Readiness', price: 999, icon: Zap, roles: ['startup'] },
+                            { name: 'AI Valuation Insights', price: 1999, icon: Globe, roles: ['startup', 'investor'] },
+                            { name: 'Warm Intro Booster', price: 2999, icon: Sparkles, roles: ['startup'] },
+                            { name: 'Due Diligence Assistant', price: 4999, icon: Check, roles: ['investor'] },
+                            { name: 'Market Intelligence Report', price: 1499, icon: Globe, roles: ['investor'] },
+                        ]
+                            .filter(addon => addon.roles.includes(view))
+                            .map((addon, idx) => {
+                                const priceInfo = subscriptionManager.formatPrice(addon.price);
+                                return (
+                                    <div key={idx} className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col items-center text-center group hover:bg-white hover:shadow-lg transition-all">
+                                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <addon.icon className="h-6 w-6 text-black" />
+                                        </div>
+                                        <h4 className="font-bold mb-1">{addon.name}</h4>
+                                        <p className="text-lg font-black">{priceInfo.symbol}{priceInfo.value}</p>
+                                        <button className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
+                                            One-time purchase
+                                        </button>
                                     </div>
-                                    <h4 className="font-bold mb-1">{addon.name}</h4>
-                                    <p className="text-lg font-black">{priceInfo.symbol}{priceInfo.value}</p>
-                                    <button className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
-                                        One-time purchase
-                                    </button>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
                     </div>
                 </div>
 
@@ -199,6 +240,12 @@ export function PricingView({ defaultView = 'investor' }: PricingViewProps) {
                     </div>
                 </div>
             </main>
+
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                tier={selectedTier}
+            />
         </div>
     )
 }

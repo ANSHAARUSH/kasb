@@ -129,7 +129,6 @@ class SubscriptionManager {
     }
 
     hasFeature(feature: string): boolean {
-        // Mock logic: check tier lists for feature existence
         const allTiers = [...STARTUP_TIERS, ...INVESTOR_TIERS];
         const tier = allTiers.find(t => t.id === this.getTier());
         return tier?.features.some(f => f.toLowerCase().includes(feature.toLowerCase())) || false;
@@ -137,13 +136,49 @@ class SubscriptionManager {
 
     getUsage() {
         const saved = localStorage.getItem('kasb_usage');
-        return saved ? JSON.parse(saved) : { profileViews: 0, contacts: 0 };
+        const defaultUsage = { profileViews: 0, contacts: 0, viewedIds: [], contactedIds: [] };
+        if (!saved) return defaultUsage;
+        try {
+            const usage = JSON.parse(saved);
+            return { ...defaultUsage, ...usage };
+        } catch {
+            return defaultUsage;
+        }
     }
 
-    trackView() {
+    resetUsage() {
+        localStorage.setItem('kasb_usage', JSON.stringify({
+            profileViews: 0,
+            contacts: 0,
+            viewedIds: [],
+            contactedIds: []
+        }));
+    }
+
+    trackView(entityId: string) {
+        if (!entityId) return;
         const usage = this.getUsage();
-        usage.profileViews += 1;
-        localStorage.setItem('kasb_usage', JSON.stringify(usage));
+        const viewedIds = new Set(usage.viewedIds || []);
+
+        if (!viewedIds.has(entityId)) {
+            viewedIds.add(entityId);
+            usage.profileViews = viewedIds.size;
+            usage.viewedIds = Array.from(viewedIds);
+            localStorage.setItem('kasb_usage', JSON.stringify(usage));
+        }
+    }
+
+    trackContact(entityId: string) {
+        if (!entityId) return;
+        const usage = this.getUsage();
+        const contactedIds = new Set(usage.contactedIds || []);
+
+        if (!contactedIds.has(entityId)) {
+            contactedIds.add(entityId);
+            usage.contacts = contactedIds.size;
+            usage.contactedIds = Array.from(contactedIds);
+            localStorage.setItem('kasb_usage', JSON.stringify(usage));
+        }
     }
 
     canViewProfile(): boolean {
@@ -151,6 +186,13 @@ class SubscriptionManager {
         const limits = TIER_LIMITS[tier];
         const usage = this.getUsage();
         return usage.profileViews < limits.profileViews;
+    }
+
+    canContact(): boolean {
+        const tier = this.getTier();
+        const limits = TIER_LIMITS[tier];
+        const usage = this.getUsage();
+        return usage.contacts < limits.contacts;
     }
 }
 

@@ -12,7 +12,10 @@ export function DashboardPricing() {
             </div>
 
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-                <PricingView defaultView={role === 'startup' ? 'startup' : 'investor'} />
+                <PricingView
+                    defaultView={role === 'startup' ? 'startup' : 'investor'}
+                    lockView={true}
+                />
             </div>
         </div>
     )

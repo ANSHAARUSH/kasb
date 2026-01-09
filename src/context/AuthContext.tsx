@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react"
 import { type Session, type User } from "@supabase/supabase-js"
 import { supabase } from "../lib/supabase"
+import { subscriptionManager, type SubscriptionTier } from "../lib/subscriptionManager"
 
 type UserRole = 'investor' | 'startup' | 'admin' | null
 
@@ -61,8 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Run all checks in parallel
             const [adminResult, startupResult, investorResult] = await Promise.all([
                 supabase.from('admins').select('id').eq('id', userId).single(),
-                supabase.from('startups').select('id').eq('id', userId).single(),
-                supabase.from('investors').select('id').eq('id', userId).single()
+                supabase.from('startups').select('id, subscription_tier').eq('id', userId).single(),
+                supabase.from('investors').select('id, subscription_tier').eq('id', userId).single()
             ])
 
             if (adminResult.data) {
@@ -72,11 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (startupResult.data) {
                 setRole('startup')
+                if (startupResult.data.subscription_tier) {
+                    subscriptionManager.setTier(startupResult.data.subscription_tier as SubscriptionTier)
+                }
                 return
             }
 
             if (investorResult.data) {
                 setRole('investor')
+                if (investorResult.data.subscription_tier) {
+                    subscriptionManager.setTier(investorResult.data.subscription_tier as SubscriptionTier)
+                }
                 return
             }
 

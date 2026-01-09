@@ -27,6 +27,7 @@ interface Startup {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     industry?: string
+    subscription_tier?: string
 }
 
 interface StartupManagementProps {
@@ -37,6 +38,7 @@ interface StartupManagementProps {
     toggleFeedVisibility: (startup: Startup) => void
     promptDelete: (table: 'startups' | 'investors', id: string) => void
     onAddClick: () => void
+    updateTier: (table: 'startups' | 'investors', id: string, tier: string) => void
 }
 
 export function StartupManagement({
@@ -46,11 +48,14 @@ export function StartupManagement({
     grantTrusted,
     toggleFeedVisibility,
     promptDelete,
-    onAddClick
+    onAddClick,
+    updateTier
 }: StartupManagementProps) {
     if (loading) {
         return <div className="p-8 text-center text-gray-400">Loading startups...</div>
     }
+
+    const STARTUP_PLANS = ['discovery', 'starter', 'growth', 'fundraise_pro']
 
     return (
         <div className="space-y-4 max-w-2xl mx-auto">
@@ -100,6 +105,18 @@ export function StartupManagement({
                                             </button>
                                         </>
                                     )}
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Plan:</span>
+                                    <select
+                                        value={startup.subscription_tier || 'discovery'}
+                                        onChange={(e) => updateTier('startups', startup.id, e.target.value)}
+                                        className="text-xs font-bold bg-gray-50 border-none rounded-lg px-2 py-1 focus:ring-1 ring-black cursor-pointer hover:bg-gray-100 transition-colors capitalize"
+                                    >
+                                        {STARTUP_PLANS.map(plan => (
+                                            <option key={plan} value={plan}>{plan.replace('_', ' ')}</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 {startup.adhaar_number && (
                                     <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">

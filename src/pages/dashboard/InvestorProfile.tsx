@@ -1,7 +1,9 @@
 import { Button } from "../../components/ui/button"
 import { useState } from "react"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, Zap } from "lucide-react"
+import { Link } from "react-router-dom"
 import { useInvestorProfile } from "../../hooks/useInvestorProfile"
+// ... (rest of imports)
 import { ProfileView } from "./investor/ProfileView"
 import { EditProfileModal } from "./investor/EditProfileModal"
 import { supabase } from "../../lib/supabase"
@@ -71,6 +73,15 @@ export function InvestorProfile() {
                     <p className="text-gray-500">Manage your investment preferences and public profile</p>
                 </div>
                 <div className="flex gap-2">
+                    <Link to="/dashboard/pricing">
+                        <Button
+                            variant="outline"
+                            className="rounded-xl font-bold border-gray-200 gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                        >
+                            <Zap className="h-4 w-4 fill-indigo-600" />
+                            Manage Plan
+                        </Button>
+                    </Link>
                     <Button
                         onClick={() => signOut()}
                         variant="outline"

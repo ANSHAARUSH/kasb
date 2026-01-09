@@ -15,6 +15,7 @@ interface Investor {
     adhaar_doc_url?: string
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
+    subscription_tier?: string
 }
 
 interface InvestorManagementProps {
@@ -24,6 +25,7 @@ interface InvestorManagementProps {
     grantTrusted: (table: 'startups' | 'investors', id: string) => void
     promptDelete: (table: 'startups' | 'investors', id: string) => void
     onAddClick: () => void
+    updateTier: (table: 'startups' | 'investors', id: string, tier: string) => void
 }
 
 export function InvestorManagement({
@@ -32,11 +34,14 @@ export function InvestorManagement({
     toggleVerifyInvestor,
     grantTrusted,
     promptDelete,
-    onAddClick
+    onAddClick,
+    updateTier
 }: InvestorManagementProps) {
     if (loading) {
         return <div className="p-8 text-center text-gray-400">Loading investors...</div>
     }
+
+    const INVESTOR_PLANS = ['explore', 'investor_basic', 'investor_pro', 'institutional']
 
     return (
         <div className="space-y-4 max-w-2xl mx-auto">
@@ -56,6 +61,18 @@ export function InvestorManagement({
                                     )}
                                 </div>
                                 <div className="text-sm text-gray-400">{investor.funds_available} available</div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Plan:</span>
+                                    <select
+                                        value={investor.subscription_tier || 'explore'}
+                                        onChange={(e) => updateTier('investors', investor.id, e.target.value)}
+                                        className="text-xs font-bold bg-gray-50 border-none rounded-lg px-2 py-1 focus:ring-1 ring-black cursor-pointer hover:bg-gray-100 transition-colors capitalize"
+                                    >
+                                        {INVESTOR_PLANS.map(plan => (
+                                            <option key={plan} value={plan}>{plan.replace('investor_', '').replace('_', ' ')}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 {investor.adhaar_number && (
                                     <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
                                         <span>Adhaar: {investor.adhaar_number}</span>

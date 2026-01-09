@@ -37,7 +37,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
 
     useEffect(() => {
         if (investor?.id && canView) {
-            subscriptionManager.trackView()
+            subscriptionManager.trackView(investor.id)
         }
     }, [investor?.id, canView])
 

@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
+import { UsageTracker } from "../dashboard/UsageTracker"
 
 export function SideNav() {
     const location = useLocation()
@@ -60,6 +61,8 @@ export function SideNav() {
                     )
                 })}
             </nav>
+
+            <UsageTracker />
 
             <div className="p-4 border-t border-gray-50">
                 <button

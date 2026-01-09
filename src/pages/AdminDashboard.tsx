@@ -37,6 +37,7 @@ interface Startup {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     industry?: string
+    subscription_tier?: string
 }
 
 interface Investor {
@@ -51,6 +52,7 @@ interface Investor {
     adhaar_doc_url?: string
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
+    subscription_tier?: string
 }
 
 export function AdminDashboard() {
@@ -183,6 +185,12 @@ export function AdminDashboard() {
         else fetchData()
     }
 
+    const updateUserTier = async (table: 'startups' | 'investors', id: string, tier: string) => {
+        const { error } = await supabase.from(table).update({ subscription_tier: tier }).eq('id', id)
+        if (error) alert('Error updating tier: ' + error.message)
+        else fetchData()
+    }
+
     return (
         <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={() => window.location.href = '/'}>
             <AnimatePresence mode="wait">
@@ -216,6 +224,7 @@ export function AdminDashboard() {
                                     toggleFeedVisibility={toggleFeedVisibility}
                                     promptDelete={promptDelete}
                                     onAddClick={() => setIsStartupModalOpen(true)}
+                                    updateTier={updateUserTier}
                                 />
                             ) : (
                                 <InvestorManagement
@@ -225,6 +234,7 @@ export function AdminDashboard() {
                                     grantTrusted={grantTrusted}
                                     promptDelete={promptDelete}
                                     onAddClick={() => setIsInvestorModalOpen(true)}
+                                    updateTier={updateUserTier}
                                 />
                             )}
                         </div>

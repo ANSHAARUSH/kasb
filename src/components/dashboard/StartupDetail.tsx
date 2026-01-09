@@ -52,7 +52,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
     useEffect(() => {
         if (startup?.id && canView) {
-            subscriptionManager.trackView()
+            subscriptionManager.trackView(startup.id)
         }
     }, [startup?.id, canView])
 
@@ -61,6 +61,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         setIsConnecting(true)
         try {
             await sendConnectionRequest(user.id, startup.id)
+            subscriptionManager.trackContact(startup.id)
             setConnStatus({ status: 'pending', isIncoming: false })
             onConnectionChange?.(startup.id)
             toast("Connection request sent", "success")
