@@ -7,7 +7,7 @@ import { cn } from "../../lib/utils"
 export function UsageTracker() {
     const [usage, setUsage] = useState(subscriptionManager.getUsage())
     const tier = subscriptionManager.getTier()
-    const limits = TIER_LIMITS[tier]
+    const limits = TIER_LIMITS[tier] || { profileViews: 0, contacts: 0 }
 
     useEffect(() => {
         // Simple polling to keep usage in sync if changed elsewhere

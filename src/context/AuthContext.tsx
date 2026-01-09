@@ -59,37 +59,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkUserRole = async (userId: string) => {
         try {
-            // Run all checks in parallel
-            const [adminResult, startupResult, investorResult] = await Promise.all([
-                supabase.from('admins').select('id').eq('id', userId).single(),
-                supabase.from('startups').select('id, subscription_tier').eq('id', userId).single(),
-                supabase.from('investors').select('id, subscription_tier').eq('id', userId).single()
-            ])
-
-            if (adminResult.data) {
+            // 1. Check Admin
+            const { data: adminData } = await supabase.from('admins').select('id').eq('id', userId).single()
+            if (adminData) {
                 setRole('admin')
                 return
             }
 
-            if (startupResult.data) {
+            // 2. Check Startup
+            const { data: startupData, error: startupError } = await supabase
+                .from('startups')
+                .select('id, subscription_tier')
+                .eq('id', userId)
+                .single()
+
+            if (startupData) {
                 setRole('startup')
-                if (startupResult.data.subscription_tier) {
-                    subscriptionManager.setTier(startupResult.data.subscription_tier as SubscriptionTier)
+                if (startupData.subscription_tier) {
+                    subscriptionManager.setTier(startupData.subscription_tier as SubscriptionTier)
                 }
                 return
             }
 
-            if (investorResult.data) {
+            // 3. Check Investor
+            const { data: investorData, error: investorError } = await supabase
+                .from('investors')
+                .select('id, subscription_tier')
+                .eq('id', userId)
+                .single()
+
+            if (investorData) {
                 setRole('investor')
-                if (investorResult.data.subscription_tier) {
-                    subscriptionManager.setTier(investorResult.data.subscription_tier as SubscriptionTier)
+                if (investorData.subscription_tier) {
+                    subscriptionManager.setTier(investorData.subscription_tier as SubscriptionTier)
                 }
                 return
             }
+
+            // Log purely informational errors (exclude "no rows found")
+            if (startupError && startupError.code !== 'PGRST116') console.error('Startup check error:', startupError)
+            if (investorError && investorError.code !== 'PGRST116') console.error('Investor check error:', investorError)
 
             setRole(null)
         } catch (error) {
-            console.error('Error checking user role:', error)
+            console.error('Critical Auth Error:', error)
             setRole(null)
         } finally {
             setLoading(false)

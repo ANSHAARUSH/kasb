@@ -11,7 +11,7 @@ export function SideNav() {
     const { role, signOut } = useAuth()
 
     // Determine routes based on role
-    const isStartupDashboard = role === 'startup'
+    const isStartupDashboard = role === 'startup' || path.includes('/startup')
     const dashboardHome = isStartupDashboard ? '/dashboard/startup' : '/dashboard/investor'
     const historyRoute = isStartupDashboard ? '/dashboard/startup/history' : '/dashboard/investor/history'
     const messagesRoute = isStartupDashboard ? '/dashboard/startup/messages' : '/dashboard/investor/messages'

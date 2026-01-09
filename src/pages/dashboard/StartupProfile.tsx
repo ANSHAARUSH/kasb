@@ -46,7 +46,27 @@ export function StartupProfile() {
         )
     }
 
-    if (!startup) return null
+    if (!startup) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Startup Profile Not Found</h3>
+                <p className="text-gray-500 max-w-md mb-6">
+                    We couldn't load your startup profile. This usually happens if the account setup wasn't completed properly.
+                </p>
+                <div className="flex gap-4">
+                    <Button onClick={() => window.location.reload()} variant="outline">
+                        Retry
+                    </Button>
+                    <Button onClick={() => signOut()} variant="default">
+                        Sign Out
+                    </Button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="pb-24 max-w-2xl mx-auto px-4">
