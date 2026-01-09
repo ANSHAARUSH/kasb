@@ -20,85 +20,73 @@ const TOPICS = [
         title: "EdTech",
         icon: BookOpen,
         desc: "Technology facilitating learning and improving performance.",
-        color: "bg-blue-50 text-blue-600",
-        cagr: "15%"
+        color: "bg-blue-50 text-blue-600"
     },
     {
         title: "HealthTech",
         icon: HeartPulse,
         desc: "Tech enabled healthcare products, services, and pharmaceutical innovations.",
-        color: "bg-red-50 text-red-600",
-        cagr: "18%"
+        color: "bg-red-50 text-red-600"
     },
     {
         title: "Manufacturing",
         icon: Factory,
         desc: "Modern industrial practices utilizing automation and data exchange.",
-        color: "bg-slate-50 text-slate-600",
-        cagr: "14%"
+        color: "bg-slate-50 text-slate-600"
     },
     {
         title: "FinTech",
         icon: Coins,
         desc: "New tech that seeks to improve and automate financial services.",
-        color: "bg-yellow-50 text-yellow-600",
-        cagr: "28%"
+        color: "bg-yellow-50 text-yellow-600"
     },
     {
         title: "E-commerce",
         icon: ShoppingCart,
         desc: "Commercial transactions conducted electronically on the Internet.",
-        color: "bg-orange-50 text-orange-600",
-        cagr: "22%"
+        color: "bg-orange-50 text-orange-600"
     },
     {
         title: "AI & SaaS",
         icon: Bot,
         desc: "Artificial Intelligence and Software as a Service solutions.",
-        color: "bg-purple-50 text-purple-600",
-        cagr: "35%"
+        color: "bg-purple-50 text-purple-600"
     },
     {
         title: "AgriTech",
         icon: Sprout,
         desc: "Technology in agriculture, horticulture, and food production efficiency.",
-        color: "bg-green-50 text-green-600",
-        cagr: "25%"
+        color: "bg-green-50 text-green-600"
     },
     {
         title: "CleanTech",
         icon: Leaf,
         desc: "Processes to reduce negative environmental impacts and conserve energy.",
-        color: "bg-emerald-50 text-emerald-600",
-        cagr: "30%"
+        color: "bg-emerald-50 text-emerald-600"
     },
     {
         title: "Media & Gaming",
         icon: Gamepad2,
         desc: "Interactive entertainment and digital media distribution.",
-        color: "bg-pink-50 text-pink-600",
-        cagr: "20%"
+        color: "bg-pink-50 text-pink-600"
     },
     {
         title: "PropTech",
         icon: Building2,
         desc: "Technology for the real estate and property management industry.",
-        color: "bg-cyan-50 text-cyan-600",
-        cagr: "16%"
+        color: "bg-cyan-50 text-cyan-600"
     },
     {
         title: "LogisticTech",
         icon: Truck,
         desc: "Optimizing supply chain and logistics operations through technology.",
-        color: "bg-amber-50 text-amber-600",
-        cagr: "18%"
+        color: "bg-amber-50 text-amber-600"
     },
     {
         title: "ClimateTech",
         icon: Rocket,
         desc: "Technologies mitigating climate change and space exploration.",
-        color: "bg-sky-50 text-sky-600",
-        cagr: "30%"
+        color: "bg-sky-50 text-sky-600"
     }
 ] as const
 
@@ -107,7 +95,6 @@ interface CheatSheetField {
     icon: LucideIcon
     desc: string
     color: string
-    cagr?: string
     isAI?: boolean
     aiGrowthData?: { country: string; value: number; growth: string }[]
 }
@@ -142,17 +129,12 @@ export function CheatSheetPage() {
 
             const insight = await getIndustryInsights(searchQuery, apiKey)
 
-            // Extract India CAGR or first available
-            const indiaData = insight.growthData.find(d => d.country === 'India')
-            const displayCagr = indiaData ? indiaData.growth : insight.growthData[0]?.growth
-
             // Map IndustryInsight to Field structure for the Panel
             setSelectedField({
                 title: insight.title,
                 icon: Sparkles,
                 desc: insight.desc,
                 color: "bg-black text-white",
-                cagr: displayCagr?.replace('+', ''),
                 isAI: true,
                 aiGrowthData: insight.growthData
             })
@@ -209,14 +191,7 @@ export function CheatSheetPage() {
                                 <div className={`rounded-2xl p-4 transition-transform group-hover:rotate-6 ${topic.color}`}>
                                     <topic.icon className="h-7 w-7" />
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center justify-between gap-2 mb-1">
-                                        <CardTitle className="text-2xl font-black tracking-tight">{topic.title}</CardTitle>
-                                        <div className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black tracking-widest uppercase">
-                                            {topic.cagr} CAGR
-                                        </div>
-                                    </div>
-                                </div>
+                                <CardTitle className="text-2xl font-black tracking-tight">{topic.title}</CardTitle>
                             </CardHeader>
                             <CardContent className="px-8 pb-8">
                                 <p className="text-gray-500 font-medium leading-relaxed">{topic.desc}</p>

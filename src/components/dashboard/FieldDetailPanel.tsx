@@ -268,7 +268,7 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
                                         <TrendingUp className="h-5 w-5 text-green-500" />
                                         Global Growth Trends
                                     </h3>
-                                    <span className="text-sm font-bold text-gray-400">Values in billions ($)</span>
+                                    <span className="text-sm font-bold text-gray-400">Expected CAGR (2024-2027)</span>
                                 </div>
 
                                 <div className="grid gap-4">
@@ -282,7 +282,7 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
                                             <div key={item.country} className="space-y-2">
                                                 <div className="flex justify-between text-sm font-bold">
                                                     <span className="text-gray-600">{item.country}</span>
-                                                    <span className="text-black">{item.growth} growth</span>
+                                                    <span className="text-black">{item.growth} CAGR</span>
                                                 </div>
                                                 <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
                                                     <motion.div
