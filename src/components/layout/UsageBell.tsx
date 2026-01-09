@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Zap, Info, Eye, Users } from "lucide-react"
+import { Zap, Eye, Users } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
 import { cn } from "../../lib/utils"
