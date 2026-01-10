@@ -167,7 +167,7 @@ export function InvestorHome() {
                 ${panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'}
             `}>
                 {/* Filters Header (Minimized) */}
-                <div className="flex-none p-6 pb-2">
+                <div className={cn("flex-none transition-all duration-300", showFilters ? "p-6 pb-2" : "p-0")}>
                     <FilterPanel
                         isOpen={showFilters}
                         filters={filters}

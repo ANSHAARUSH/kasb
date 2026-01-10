@@ -67,7 +67,7 @@ export function DashboardLayout() {
                     </div>
                 </header>
 
-                <main className="flex-1 px-4 py-6 pb-24 md:pb-6">
+                <main className="flex-1 px-4 md:py-6 pt-0 pb-24 md:pb-6">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>
