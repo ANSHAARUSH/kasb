@@ -139,7 +139,7 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
 
     return (
         <Card onClick={onClick} className={cn(
-            "group h-full flex flex-col relative hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all cursor-pointer duration-500 overflow-hidden border border-black shadow-sm",
+            "group h-full flex flex-col relative hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all cursor-pointer duration-500 overflow-hidden border border-black shadow-sm touch-manipulation",
             isSelected ? "ring-2 ring-black bg-white shadow-xl" : "bg-white/50 backdrop-blur-sm"
         )}>
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

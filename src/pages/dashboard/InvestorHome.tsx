@@ -319,7 +319,7 @@ export function InvestorHome() {
                         {/* Actually, let's just leave the Mobile behavior as is (Modal) utilizing the same component but wrapped. */}
                         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-4">
                             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDetailStartup(null)} />
-                            <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                            <div className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl h-[85vh] overflow-hidden flex flex-col shadow-2xl">
                                 <div className="absolute top-2 right-2 z-10">
                                     <Button variant="ghost" size="icon" onClick={() => setDetailStartup(null)} className="rounded-full bg-white/50 hover:bg-white">
                                         <X className="h-5 w-5" />

@@ -155,7 +155,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             onClick={onClick}
             onDoubleClick={onDoubleClick}
             className={cn(
-                "group flex flex-col relative cursor-pointer transition-all duration-500 overflow-hidden border border-black shadow-sm h-auto sm:h-full",
+                "group flex flex-col relative cursor-pointer transition-all duration-500 overflow-hidden border border-black shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1",
                 isSelected ? 'ring-2 ring-black bg-white shadow-xl' : 'bg-white/50 backdrop-blur-sm'
             )}
