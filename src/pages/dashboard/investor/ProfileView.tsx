@@ -30,14 +30,14 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                         <p className="text-gray-500">{investor.title || 'Investor'}</p>
                     </div>
                 </CardHeader>
-                <CardContent className="grid gap-6 md:grid-cols-2 pt-6">
+                <CardContent className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 pt-6">
                     <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                         <p className="text-sm text-gray-500">Location</p>
-                        <p className="text-xl font-bold">{investor.location || 'Not set'}</p>
+                        <p className="text-lg sm:text-xl font-bold">{investor.location || 'Not set'}</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                         <p className="text-sm text-gray-500">Funds Available</p>
-                        <p className="text-2xl font-bold text-green-600">{investor.funds_available || 'Not set'}</p>
+                        <p className="text-xl sm:text-2xl font-bold text-green-600">{investor.funds_available || 'Not set'}</p>
                     </div>
                     <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100">
                         <p className="text-sm text-gray-500">Portfolio Size</p>
@@ -73,8 +73,8 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                             <p className="text-xs text-gray-500">Email confirmed.</p>
                         </div>
                         {investor.verification_level === 'basic' && !investor.review_requested && (
-                            <div className="ml-auto">
-                                <Button size="sm" onClick={onRequestReview} className="bg-black text-white rounded-lg text-xs font-bold">
+                            <div className="ml-auto shrink-0">
+                                <Button size="sm" onClick={onRequestReview} className="bg-black text-white rounded-lg text-xs font-bold px-2 py-1 h-auto">
                                     Request Review
                                 </Button>
                             </div>

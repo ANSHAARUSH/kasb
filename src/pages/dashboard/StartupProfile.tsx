@@ -70,12 +70,12 @@ export function StartupProfile() {
 
     return (
         <div className="pb-24 max-w-2xl mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight">Profile</h1>
+                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Profile</h1>
                     <p className="text-gray-400 mt-1 font-medium">Manage your startup identity</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Link to="/dashboard/pricing">
                         <Button
                             variant="outline"

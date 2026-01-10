@@ -1,4 +1,4 @@
-import { Home, History, MessageSquare, User } from "lucide-react"
+import { Home, History, MessageSquare, User, FileText } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
@@ -12,12 +12,14 @@ export function BottomNav() {
     const dashboardHome = isStartupDashboard ? '/dashboard/startup' : '/dashboard/investor'
     const historyRoute = isStartupDashboard ? '/dashboard/startup/history' : '/dashboard/investor/history'
     const messagesRoute = isStartupDashboard ? '/dashboard/startup/messages' : '/dashboard/investor/messages'
+    const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/cheatsheet' : '/dashboard/investor/cheatsheet'
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
 
     const navItems = [
         { icon: Home, label: "Home", href: dashboardHome },
         { icon: History, label: "History", href: historyRoute },
-        { icon: MessageSquare, label: "Messages", href: messagesRoute },
+        { icon: MessageSquare, label: "Chat", href: messagesRoute },
+        { icon: FileText, label: "Cheat", href: cheatSheetRoute },
         { icon: User, label: "Profile", href: profileRoute },
     ]
 

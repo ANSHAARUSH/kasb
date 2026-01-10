@@ -33,8 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(session)
             setUser(session?.user ?? null)
             if (session?.user) {
+                subscriptionManager.setUserId(session.user.id)
                 checkUserRole(session.user.id)
             } else {
+                subscriptionManager.setUserId(null)
                 setLoading(false)
             }
         })
@@ -46,9 +48,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setSession(session)
             setUser(session?.user ?? null)
             if (session?.user) {
+                subscriptionManager.setUserId(session.user.id)
                 setLoading(true) // Start loading while we check role
                 checkUserRole(session.user.id)
             } else {
+                subscriptionManager.setUserId(null)
                 setRole(null)
                 setLoading(false)
             }
@@ -75,9 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (startupData) {
                 setRole('startup')
-                if (startupData.subscription_tier) {
-                    subscriptionManager.setTier(startupData.subscription_tier as SubscriptionTier)
-                }
+                const tier = (startupData.subscription_tier || 'discovery') as SubscriptionTier
+                subscriptionManager.setTier(tier)
                 return
             }
 
@@ -90,9 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (investorData) {
                 setRole('investor')
-                if (investorData.subscription_tier) {
-                    subscriptionManager.setTier(investorData.subscription_tier as SubscriptionTier)
-                }
+                const tier = (investorData.subscription_tier || 'explore') as SubscriptionTier
+                subscriptionManager.setTier(tier)
                 return
             }
 
@@ -111,6 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         await supabase.auth.signOut()
+        subscriptionManager.setUserId(null)
         setRole(null)
         setSession(null)
         setUser(null)

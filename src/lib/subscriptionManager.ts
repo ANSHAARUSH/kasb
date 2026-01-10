@@ -97,24 +97,36 @@ export const INVESTOR_TIERS: TierConfig[] = [
 class SubscriptionManager {
     private currentRegion: UserRegion = 'India';
     private activeTier: SubscriptionTier = 'explore'; // Default
+    private userId: string | null = null;
+
+    setUserId(userId: string | null) {
+        this.userId = userId;
+        // Reset in-memory cache to prevent state leakage between accounts
+        this.activeTier = 'explore';
+        this.currentRegion = 'India';
+    }
+
+    private getStorageKey(key: string): string {
+        return this.userId ? `${key}_${this.userId}` : key;
+    }
 
     setRegion(region: UserRegion) {
         this.currentRegion = region;
-        localStorage.setItem('kasb_user_region', region);
+        localStorage.setItem(this.getStorageKey('kasb_user_region'), region);
     }
 
     getRegion(): UserRegion {
-        const saved = localStorage.getItem('kasb_user_region') as UserRegion;
+        const saved = localStorage.getItem(this.getStorageKey('kasb_user_region')) as UserRegion;
         return saved || this.currentRegion;
     }
 
     setTier(tier: SubscriptionTier) {
         this.activeTier = tier;
-        localStorage.setItem('kasb_user_tier', tier);
+        localStorage.setItem(this.getStorageKey('kasb_user_tier'), tier);
     }
 
     getTier(): SubscriptionTier {
-        const saved = localStorage.getItem('kasb_user_tier') as SubscriptionTier;
+        const saved = localStorage.getItem(this.getStorageKey('kasb_user_tier')) as SubscriptionTier;
         return saved || this.activeTier;
     }
 
@@ -135,7 +147,8 @@ class SubscriptionManager {
     }
 
     getUsage() {
-        const saved = localStorage.getItem('kasb_usage');
+        if (!this.userId) return { profileViews: 0, contacts: 0, viewedIds: [], contactedIds: [] };
+        const saved = localStorage.getItem(this.getStorageKey('kasb_usage'));
         const defaultUsage = { profileViews: 0, contacts: 0, viewedIds: [], contactedIds: [] };
         if (!saved) return defaultUsage;
         try {
@@ -147,7 +160,8 @@ class SubscriptionManager {
     }
 
     resetUsage() {
-        localStorage.setItem('kasb_usage', JSON.stringify({
+        if (!this.userId) return;
+        localStorage.setItem(this.getStorageKey('kasb_usage'), JSON.stringify({
             profileViews: 0,
             contacts: 0,
             viewedIds: [],
@@ -156,7 +170,7 @@ class SubscriptionManager {
     }
 
     trackView(entityId: string) {
-        if (!entityId) return;
+        if (!entityId || !this.userId) return;
         const usage = this.getUsage();
         const viewedIds = new Set(usage.viewedIds || []);
 
@@ -164,12 +178,12 @@ class SubscriptionManager {
             viewedIds.add(entityId);
             usage.profileViews = viewedIds.size;
             usage.viewedIds = Array.from(viewedIds);
-            localStorage.setItem('kasb_usage', JSON.stringify(usage));
+            localStorage.setItem(this.getStorageKey('kasb_usage'), JSON.stringify(usage));
         }
     }
 
     trackContact(entityId: string) {
-        if (!entityId) return;
+        if (!entityId || !this.userId) return;
         const usage = this.getUsage();
         const contactedIds = new Set(usage.contactedIds || []);
 
@@ -177,21 +191,33 @@ class SubscriptionManager {
             contactedIds.add(entityId);
             usage.contacts = contactedIds.size;
             usage.contactedIds = Array.from(contactedIds);
-            localStorage.setItem('kasb_usage', JSON.stringify(usage));
+            localStorage.setItem(this.getStorageKey('kasb_usage'), JSON.stringify(usage));
         }
     }
 
-    canViewProfile(): boolean {
+    canViewProfile(entityId?: string): boolean {
         const tier = this.getTier();
         const limits = TIER_LIMITS[tier];
         const usage = this.getUsage();
+
+        // If we've already viewed this specific entity, we can always view it again
+        if (entityId && (usage.viewedIds || []).includes(entityId)) {
+            return true;
+        }
+
         return usage.profileViews < limits.profileViews;
     }
 
-    canContact(): boolean {
+    canContact(entityId?: string): boolean {
         const tier = this.getTier();
         const limits = TIER_LIMITS[tier];
         const usage = this.getUsage();
+
+        // If we've already contacted this specific entity, we can always contact it again
+        if (entityId && (usage.contactedIds || []).includes(entityId)) {
+            return true;
+        }
+
         return usage.contacts < limits.contacts;
     }
 }

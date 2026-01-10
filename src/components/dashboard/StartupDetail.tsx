@@ -48,7 +48,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         checkStatus()
     }, [user, startup?.id, triggerUpdate, startup?.logo])
 
-    const canView = subscriptionManager.canViewProfile() || connStatus?.status === 'accepted'
+    const canView = subscriptionManager.canViewProfile(startup?.id) || connStatus?.status === 'accepted'
 
     useEffect(() => {
         if (startup?.id && canView) {

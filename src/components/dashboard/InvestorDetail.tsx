@@ -33,7 +33,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
         checkStatus()
     }, [user, investor?.id])
 
-    const canView = subscriptionManager.canViewProfile() || connStatus?.status === 'accepted'
+    const canView = subscriptionManager.canViewProfile(investor?.id) || connStatus?.status === 'accepted'
 
     useEffect(() => {
         if (investor?.id && canView) {

@@ -66,13 +66,13 @@ export function InvestorProfile() {
     }
 
     return (
-        <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm">
-            <div className="flex items-center justify-between mb-8">
+        <div className="bg-white rounded-3xl p-4 sm:p-8 border border-gray-100 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold">Investor Profile</h2>
-                    <p className="text-gray-500">Manage your investment preferences and public profile</p>
+                    <p className="text-gray-500 text-sm sm:text-base">Manage your investment preferences and public profile</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Link to="/dashboard/pricing">
                         <Button
                             variant="outline"

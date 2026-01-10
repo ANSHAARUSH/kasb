@@ -8,12 +8,12 @@ import { StartupDetail, type PanelSize } from "../../components/dashboard/Startu
 // import { useAuth } from "../../context/AuthContext"
 // import { useToast } from "../../hooks/useToast"
 
-import { Filter, SlidersHorizontal, X } from "lucide-react"
+import { Filter, SlidersHorizontal, X, FileText } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { FilterPanel, type FilterState } from "../../components/dashboard/FilterPanel"
 import { useChat } from "../../hooks/useChat"
 import { useDebounce } from "../../hooks/useDebounce"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, Link } from "react-router-dom"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { parseRevenue, cn } from "../../lib/utils"
 import { useStartups } from "../../hooks/useStartups"
@@ -181,7 +181,15 @@ export function InvestorHome() {
                     <div className="max-w-2xl mx-auto space-y-6">
                         <div className="flex items-center justify-between">
                             <h1 className="text-xl font-bold">Discover Startups</h1>
-                            <span className="text-sm text-gray-500">{filteredStartups.length} matches</span>
+                            <div className="flex items-center gap-3">
+                                <Link to="/dashboard/investor/cheatsheet" className="md:hidden">
+                                    <Button variant="outline" size="sm" className="h-8 rounded-lg gap-1.5 border-gray-200 text-gray-600">
+                                        <FileText className="h-3.5 w-3.5" />
+                                        <span className="text-xs">Cheat Sheet</span>
+                                    </Button>
+                                </Link>
+                                <span className="text-sm text-gray-500">{filteredStartups.length} matches</span>
+                            </div>
                         </div>
 
                         {filteredStartups.length === 0 ? (
@@ -226,7 +234,7 @@ export function InvestorHome() {
                 </div>
 
                 {/* Fixed Bottom Search & Filter Bar */}
-                <div className="fixed bottom-20 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
+                <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
                     <div className="max-w-md mx-auto flex items-center gap-2 pointer-events-auto">
                         <div className="flex-1">
                             <SearchInput

@@ -10,6 +10,9 @@ import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { useInvestors } from "../../hooks/useInvestors"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
+import { Link } from "react-router-dom"
+import { Button } from "../../components/ui/button"
+import { FileText } from "lucide-react"
 
 export function StartupHome() {
     // const { user } = useAuth()
@@ -79,9 +82,17 @@ export function StartupHome() {
         <div className="pb-20">
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Discover Investors</h1>
-                <span className="text-sm text-gray-500">
-                    {filteredInvestors.length} matches
-                </span>
+                <div className="flex items-center gap-3">
+                    <Link to="/dashboard/startup/cheatsheet" className="md:hidden">
+                        <Button variant="outline" size="sm" className="h-8 rounded-lg gap-1.5 border-gray-200 text-gray-600">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-xs">Cheat Sheet</span>
+                        </Button>
+                    </Link>
+                    <span className="text-sm text-gray-500">
+                        {filteredInvestors.length} matches
+                    </span>
+                </div>
             </div>
 
             {filteredInvestors.length === 0 ? (
@@ -112,7 +123,7 @@ export function StartupHome() {
             <div className="h-24" />
 
             {/* Fixed Bottom Search Bar */}
-            <div className="fixed bottom-20 left-0 right-0 z-40 px-4 md:left-64 pointer-events-none">
+            <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 pointer-events-none">
                 <div className="max-w-md mx-auto pointer-events-auto">
                     <SearchInput
                         value={searchQuery}
