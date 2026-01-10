@@ -6,7 +6,8 @@ import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
-import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
+import { Avatar } from "../ui/Avatar"
 
 interface InvestorCardProps {
     investor: Investor
@@ -23,6 +24,8 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
+    const [isClosingDeal, setIsClosingDeal] = useState(false)
+    const [isDisconnecting, setIsDisconnecting] = useState(false)
 
     useEffect(() => {
         if (!user || !investor.id) return
@@ -99,6 +102,41 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
         onToggleSave?.(investor)
     }
 
+    const handleCloseDeal = async (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (!connStatus?.connectionId) return
+
+        setIsClosingDeal(true)
+        try {
+            await closeDeal(connStatus.connectionId)
+            const newStatus = await getConnectionStatus(user!.id, investor.id)
+            setConnStatus(newStatus)
+            toast("Deal marked as closed!", "success")
+        } catch (error) {
+            console.error(error)
+            toast("Failed to close deal", "error")
+        } finally {
+            setIsClosingDeal(false)
+        }
+    }
+
+    const handleDisconnect = async (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (!user) return
+
+        setIsDisconnecting(true)
+        try {
+            await disconnectConnection(user.id, investor.id)
+            setConnStatus(null)
+            toast("Connection removed", "info")
+        } catch (error) {
+            console.error(error)
+            toast("Failed to disconnect", "error")
+        } finally {
+            setIsDisconnecting(false)
+        }
+    }
+
     return (
         <Card onClick={onClick} className={cn(
             "group h-full flex flex-col relative hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all cursor-pointer duration-500 overflow-hidden border border-black shadow-sm",
@@ -108,26 +146,12 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
 
             <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="flex items-start gap-4">
-                    <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
-                        {(investor.avatar?.startsWith('http') || investor.avatar?.startsWith('/')) ? (
-                            <img
-                                src={investor.avatar}
-                                alt={investor.name}
-                                className="h-full w-full object-cover"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement
-                                    target.style.display = 'none'
-                                    const parent = target.parentElement
-                                    if (parent) {
-                                        parent.innerText = investor.name?.charAt(0).toUpperCase() || '?'
-                                    }
-                                }}
-                            />
-                        ) : (
-                            <span className="text-2xl">
-                                {(investor.avatar && investor.avatar.length <= 2) ? investor.avatar : (investor.name?.charAt(0).toUpperCase() || '?')}
-                            </span>
-                        )}
+                    <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm transition-transform duration-500 group-hover:scale-110">
+                        <Avatar
+                            src={investor.avatar}
+                            name={investor.name}
+                            fallbackClassName="text-2xl text-gray-500"
+                        />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center justify-between">
@@ -145,81 +169,111 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                 </span>
                             ))}
                         </div>
-                        <div className="mt-5 flex items-center justify-between">
-                            <span className="text-[9px] text-gray-300 font-black uppercase tracking-widest">
-                                {investor.investments} Deals Closed
-                            </span>
-                            <div className="flex gap-2">
-                                {onToggleSave && (
+                    </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[9px] text-gray-300 font-black uppercase tracking-widest">
+                            {investor.investments} Deals Closed
+                        </span>
+                        <div className="flex gap-2">
+                            {onToggleSave && (
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={handleToggleSave}
+                                    className={cn(
+                                        "rounded-full h-9 w-9 p-0 transition-all duration-300",
+                                        isSaved
+                                            ? "bg-green-50 text-green-600 shadow-inner"
+                                            : "bg-white border border-gray-100 text-gray-300 hover:text-green-600 hover:border-green-100"
+                                    )}
+                                >
+                                    <BookmarkPlus className={cn("h-4 w-4", isSaved && "fill-current")} />
+                                </Button>
+                            )}
+                            {onMessageClick && connStatus?.status === 'accepted' && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleMessageClick}
+                                    className="rounded-full h-9 px-4 text-xs font-bold border-2 hover:bg-black hover:text-white transition-all shadow-sm"
+                                >
+                                    <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+                                    Message
+                                </Button>
+                            )}
+                            {!connStatus && user?.id !== investor.id && (
+                                <Button
+                                    size="sm"
+                                    disabled={isConnecting}
+                                    onClick={handleConnect}
+                                    className="rounded-full h-9 px-4 text-xs font-bold bg-black text-white hover:bg-gray-800 transition-all hover:shadow-lg active:scale-95"
+                                >
+                                    <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                                    {isConnecting ? "..." : "Connect"}
+                                </Button>
+                            )}
+                            {connStatus?.status === 'pending' && connStatus.isIncoming && (
+                                <>
                                     <Button
                                         size="sm"
-                                        variant="ghost"
-                                        onClick={handleToggleSave}
-                                        className={cn(
-                                            "rounded-full h-9 w-9 p-0 transition-all duration-300",
-                                            isSaved
-                                                ? "bg-green-50 text-green-600 shadow-inner"
-                                                : "bg-white border border-gray-100 text-gray-300 hover:text-green-600 hover:border-green-100"
-                                        )}
+                                        disabled={isProcessing}
+                                        onClick={handleAccept}
+                                        className="rounded-full h-9 w-9 p-0 bg-emerald-500 text-white hover:bg-emerald-600 transition-all hover:shadow-lg active:scale-95"
+                                        title="Accept connection"
                                     >
-                                        <BookmarkPlus className={cn("h-4 w-4", isSaved && "fill-current")} />
+                                        <CheckCircle className="h-4 w-4" />
                                     </Button>
-                                )}
-                                {onMessageClick && connStatus?.status === 'accepted' && (
                                     <Button
                                         size="sm"
+                                        disabled={isProcessing}
+                                        onClick={handleDecline}
                                         variant="outline"
-                                        onClick={handleMessageClick}
-                                        className="rounded-full h-9 px-4 text-xs font-bold border-2 hover:bg-black hover:text-white transition-all shadow-sm"
+                                        className="rounded-full h-9 w-9 p-0 border-2 border-red-200 text-red-600 hover:bg-red-50 transition-all active:scale-95"
+                                        title="Decline connection"
                                     >
-                                        <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
-                                        Message
+                                        <X className="h-4 w-4" />
                                     </Button>
-                                )}
-                                {!connStatus && user?.id !== investor.id && (
-                                    <Button
-                                        size="sm"
-                                        disabled={isConnecting}
-                                        onClick={handleConnect}
-                                        className="rounded-full h-9 px-4 text-xs font-bold bg-black text-white hover:bg-gray-800 transition-all hover:shadow-lg active:scale-95"
-                                    >
-                                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                                        {isConnecting ? "..." : "Connect"}
-                                    </Button>
-                                )}
-                                {connStatus?.status === 'pending' && connStatus.isIncoming && (
-                                    <>
-                                        <Button
-                                            size="sm"
-                                            disabled={isProcessing}
-                                            onClick={handleAccept}
-                                            className="rounded-full h-9 w-9 p-0 bg-emerald-500 text-white hover:bg-emerald-600 transition-all hover:shadow-lg active:scale-95"
-                                            title="Accept connection"
-                                        >
-                                            <CheckCircle className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            size="sm"
-                                            disabled={isProcessing}
-                                            onClick={handleDecline}
-                                            variant="outline"
-                                            className="rounded-full h-9 w-9 p-0 border-2 border-red-200 text-red-600 hover:bg-red-50 transition-all active:scale-95"
-                                            title="Decline connection"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </>
-                                )}
-                                {connStatus?.status === 'pending' && !connStatus.isIncoming && (
-                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-400 rounded-full border border-gray-100 text-[9px] font-black uppercase tracking-widest">
-                                        <Clock className="h-3 w-3" />
-                                        Wait
-                                    </div>
-                                )}
-                            </div>
+                                </>
+                            )}
+                            {connStatus?.status === 'pending' && !connStatus.isIncoming && (
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-400 rounded-full border border-gray-100 text-[9px] font-black uppercase tracking-widest">
+                                    <Clock className="h-3 w-3" />
+                                    Wait
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
+
+                {connStatus?.status === 'accepted' && !connStatus.dealClosed && (
+                    <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                        <span className="text-xs font-bold text-amber-900">Deal closed?</span>
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                disabled={isClosingDeal}
+                                onClick={handleCloseDeal}
+                                className="rounded-full h-8 w-8 p-0 bg-green-500 text-white hover:bg-green-600 transition-all hover:shadow-lg active:scale-95"
+                                title="Mark deal as closed"
+                            >
+                                <CheckCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                size="sm"
+                                disabled={isDisconnecting}
+                                onClick={handleDisconnect}
+                                variant="ghost"
+                                className="rounded-full h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all active:scale-95"
+                                title="Disconnect"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

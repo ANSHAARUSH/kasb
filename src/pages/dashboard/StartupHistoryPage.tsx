@@ -3,7 +3,7 @@ import { InvestorCard } from "../../components/dashboard/InvestorCard"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { supabase } from "../../lib/supabase"
+import { supabase, getClosedDeals } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
@@ -14,11 +14,8 @@ export function StartupHistoryPage() {
    const { toast } = useToast()
    const [activeTab, setActiveTab] = useState<'history' | 'future'>('future')
    const [savedInvestors, setSavedInvestors] = useState<Investor[]>([])
+   const [historyInvestors, setHistoryInvestors] = useState<Investor[]>([])
    const [loading, setLoading] = useState(false)
-
-   // History is empty for now as it would require a `view_history` table similar to `saved_investors`
-   // but optimized for high write volume.
-   const historyInvestors: Investor[] = []
 
    useEffect(() => {
       if (!user || activeTab !== 'future') return
@@ -52,6 +49,48 @@ export function StartupHistoryPage() {
       }
 
       fetchSavedInvestors()
+   }, [user, activeTab])
+
+   useEffect(() => {
+      if (!user || activeTab !== 'history') return
+
+      const fetchClosedDeals = async () => {
+         setLoading(true)
+         try {
+            const closedDealIds = await getClosedDeals(user.id)
+
+            if (closedDealIds.length === 0) {
+               setHistoryInvestors([])
+               setLoading(false)
+               return
+            }
+
+            // Fetch investor data for closed deals
+            const { data, error } = await supabase
+               .from('investors')
+               .select('*')
+               .in('id', closedDealIds)
+
+            if (data) {
+               const mapped = data.map((i: InvestorDB) => ({
+                  id: i.id,
+                  name: i.name,
+                  avatar: i.avatar || 'https://i.pravatar.cc/150',
+                  bio: i.bio || 'Active Investor',
+                  fundsAvailable: i.funds_available || '$0',
+                  investments: i.investments_count || 0,
+                  expertise: i.expertise || []
+               } as Investor))
+               setHistoryInvestors(mapped)
+            }
+            if (error) console.error("Error fetching closed deals:", error)
+         } catch (err) {
+            console.error("Error:", err)
+         }
+         setLoading(false)
+      }
+
+      fetchClosedDeals()
    }, [user, activeTab])
 
    const handleRemove = async (investor: Investor) => {

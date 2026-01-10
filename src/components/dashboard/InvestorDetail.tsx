@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { Lock } from "lucide-react"
+import { Avatar } from "../ui/Avatar"
 
 interface InvestorDetailProps {
     investor: Investor | null
@@ -81,24 +82,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
                             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-gray-200" />
                             <div className="flex items-start justify-between mt-2">
                                 <div className="flex items-center gap-4">
-                                    <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm text-2xl">
-                                        {(investor.avatar?.startsWith('http') || investor.avatar?.startsWith('/')) ? (
-                                            <img
-                                                src={investor.avatar}
-                                                alt={investor.name}
-                                                className="h-full w-full object-cover"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement
-                                                    target.style.display = 'none'
-                                                    const parent = target.parentElement
-                                                    if (parent) {
-                                                        parent.innerText = investor.name?.charAt(0).toUpperCase() || '?'
-                                                    }
-                                                }}
-                                            />
-                                        ) : (
-                                            <span>{investor.avatar || (investor.name?.charAt(0).toUpperCase() || '?')}</span>
-                                        )}
+                                    <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                        <Avatar
+                                            src={investor.avatar}
+                                            name={investor.name}
+                                            fallbackClassName="text-2xl text-gray-500"
+                                        />
                                     </div>
                                     <div>
                                         <h2 className="text-2xl font-bold">{investor.name}</h2>

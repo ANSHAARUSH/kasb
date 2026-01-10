@@ -3,7 +3,7 @@ import { StartupCard } from "../../components/dashboard/StartupCard"
 import { StartupComparisonView } from "../../components/dashboard/StartupComparisonView"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { supabase, getUserSetting, getGlobalConfig } from "../../lib/supabase"
+import { supabase, getUserSetting, getGlobalConfig, getClosedDeals } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import type { Startup } from "../../data/mockData"
@@ -17,6 +17,7 @@ export function HistoryPage() {
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<'history' | 'future'>('future')
     const [futureStartups, setFutureStartups] = useState<Startup[]>([])
+    const [historyStartups, setHistoryStartups] = useState<Startup[]>([])
     const [loading, setLoading] = useState(false)
 
     // Comparison State
@@ -74,7 +75,64 @@ export function HistoryPage() {
         fetchFuturePlans()
     }, [user, activeTab])
 
-    const displayedStartups = activeTab === 'history' ? [] : futureStartups
+    useEffect(() => {
+        if (!user || activeTab !== 'history') return
+
+        const fetchClosedDeals = async () => {
+            setLoading(true)
+            try {
+                const closedDealIds = await getClosedDeals(user.id)
+
+                if (closedDealIds.length === 0) {
+                    setHistoryStartups([])
+                    setLoading(false)
+                    return
+                }
+
+                // Fetch startup data for closed deals
+                const { data, error } = await supabase
+                    .from('startups')
+                    .select('*')
+                    .in('id', closedDealIds)
+
+                if (data) {
+                    const mapped = data.map((s: StartupDB) => ({
+                        id: s.id,
+                        name: s.name,
+                        logo: s.logo || '🚀',
+                        problemSolving: s.problem_solving,
+                        description: s.description,
+                        history: s.history || '',
+                        metrics: {
+                            valuation: s.valuation || '',
+                            stage: s.stage || '',
+                            traction: s.traction || ''
+                        },
+                        founder: {
+                            name: s.founder_name || 'Founder',
+                            avatar: s.founder_avatar || '',
+                            bio: s.founder_bio || '',
+                            education: s.founder_education || '',
+                            workHistory: s.founder_work_history || ''
+                        },
+                        tags: s.tags || [],
+                        emailVerified: s.email_verified,
+                        showInFeed: s.show_in_feed,
+                        industry: s.industry
+                    } as Startup))
+                    setHistoryStartups(mapped)
+                }
+                if (error) console.error("Error fetching closed deals:", error)
+            } catch (err) {
+                console.error("Error:", err)
+            }
+            setLoading(false)
+        }
+
+        fetchClosedDeals()
+    }, [user, activeTab])
+
+    const displayedStartups = activeTab === 'history' ? historyStartups : futureStartups
 
     const handleSelect = (id: string) => {
         // Selection allowed in both tabs

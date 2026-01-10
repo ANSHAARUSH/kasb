@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Send, MessageCircle, ChevronLeft, LogIn } from "lucide-react"
 import { Button } from "../ui/button"
+import { Avatar } from "../ui/Avatar"
 import { Link } from "react-router-dom"
 
 export function ChatDialog() {
@@ -65,24 +66,12 @@ export function ChatDialog() {
                                         <ChevronLeft className="h-5 w-5" />
                                     </Button>
                                     <div className="flex items-center gap-2">
-                                        <div className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm text-xs">
-                                            {(activeUser.avatar?.startsWith('http') || activeUser.avatar?.startsWith('/')) ? (
-                                                <img
-                                                    src={activeUser.avatar}
-                                                    alt={activeUser.name}
-                                                    className="h-full w-full object-cover"
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement
-                                                        target.style.display = 'none'
-                                                        const parent = target.parentElement
-                                                        if (parent) {
-                                                            parent.innerText = activeUser.name?.charAt(0).toUpperCase() || '?'
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span>{activeUser.avatar || (activeUser.name?.charAt(0).toUpperCase() || '?')}</span>
-                                            )}
+                                        <div className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                            <Avatar
+                                                src={activeUser.avatar}
+                                                name={activeUser.name}
+                                                fallbackClassName="text-xs text-gray-500"
+                                            />
                                         </div>
                                         <div className="font-bold text-sm">{activeUser.name}</div>
                                     </div>
@@ -174,24 +163,12 @@ export function ChatDialog() {
                                                     onClick={() => openChat(chat)}
                                                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors text-left"
                                                 >
-                                                    <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm text-lg">
-                                                        {(chat.avatar?.startsWith('http') || chat.avatar?.startsWith('/')) ? (
-                                                            <img
-                                                                src={chat.avatar}
-                                                                alt={chat.name}
-                                                                className="h-full w-full object-cover"
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLImageElement
-                                                                    target.style.display = 'none'
-                                                                    const parent = target.parentElement
-                                                                    if (parent) {
-                                                                        parent.innerText = chat.name?.charAt(0).toUpperCase() || '?'
-                                                                    }
-                                                                }}
-                                                            />
-                                                        ) : (
-                                                            <span>{chat.avatar || (chat.name?.charAt(0).toUpperCase() || '?')}</span>
-                                                        )}
+                                                    <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                                        <Avatar
+                                                            src={chat.avatar}
+                                                            name={chat.name}
+                                                            fallbackClassName="text-lg text-gray-500"
+                                                        />
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-sm text-gray-900">{chat.name}</div>

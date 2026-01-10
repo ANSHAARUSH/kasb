@@ -6,6 +6,7 @@ import { useMemo } from "react"
 import { Sparkles } from "lucide-react"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
+import { Avatar } from "../../../components/ui/Avatar"
 
 interface ProfileViewProps {
     startup: StartupProfileData
@@ -32,30 +33,12 @@ export function ProfileView({ startup, onRequestReview, onMarkAsLive }: ProfileV
             <Card className="border-0 shadow-sm overflow-hidden rounded-[2.5rem] bg-white">
                 <CardHeader className="p-8 pb-4">
                     <div className="flex items-center gap-6">
-                        <div className="h-20 w-20 flex items-center justify-center rounded-3xl bg-gray-50 text-4xl shadow-inner border border-gray-100 overflow-hidden font-bold text-gray-500">
-                            {(startup.logo?.startsWith('http') || startup.logo?.startsWith('/')) ? (
-                                <img
-                                    src={startup.logo}
-                                    alt={startup.name}
-                                    className="h-full w-full object-cover"
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement
-                                        target.style.display = 'none'
-                                        const parent = target.parentElement
-                                        if (parent) {
-                                            parent.innerText = startup.name?.charAt(0).toUpperCase() || '?'
-                                            parent.className += ' font-bold text-4xl text-gray-500'
-                                            parent.style.display = 'flex'
-                                            parent.style.alignItems = 'center'
-                                            parent.style.justifyContent = 'center'
-                                        }
-                                    }}
-                                />
-                            ) : (
-                                <span>
-                                    {(startup.logo && startup.logo.length <= 2) ? startup.logo : (startup.name?.charAt(0).toUpperCase() || '?')}
-                                </span>
-                            )}
+                        <div className="h-20 w-20 flex items-center justify-center rounded-3xl bg-gray-50 shadow-inner border border-gray-100 overflow-hidden font-bold text-gray-500">
+                            <Avatar
+                                src={startup.logo}
+                                name={startup.name}
+                                fallbackClassName="text-4xl text-gray-500"
+                            />
                         </div>
                         <div>
                             <div className="flex items-center gap-3">

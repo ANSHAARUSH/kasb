@@ -61,6 +61,7 @@ export interface ConnectionStatus {
     status: 'pending' | 'accepted' | 'rejected'
     isIncoming: boolean
     connectionId?: string
+    dealClosed?: boolean
 }
 
 export async function getConnectionStatus(userId1: string, userId2: string): Promise<ConnectionStatus | null> {
@@ -75,7 +76,8 @@ export async function getConnectionStatus(userId1: string, userId2: string): Pro
     return {
         status: data.status,
         isIncoming: data.receiver_id === userId1,
-        connectionId: data.id
+        connectionId: data.id,
+        dealClosed: false // Default to false for now, will be updated after migration
     }
 }
 
@@ -104,4 +106,32 @@ export async function disconnectConnection(userId1: string, userId2: string) {
         .or(`and(sender_id.eq.${userId1},receiver_id.eq.${userId2}),and(sender_id.eq.${userId2},receiver_id.eq.${userId1})`)
 
     if (error) throw error
+}
+
+export async function closeDeal(connectionId: string) {
+    const { error } = await supabase
+        .from('connections')
+        .update({
+            deal_closed: true,
+            deal_closed_at: new Date().toISOString()
+        })
+        .eq('id', connectionId)
+
+    if (error) throw error
+}
+
+export async function getClosedDeals(userId: string): Promise<string[]> {
+    const { data, error } = await supabase
+        .from('connections')
+        .select('sender_id, receiver_id')
+        .eq('status', 'accepted')
+        .eq('deal_closed', true)
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+
+    if (error || !data) return []
+
+    // Return IDs of the other party (not the current user)
+    return data.map(conn =>
+        conn.sender_id === userId ? conn.receiver_id : conn.sender_id
+    )
 }

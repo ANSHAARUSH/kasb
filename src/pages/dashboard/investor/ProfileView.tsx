@@ -4,6 +4,7 @@ import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { Award } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { cn } from "../../../lib/utils"
+import { Avatar } from "../../../components/ui/Avatar"
 
 interface ProfileViewProps {
     investor: InvestorProfileData
@@ -15,13 +16,13 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
         <div className="space-y-6">
             <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
-                    {investor.avatar ? (
-                        <img src={investor.avatar} alt={investor.name} className="h-20 w-20 rounded-full object-cover bg-gray-100" />
-                    ) : (
-                        <div className="h-20 w-20 rounded-full bg-black text-white flex items-center justify-center text-2xl font-bold">
-                            {(investor.avatar && investor.avatar.length <= 2) ? investor.avatar : (investor.name?.[0]?.toUpperCase() || '?')}
-                        </div>
-                    )}
+                    <div className="h-20 w-20 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                        <Avatar
+                            src={investor.avatar}
+                            name={investor.name}
+                            fallbackClassName="text-2xl text-gray-500"
+                        />
+                    </div>
                     <div>
                         <div className="flex items-center gap-2">
                             <CardTitle className="text-2xl">{investor.name}</CardTitle>

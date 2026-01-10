@@ -10,6 +10,7 @@ import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { Lock, BarChart3 } from "lucide-react"
 import { generateValuationInsights } from "../../lib/ai"
+import { Avatar } from "../ui/Avatar"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -31,7 +32,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [isDisconnecting, setIsDisconnecting] = useState(false)
     const [isConnecting, setIsConnecting] = useState(false)
     const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
-    const [imgError, setImgError] = useState(false)
     const [valuationInsights, setValuationInsights] = useState<string | null>(null)
     const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
 
@@ -39,7 +39,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         if (!user || !startup?.id) return
 
         setShowDisconnectConfirm(false) // Reset on startup change
-        setImgError(false) // Reset image error state
 
         async function checkStatus() {
             const status = await getConnectionStatus(user!.id, startup!.id)
@@ -145,19 +144,12 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             <div className="flex-none px-6 pt-6 pb-4 border-b border-gray-50">
                 <div className="flex items-start justify-between mt-2">
                     <div className="flex items-center gap-4">
-                        <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden text-2xl font-bold text-gray-500">
-                            {imgError || !(startup.logo?.startsWith('http') || startup.logo?.startsWith('/')) ? (
-                                <div>
-                                    {(!startup.logo?.startsWith('http') && !startup.logo?.startsWith('/')) ? startup.logo : (startup.name?.charAt(0).toUpperCase() || '?')}
-                                </div>
-                            ) : (
-                                <img
-                                    src={startup.logo}
-                                    alt={startup.name}
-                                    className="h-full w-full object-cover"
-                                    onError={() => setImgError(true)}
-                                />
-                            )}
+                        <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
+                            <Avatar
+                                src={startup.logo}
+                                name={startup.name}
+                                fallbackClassName="text-2xl text-gray-500"
+                            />
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold">{startup.name}</h2>

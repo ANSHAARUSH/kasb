@@ -3,6 +3,7 @@ import { supabase } from "../../lib/supabase"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Check, X, AlertTriangle } from "lucide-react"
+import { Avatar } from "../../components/ui/Avatar"
 
 interface ModerationItem {
     id: string
@@ -97,24 +98,12 @@ export function ModerationQueue() {
                     {queue.map(item => (
                         <Card key={item.id} className="overflow-hidden border border-gray-100 shadow-sm rounded-3xl">
                             <CardContent className="p-6 flex items-start gap-4">
-                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm text-2xl">
-                                    {(item.logo?.startsWith('http') || item.logo?.startsWith('/') || item.avatar?.startsWith('http') || item.avatar?.startsWith('/')) ? (
-                                        <img
-                                            src={item.logo || item.avatar}
-                                            alt={item.name}
-                                            className="h-full w-full object-cover"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement
-                                                target.style.display = 'none'
-                                                const parent = target.parentElement
-                                                if (parent) {
-                                                    parent.innerText = item.name?.charAt(0).toUpperCase() || '?'
-                                                }
-                                            }}
-                                        />
-                                    ) : (
-                                        <span>{item.logo || item.avatar || (item.name?.charAt(0).toUpperCase() || '?')}</span>
-                                    )}
+                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                    <Avatar
+                                        src={item.logo || item.avatar}
+                                        name={item.name}
+                                        fallbackClassName="text-2xl text-gray-500"
+                                    />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">

@@ -3,6 +3,7 @@ import { Button } from "../../components/ui/button"
 import { VerificationBadge } from "../../components/ui/VerificationBadge"
 import { cn } from "../../lib/utils"
 import { Award } from "lucide-react"
+import { Avatar } from "../../components/ui/Avatar"
 
 interface Startup {
     id: string
@@ -63,24 +64,12 @@ export function StartupManagement({
                 {startups.map(startup => (
                     <div key={startup.id} className="flex items-center justify-between p-5 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-4 flex-1">
-                            <div className="text-2xl h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm">
-                                {(startup.logo?.startsWith('http') || startup.logo?.startsWith('/')) ? (
-                                    <img
-                                        src={startup.logo}
-                                        alt={startup.name}
-                                        className="h-full w-full object-cover"
-                                        onError={(e) => {
-                                            const target = e.target as HTMLImageElement
-                                            target.style.display = 'none'
-                                            const parent = target.parentElement
-                                            if (parent) {
-                                                parent.innerText = startup.name?.charAt(0).toUpperCase() || '?'
-                                            }
-                                        }}
-                                    />
-                                ) : (
-                                    <span>{startup.logo || (startup.name?.charAt(0).toUpperCase() || '?')}</span>
-                                )}
+                            <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                <Avatar
+                                    src={startup.logo}
+                                    name={startup.name}
+                                    fallbackClassName="text-2xl text-gray-500"
+                                />
                             </div>
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">

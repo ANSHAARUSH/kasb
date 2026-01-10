@@ -2,6 +2,7 @@ import { Trash2, Award } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { VerificationBadge } from "../../components/ui/VerificationBadge"
 import { cn } from "../../lib/utils"
+import { Avatar } from "../../components/ui/Avatar"
 
 interface Investor {
     id: string
@@ -49,7 +50,13 @@ export function InvestorManagement({
                 {investors.map(investor => (
                     <div key={investor.id} className="flex items-center justify-between p-5 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-4">
-                            <img src={investor.avatar} alt="" className="h-12 w-12 rounded-2xl object-cover" />
+                            <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                <Avatar
+                                    src={investor.avatar}
+                                    name={investor.name}
+                                    fallbackClassName="text-2xl text-gray-500"
+                                />
+                            </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <div className="font-bold text-base">{investor.name}</div>

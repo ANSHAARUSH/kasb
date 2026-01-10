@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button"
 import { Search, Send, ArrowLeft, MessageSquare } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
+import { Avatar } from "../../components/ui/Avatar"
 import { Link } from "react-router-dom"
 
 interface Message {
@@ -226,24 +227,12 @@ export function MessagesPage() {
                                     onClick={() => setSelectedChat(chat.userId)}
                                     className={`flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors ${selectedChat === chat.userId ? 'bg-gray-50' : ''}`}
                                 >
-                                    <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm text-lg">
-                                        {(chat.avatar?.startsWith('http') || chat.avatar?.startsWith('/')) ? (
-                                            <img
-                                                src={chat.avatar}
-                                                alt={chat.name}
-                                                className="h-full w-full object-cover"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement
-                                                    target.style.display = 'none'
-                                                    const parent = target.parentElement
-                                                    if (parent) {
-                                                        parent.innerText = chat.name?.charAt(0).toUpperCase() || '?'
-                                                    }
-                                                }}
-                                            />
-                                        ) : (
-                                            <span>{chat.avatar || (chat.name?.charAt(0).toUpperCase() || '?')}</span>
-                                        )}
+                                    <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                                        <Avatar
+                                            src={chat.avatar}
+                                            name={chat.name}
+                                            fallbackClassName="text-lg text-gray-500"
+                                        />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
@@ -272,25 +261,15 @@ export function MessagesPage() {
                                 <ArrowLeft className="h-5 w-5" />
                             </Button>
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden font-bold text-gray-500 ring-1 ring-gray-100 shadow-sm">
+                                <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
                                     {(() => {
                                         const chat = conversations.find(c => c.userId === selectedChat);
-                                        return (chat?.avatar?.startsWith('http') || chat?.avatar?.startsWith('/')) ? (
-                                            <img
+                                        return (
+                                            <Avatar
                                                 src={chat?.avatar}
-                                                alt={chat?.name}
-                                                className="h-full w-full object-cover"
-                                                onError={(e) => {
-                                                    const target = e.target as HTMLImageElement
-                                                    target.style.display = 'none'
-                                                    const parent = target.parentElement
-                                                    if (parent) {
-                                                        parent.innerText = chat?.name?.charAt(0).toUpperCase() || '?'
-                                                    }
-                                                }}
+                                                name={chat?.name}
+                                                fallbackClassName="text-base text-gray-500"
                                             />
-                                        ) : (
-                                            <span>{chat?.avatar || (chat?.name?.charAt(0).toUpperCase() || '?')}</span>
                                         )
                                     })()}
                                 </div>
