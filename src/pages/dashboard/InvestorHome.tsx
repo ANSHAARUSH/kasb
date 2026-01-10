@@ -177,7 +177,7 @@ export function InvestorHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-20 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 scrollbar-hide">
                     <div className="max-w-2xl mx-auto space-y-6">
                         <div className="flex items-center justify-between">
                             <h1 className="text-xl font-bold">Discover Startups</h1>

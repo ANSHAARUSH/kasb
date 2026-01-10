@@ -79,7 +79,7 @@ export function StartupHome() {
     }
 
     return (
-        <div className="pb-20">
+        <div className="pb-20 pt-6">
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-bold">Discover Investors</h1>
                 <div className="flex items-center gap-3">
