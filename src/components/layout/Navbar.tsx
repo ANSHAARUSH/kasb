@@ -15,7 +15,7 @@ export function Navbar() {
     ]
 
     return (
-        <header className="fixed top-0 z-50 w-full glass-dark">
+        <header className="fixed top-0 z-50 w-full bg-black shadow-md">
             <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
                 <Link to="/" className="flex items-center gap-2.5 z-50">
                     <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-9 w-auto rounded-md" />
@@ -56,12 +56,12 @@ export function Navbar() {
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        {/* Backdrop with Blur */}
+                        {/* Backdrop */}
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden"
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
                             onClick={() => setIsOpen(false)}
                         />
 
@@ -71,13 +71,13 @@ export function Navbar() {
                             animate={{ x: 0 }}
                             exit={{ x: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 h-full w-[280px] bg-black z-50 p-6 shadow-2xl md:hidden flex flex-col border-l border-white/10"
+                            className="fixed top-0 right-0 h-full w-[280px] bg-white z-[70] p-6 shadow-2xl md:hidden flex flex-col"
                         >
                             <div className="flex items-center justify-between mb-8">
-                                <span className="text-xl font-bold text-white">Menu</span>
+                                <span className="text-xl font-bold text-gray-900">Menu</span>
                                 <button
                                     onClick={() => setIsOpen(false)}
-                                    className="p-2 -mr-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10 transition-colors"
+                                    className="p-2 -mr-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors"
                                 >
                                     <X className="h-6 w-6" />
                                 </button>
@@ -88,7 +88,7 @@ export function Navbar() {
                                     <a
                                         key={link.href}
                                         href={link.href}
-                                        className="text-lg font-medium text-gray-300 hover:text-white transition-colors"
+                                        className="text-lg font-medium text-gray-600 hover:text-black transition-colors"
                                         onClick={() => setIsOpen(false)}
                                     >
                                         {link.label}
@@ -96,22 +96,22 @@ export function Navbar() {
                                 ))}
                                 <Link
                                     to="/pricing"
-                                    className="text-lg font-medium text-gray-300 hover:text-white transition-colors"
+                                    className="text-lg font-medium text-gray-600 hover:text-black transition-colors"
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Pricing
                                 </Link>
                             </nav>
 
-                            <div className="mt-auto flex flex-col gap-4 pt-8 border-t border-white/10">
+                            <div className="mt-auto flex flex-col gap-4 pt-8 border-t border-gray-100">
                                 <Link
                                     to="/login"
-                                    className="text-center py-2.5 text-gray-300 font-medium hover:text-white transition-colors"
+                                    className="text-center py-2.5 text-gray-600 font-medium hover:text-black transition-colors"
                                     onClick={() => setIsOpen(false)}
                                 >
                                     Sign In
                                 </Link>
-                                <Button asChild className="w-full h-12 rounded-full text-lg shadow-xl shadow-white/10 bg-white text-black hover:bg-gray-200">
+                                <Button asChild className="w-full h-12 rounded-full text-lg shadow-xl shadow-indigo-100">
                                     <Link to="/signup" onClick={() => setIsOpen(false)}>Get Started</Link>
                                 </Button>
                             </div>
