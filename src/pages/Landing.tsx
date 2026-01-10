@@ -203,7 +203,7 @@ export function Landing() {
                     viewport={{ once: true }}
                     className="mt-16 text-sm text-gray-400 font-medium tracking-widest uppercase"
                 >
-                    Co-founded by <span className="text-black">Ansh</span> & <span className="text-black">Aarush</span>
+                    Founded by <span className="text-black">Aarush</span> & <span className="text-black">Ansh</span>
                 </motion.div>
             </section>
         </div>
