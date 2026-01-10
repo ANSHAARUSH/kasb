@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Check, Globe, Zap, Sparkles, Building2, UserCircle2 } from "lucide-react"
 import { Button } from "../ui/button"
 import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, REGION_CONFIG, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { PaymentModal } from "./PaymentModal"
+import { useAuth } from "../../context/AuthContext"
 
 interface PricingViewProps {
     defaultView?: 'investor' | 'startup'
@@ -12,6 +14,8 @@ interface PricingViewProps {
 }
 
 export function PricingView({ defaultView = 'investor', lockView = false }: PricingViewProps) {
+    const { user } = useAuth()
+    const navigate = useNavigate()
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
     const [region, setRegion] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
@@ -25,6 +29,10 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
     const tiers = view === 'startup' ? STARTUP_TIERS : INVESTOR_TIERS
 
     const handleUpgradeClick = (tier: any) => {
+        if (!user) {
+            navigate('/login')
+            return
+        }
         if (tier.price === 0) return
         setSelectedTier({
             id: tier.id,
@@ -141,7 +149,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
                             ? Math.round(basePriceNum * 0.8)
                             : priceInfo.value;
 
-                        const isCurrentTier = subscriptionManager.getTier() === tier.id;
+                        const isCurrentTier = !!user && subscriptionManager.getTier() === tier.id;
 
                         return (
                             <motion.div
