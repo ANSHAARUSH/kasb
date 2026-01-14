@@ -1,6 +1,6 @@
 import { Button } from "../../components/ui/button"
 import { useState } from "react"
-import { Pencil, Trash2, Zap } from "lucide-react"
+import { Pencil, Trash2, Zap, LogOut } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { ProfileView } from "./startup/ProfileView"
@@ -14,7 +14,7 @@ import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function StartupProfile() {
-    const { startup, loading, saving, updateProfile, requestReview, markAsLive } = useStartupProfile()
+    const { startup, loading, saving, updateProfile, requestReview } = useStartupProfile()
     const { user, signOut } = useAuth()
     const { toast } = useToast()
     const [isEditOpen, setIsEditOpen] = useState(false)
@@ -25,11 +25,15 @@ export function StartupProfile() {
     const handleDeleteAccount = async () => {
         try {
             const { error } = await supabase.rpc('delete_user_account')
-            if (error) throw error
+            if (error) {
+                console.error('Account deletion error:', error)
+                const detailedError = error.details || error.hint || error.message
+                throw new Error(detailedError)
+            }
             await signOut()
             window.location.href = '/'
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "An unknown error occurred"
+        } catch (err: any) {
+            const message = err?.message || "An unknown error occurred"
             alert("Error deleting account: " + message)
         }
     }
@@ -69,17 +73,17 @@ export function StartupProfile() {
     }
 
     return (
-        <div className="pb-24 max-w-2xl mx-auto px-4">
+        <div className="pb-24 max-w-4xl mx-auto px-4 pt-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Profile</h1>
-                    <p className="text-gray-400 mt-1 font-medium">Manage your startup identity</p>
+                    <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
+                    <p className="text-gray-400 text-sm font-medium">Manage your startup identity</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     <Link to="/dashboard/pricing">
                         <Button
                             variant="outline"
-                            className="rounded-2xl font-bold border-gray-200 gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            className="rounded-xl h-9 font-bold border-gray-200 gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
                         >
                             <Zap className="h-4 w-4 fill-indigo-600" />
                             Manage Plan
@@ -88,13 +92,14 @@ export function StartupProfile() {
                     <Button
                         onClick={() => signOut()}
                         variant="outline"
-                        className="rounded-2xl font-bold border-gray-200"
+                        className="rounded-xl h-9 font-bold border-gray-200 gap-2 text-gray-600 hover:text-red-600 hover:bg-red-50"
                     >
+                        <LogOut className="h-4 w-4" />
                         Sign Out
                     </Button>
                     <Button
                         onClick={() => setIsEditOpen(true)}
-                        className="bg-black text-white hover:bg-gray-800 rounded-2xl font-bold gap-2"
+                        className="bg-black text-white hover:bg-gray-800 h-9 rounded-xl font-bold gap-2"
                     >
                         <Pencil className="h-4 w-4" />
                         Edit Profile
@@ -102,7 +107,13 @@ export function StartupProfile() {
                 </div>
             </div>
 
-            <ProfileView startup={startup} onRequestReview={requestReview} onMarkAsLive={markAsLive} />
+            <ProfileView
+                startup={startup}
+                onRequestReview={requestReview}
+                onSave={updateProfile}
+                saving={saving}
+                onMarkAsLive={() => { }}
+            />
 
             {/* AI Pitch Deck Review Section */}
             <div className="mt-12 p-8 rounded-[2.5rem] bg-indigo-50 border border-indigo-100 relative overflow-hidden">

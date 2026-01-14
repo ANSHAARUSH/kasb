@@ -53,15 +53,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         const { data: sData } = await supabase.from('startups').select('id, name, logo').in('id', ids)
         const { data: iData } = await supabase.from('investors').select('id, name, avatar').in('id', ids)
+        const { data: aData } = await supabase.from('admins').select('id').in('id', ids)
 
+        const adminIds = new Set(aData?.map(a => a.id) || [])
         const chatUsers: ChatUser[] = []
 
-        sData?.forEach((s: { id: string, name: string, logo: string }) =>
-            chatUsers.push({ id: s.id, name: s.name, avatar: s.logo || '🚀', role: 'startup' })
-        )
-        iData?.forEach((i: { id: string, name: string, avatar: string }) =>
-            chatUsers.push({ id: i.id, name: i.name, avatar: i.avatar || '👤', role: 'investor' })
-        )
+        // Handle Admins first for priority branding
+        adminIds.forEach(id => {
+            chatUsers.push({
+                id,
+                name: 'Kasb.AI',
+                avatar: `${import.meta.env.BASE_URL}logo.jpg`,
+                role: 'investor'
+            })
+        })
+
+        sData?.forEach((s: { id: string, name: string, logo: string }) => {
+            if (!adminIds.has(s.id)) {
+                chatUsers.push({ id: s.id, name: s.name, avatar: s.logo || '🚀', role: 'startup' })
+            }
+        })
+        iData?.forEach((i: { id: string, name: string, avatar: string }) => {
+            if (!adminIds.has(i.id)) {
+                chatUsers.push({ id: i.id, name: i.name, avatar: i.avatar || '👤', role: 'investor' })
+            }
+        })
 
         setRecentChats((prev) => {
             // Only update if data changed (naive check)

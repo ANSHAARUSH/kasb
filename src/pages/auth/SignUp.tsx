@@ -12,34 +12,8 @@ import { InvestorFields } from "./signup/InvestorFields"
 import { refineProblemStatement } from "../../lib/ai"
 import { getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
+import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
 
-const INDUSTRIES = [
-    'AI/ML',
-    'SaaS',
-    'FinTech',
-    'HealthTech',
-    'EdTech',
-    'AgriTech',
-    'CleanTech',
-    'ClimateTech',
-    'Manufacturing',
-    'E-commerce',
-    'Media & Gaming',
-    'PropTech',
-    'LogisticTech',
-    'Others'
-] as const
-
-const EXPERTISE_AREAS = [
-    'SaaS',
-    'FinTech',
-    'HealthTech',
-    'AI/ML',
-    'E-commerce',
-    'Enterprise',
-    'Consumer',
-    'Others'
-] as const
 
 export function SignUp() {
     const { toast } = useToast()
@@ -140,7 +114,7 @@ export function SignUp() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+                    emailRedirectTo: `${window.location.origin}/login`,
                     data: metadata
                 }
             })
@@ -188,7 +162,7 @@ export function SignUp() {
                                     type: 'signup',
                                     email,
                                     options: {
-                                        emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`
+                                        emailRedirectTo: `${window.location.origin}/login`
                                     }
                                 })
                                 if (error) setError(error.message)

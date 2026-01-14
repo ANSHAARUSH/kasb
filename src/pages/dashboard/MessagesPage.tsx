@@ -54,6 +54,9 @@ export function MessagesPage() {
         // Fetch details
         const { data: startupData } = await supabase.from('startups').select('id, name, founder_name, logo').in('id', otherIds)
         const { data: investorData } = await supabase.from('investors').select('id, name, avatar').in('id', otherIds)
+        const { data: adminData } = await supabase.from('admins').select('id').in('id', otherIds)
+
+        const adminIds = new Set(adminData?.map(a => a.id) || [])
 
         // Fetch connection status for these users
         const { data: connectionData } = await supabase
@@ -66,7 +69,8 @@ export function MessagesPage() {
 
         const profiles = [
             ...(startupData || []).map(s => ({ id: s.id, name: s.name || s.founder_name, avatar: s.logo })),
-            ...(investorData || []).map(i => ({ id: i.id, name: i.name, avatar: i.avatar }))
+            ...(investorData || []).map(i => ({ id: i.id, name: i.name, avatar: i.avatar })),
+            ...Array.from(adminIds).map(id => ({ id, name: 'Kasb.AI', avatar: `${import.meta.env.BASE_URL}logo.jpg` }))
         ]
 
         const formatted: Conversation[] = otherIds

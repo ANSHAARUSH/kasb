@@ -5,6 +5,7 @@ import { Modal } from "../../../components/ui/modal"
 import { useState, useEffect } from "react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { COUNTRIES } from "../../../lib/locationData"
+import { EXPERTISE_AREAS } from "../../../lib/constants"
 
 interface EditProfileModalProps {
     isOpen: boolean
@@ -29,6 +30,15 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
         const success = await onSave(editForm)
         if (success) {
             onClose()
+        }
+    }
+
+    const toggleExpertise = (area: string) => {
+        const current = editForm.expertise || []
+        if (current.includes(area)) {
+            setEditForm(prev => ({ ...prev, expertise: current.filter(a => a !== area) }))
+        } else {
+            setEditForm(prev => ({ ...prev, expertise: [...current, area] }))
         }
     }
 
@@ -110,6 +120,25 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
                         value={editForm.bio || ''}
                         onChange={e => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
                     />
+                </div>
+
+                <div className="space-y-3">
+                    <label className="text-sm font-medium">Areas of Expertise</label>
+                    <div className="flex flex-wrap gap-2">
+                        {EXPERTISE_AREAS.map((area) => (
+                            <button
+                                key={area}
+                                type="button"
+                                onClick={() => toggleExpertise(area)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${(editForm.expertise || []).includes(area)
+                                        ? 'bg-black text-white border-black shadow-md'
+                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300'
+                                    }`}
+                            >
+                                {area}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 <ImageUploadInput

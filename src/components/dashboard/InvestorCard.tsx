@@ -50,9 +50,9 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
             const newStatus = await getConnectionStatus(user.id, investor.id)
             setConnStatus(newStatus)
             toast("Connection request sent!", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to send request", "error")
+            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsConnecting(false)
         }
@@ -68,9 +68,9 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
             const newStatus = await getConnectionStatus(user!.id, investor.id)
             setConnStatus(newStatus)
             toast("Connection accepted!", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to accept", "error")
+            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsProcessing(false)
         }
@@ -85,9 +85,9 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
             await declineConnectionRequest(connStatus.connectionId)
             setConnStatus(null)
             toast("Connection declined", "info")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to decline", "error")
+            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsProcessing(false)
         }

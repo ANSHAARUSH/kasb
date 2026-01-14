@@ -62,8 +62,40 @@ BEGIN
         );
         -- Note: 'expertise' is an array column in some versions or usually useful. 
         -- If investors table has 'expertise' column (check schema), we can try to cast.
-        -- But simpler to just get the basic profile created so they can edit later.
     END IF;
+
+    -- NEW: Send Welcome Message from the first available Admin
+    DECLARE
+        admin_id UUID;
+        welcome_text TEXT;
+    BEGIN
+        -- Find the first available admin
+        SELECT id INTO admin_id FROM public.admins LIMIT 1;
+        
+        -- Only proceed if an admin exists
+        IF admin_id IS NOT NULL THEN
+            -- 1. Create an accepted connection immediately so they can chat
+            INSERT INTO public.connections (sender_id, receiver_id, status)
+            VALUES (admin_id, new.id, 'accepted')
+            ON CONFLICT (sender_id, receiver_id) DO NOTHING;
+
+            -- 2. Define welcome message based on role
+            IF user_role = 'startup' THEN
+                welcome_text := 'Welcome to KASB.AI! 🚀 We are excited to help you find the right investors. Start by completing your profile and exploring our investor network.';
+            ELSIF user_role = 'investor' THEN
+                welcome_text := 'Welcome to KASB.AI! 💼 We are thrilled to have you here. Start exploring our verified startups and discover your next great investment.';
+            ELSE
+                welcome_text := 'Welcome to KASB.AI! We are glad to have you here. Explore our platform to connect and grow.';
+            END IF;
+
+            -- 3. Insert the welcome message
+            INSERT INTO public.messages (sender_id, receiver_id, content)
+            VALUES (admin_id, new.id, welcome_text);
+        END IF;
+    EXCEPTION WHEN OTHERS THEN
+        -- Silently fail for the welcome message to ensure user profile creation still succeeds
+        NULL;
+    END;
 
     RETURN new;
 END;

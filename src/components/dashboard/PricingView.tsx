@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Check, Globe, Zap, Sparkles, Building2, UserCircle2 } from "lucide-react"
 import { Button } from "../ui/button"
-import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, REGION_CONFIG, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
+import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { PaymentModal } from "./PaymentModal"
 import { useAuth } from "../../context/AuthContext"
 
@@ -17,7 +17,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
     const { user } = useAuth()
     const navigate = useNavigate()
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
-    const [region, setRegion] = useState<UserRegion>(subscriptionManager.getRegion())
+    const [region] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
     const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number } | null>(null)
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
@@ -47,22 +47,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
             <main className="container mx-auto px-4 py-8">
                 {/* ... (Header and Controls remain same) ... */}
                 <div className="text-center max-w-3xl mx-auto mb-16">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-50 border border-gray-100 mb-6"
-                    >
-                        <Globe className="h-4 w-4 text-gray-400" />
-                        <select
-                            value={region}
-                            onChange={(e) => setRegion(e.target.value as UserRegion)}
-                            className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
-                        >
-                            {Object.keys(REGION_CONFIG).map(r => (
-                                <option key={r} value={r}>{r} Region</option>
-                            ))}
-                        </select>
-                    </motion.div>
+
 
                     <motion.h1
                         initial={{ opacity: 0, y: 20 }}
@@ -146,7 +131,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
                         const priceInfo = subscriptionManager.formatPrice(tier.price);
                         const basePriceNum = parseInt(priceInfo.value.replace(/,/g, ''));
                         const displayPrice = billingCycle === 'yearly'
-                            ? Math.round(basePriceNum * 0.8)
+                            ? Math.round(basePriceNum * 0.8 * 12).toLocaleString() // Show simplified yearly total
                             : priceInfo.value;
 
                         const isCurrentTier = !!user && subscriptionManager.getTier() === tier.id;
@@ -171,7 +156,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
                                     <div className="flex items-baseline gap-1">
                                         <span className="text-gray-400 text-lg font-medium">{priceInfo.symbol}</span>
                                         <span className="text-4xl font-black">{displayPrice}</span>
-                                        <span className="text-gray-400 text-sm">/mo</span>
+                                        <span className="text-gray-400 text-sm">{billingCycle === 'yearly' ? '/year' : '/mo'}</span>
                                     </div>
                                     {billingCycle === 'yearly' && tier.price > 0 && (
                                         <p className="text-xs text-green-600 font-medium mt-1">Billed annually</p>

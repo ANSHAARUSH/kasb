@@ -1,13 +1,15 @@
 import type { Startup } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X } from "lucide-react"
+import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { useState, useEffect } from "react"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { Avatar } from "../ui/Avatar"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { useNavigate } from "react-router-dom"
 
 interface StartupCardProps {
     startup: Startup
@@ -20,11 +22,13 @@ interface StartupCardProps {
     onMessageClick?: (startup: Startup) => void
     triggerUpdate?: { startupId: string; timestamp: number } | null
     onConnectionChange?: (startupId: string) => void
+    isRecommended?: boolean
 }
 
-export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange }: StartupCardProps) {
+export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
+    const navigate = useNavigate()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -52,16 +56,23 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             return
         }
 
+        if (!subscriptionManager.canContact()) {
+            toast("Connection limit reached. Upgrade to connect with more startups!", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
+
         setIsConnecting(true)
         try {
             await sendConnectionRequest(user.id, startup.id)
+            subscriptionManager.trackContact(startup.id)
             const newStatus = await getConnectionStatus(user.id, startup.id)
             setConnStatus(newStatus)
             onConnectionChange?.(startup.id)
             toast("Connection request sent!", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to send request", "error")
+            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsConnecting(false)
         }
@@ -78,9 +89,9 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             setConnStatus(newStatus)
             onConnectionChange?.(startup.id)
             toast("Connection accepted!", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to accept", "error")
+            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsProcessing(false)
         }
@@ -96,9 +107,9 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             setConnStatus(null)
             onConnectionChange?.(startup.id)
             toast("Connection declined", "info")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to decline", "error")
+            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsProcessing(false)
         }
@@ -180,6 +191,12 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 border border-amber-100 uppercase tracking-tighter shadow-sm">
                                             <ShieldCheck className="w-2.5 h-2.5" />
                                             Verified
+                                        </span>
+                                    )}
+                                    {isRecommended && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-tighter shadow-sm">
+                                            <Sparkles className="w-2.5 h-2.5" />
+                                            AI Suggested
                                         </span>
                                     )}
                                 </div>

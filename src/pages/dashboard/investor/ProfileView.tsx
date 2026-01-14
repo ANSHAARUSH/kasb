@@ -44,10 +44,20 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                         <p className="text-sm text-gray-500">Portfolio Size</p>
                         <p className="text-2xl font-bold">{investor.investments_count || 0} Companies</p>
                     </div>
-                    {investor.bio && (
+                    <div className="col-span-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                        <p className="text-sm text-gray-500">Bio</p>
+                        <p className="text-base mt-2 leading-relaxed">{investor.bio}</p>
+                    </div>
+                    {investor.expertise && investor.expertise.length > 0 && (
                         <div className="col-span-2 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                            <p className="text-sm text-gray-500">Bio</p>
-                            <p className="text-base mt-2 leading-relaxed">{investor.bio}</p>
+                            <p className="text-sm text-gray-500 mb-3">Areas of Expertise</p>
+                            <div className="flex flex-wrap gap-2">
+                                {investor.expertise.map(exp => (
+                                    <span key={exp} className="px-3 py-1 bg-white border border-gray-100 text-gray-600 rounded-full text-xs font-bold shadow-sm uppercase">
+                                        {exp}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </CardContent>
@@ -97,7 +107,7 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                                     ✓ Verified with Adhaar Card {investor.adhaar_number && `(${investor.adhaar_number})`}
                                 </p>
                             ) : (
-                                <p className="text-gray-500 italic">Please upload your Adhaar Card for verification.</p>
+                                <p className="text-gray-500 italic">Verification process is currently being updated.</p>
                             )}
                         </div>
                     </div>

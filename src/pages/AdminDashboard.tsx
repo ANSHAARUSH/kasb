@@ -11,6 +11,7 @@ import { AdminSettings } from "./admin/AdminSettings"
 import { AdminModals } from "./admin/AdminModals"
 import { Button } from "../components/ui/button"
 import { Plus } from "lucide-react"
+import { useAuth } from "../context/AuthContext"
 
 // Define types that match our Supabase schema
 // (Keep types for now as they are used in management components)
@@ -56,6 +57,7 @@ interface Investor {
 }
 
 export function AdminDashboard() {
+    const { signOut } = useAuth()
     const [activeTab, setActiveTab] = useState<AdminTab>('overview')
 
     // Data States
@@ -179,10 +181,23 @@ export function AdminDashboard() {
     }
 
     const promptDelete = async (table: 'startups' | 'investors', id: string) => {
-        if (!confirm(`Are you sure you want to delete this ${table === 'startups' ? 'startup' : 'investor'}?`)) return
-        const { error } = await supabase.from(table).delete().eq('id', id)
-        if (error) alert('Error deleting: ' + error.message)
-        else fetchData()
+        if (!confirm(`Are you sure you want to delete this ${table === 'startups' ? 'startup' : 'investor'}? This will permanently delete their account.`)) return
+
+        // 1. Try to delete from Auth (which should cascade delete the public profile if set up correctly)
+        const { error: rpcError } = await supabase.rpc('delete_user_by_id', { user_id: id })
+
+        if (rpcError) {
+            console.error('Error deleting auth user (RPC might be missing):', rpcError)
+            // 2. Fallback: Delete from public table directly if RPC fails
+            const { error: tableError } = await supabase.from(table).delete().eq('id', id)
+            if (tableError) {
+                alert('Error deleting: ' + tableError.message)
+                return
+            }
+        }
+
+        // Refresh data
+        fetchData()
     }
 
     const updateUserTier = async (table: 'startups' | 'investors', id: string, tier: string) => {
@@ -192,7 +207,10 @@ export function AdminDashboard() {
     }
 
     return (
-        <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={() => window.location.href = '/'}>
+        <AdminLayout activeTab={activeTab} setActiveTab={setActiveTab} onLogout={async () => {
+            await signOut()
+            window.location.href = '/'
+        }}>
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeTab}

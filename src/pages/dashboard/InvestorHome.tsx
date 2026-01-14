@@ -17,6 +17,8 @@ import { useSearchParams, Link } from "react-router-dom"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { parseRevenue, cn } from "../../lib/utils"
 import { useStartups } from "../../hooks/useStartups"
+import { useInvestorProfile } from "../../hooks/useInvestorProfile"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function InvestorHome() {
     // const { user } = useAuth()
@@ -132,13 +134,32 @@ export function InvestorHome() {
         return true
     })
 
-    // Auto-select first startup if none selected and we have results
+    const { investor } = useInvestorProfile()
+    const canSeeAISuggestions = subscriptionManager.hasFeature('AI warm intros') // Proxy for AI match previews/suggestions
+
+    const displayStartups = filteredStartups.map(startup => {
+        if (!canSeeAISuggestions || !investor?.expertise) return { ...startup, isRecommended: false };
+
+        const hasExpertiseMatch = investor.expertise.some(exp =>
+            startup.tags.some(tag => tag.toLowerCase() === exp.toLowerCase()) ||
+            (startup.industry && startup.industry.toLowerCase() === exp.toLowerCase())
+        );
+
+        return { ...startup, isRecommended: hasExpertiseMatch };
+    }).sort((a, b) => {
+        // Prioritize recommended ones if they have the feature
+        if (canSeeAISuggestions) {
+            if (a.isRecommended && !b.isRecommended) return -1;
+            if (!a.isRecommended && b.isRecommended) return 1;
+        }
+        return 0;
+    });
     // Only on mount or when list changes significantly, but ideally just defaulting to the first one for the view
     useEffect(() => {
         // Only auto-select on desktop (lg breakpoint is 1024px)
         if (!selectedId && filteredStartups.length > 0 && !detailStartup && window.innerWidth >= 1024) {
             setSelectedId(filteredStartups[0].id)
-            setDetailStartup(filteredStartups[0])
+            // Removed auto-open of detail panel to avoid counting views on mount
         }
     }, [filteredStartups, selectedId, detailStartup])
 
@@ -188,18 +209,18 @@ export function InvestorHome() {
                                         <span className="text-xs">Cheat Sheet</span>
                                     </Button>
                                 </Link>
-                                <span className="text-sm text-gray-500">{filteredStartups.length} matches</span>
+                                <span className="text-sm text-gray-500">{displayStartups.length} matches</span>
                             </div>
                         </div>
 
-                        {filteredStartups.length === 0 ? (
+                        {displayStartups.length === 0 ? (
                             <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">
                                 <Filter className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                                 <h3 className="text-lg font-medium text-gray-900 mb-1">No startups found</h3>
                                 <p>Try adjusting your filters.</p>
                             </div>
                         ) : (
-                            filteredStartups.map(startup => (
+                            displayStartups.map(startup => (
                                 <div key={startup.id} className="transform transition-all duration-200 hover:scale-[1.01]">
                                     <StartupCard
                                         startup={startup}
@@ -207,27 +228,35 @@ export function InvestorHome() {
                                         isSaved={savedStartupIds.includes(startup.id)}
                                         onClick={() => {
                                             setSelectedId(startup.id)
-                                            // Desktop: Open details panel
-                                            if (window.innerWidth >= 1024) {
-                                                setDetailStartup(startup)
-                                                if (panelSize === 'minimized') setPanelSize('default')
-                                            }
                                         }}
                                         onDoubleClick={() => {
-                                            // Mobile: specific double tap to open details modal
-                                            if (window.innerWidth < 1024) {
-                                                setDetailStartup(startup)
-                                                setSelectedId(startup.id)
+                                            if (!subscriptionManager.canViewProfile(startup.id)) {
+                                                // Handle limit reached (show toast/redirect)
+                                                // We can also just set a "showUpgrade" state if we want a modal
+                                                const url = '/dashboard/pricing';
+                                                window.location.href = url;
+                                                return;
+                                            }
+
+                                            subscriptionManager.trackView(startup.id)
+                                            setDetailStartup(startup)
+                                            setSelectedId(startup.id)
+
+                                            // Desktop: Ensure panel is visible
+                                            if (window.innerWidth >= 1024) {
+                                                if (panelSize === 'minimized') setPanelSize('default')
                                             }
                                         }}
                                         onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                         onMessageClick={handleMessage}
                                         triggerUpdate={connectionUpdate}
                                         onConnectionChange={handleConnectionChange}
+                                        isRecommended={startup.isRecommended}
                                     />
                                 </div>
                             ))
                         )}
+
                         {/* Bottom spacer */}
                         <div className="h-20" />
                     </div>

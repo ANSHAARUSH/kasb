@@ -4,7 +4,7 @@ import { X, Briefcase, TrendingUp, UserMinus } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { getConnectionStatus, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
+import { getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -23,6 +23,8 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
+    const [isConnecting, setIsConnecting] = useState(false)
+    const [isProcessing, setIsProcessing] = useState(false)
 
     useEffect(() => {
         if (!user || !investor?.id) return
@@ -42,6 +44,55 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
         }
     }, [investor?.id, canView])
 
+    const handleConnect = async () => {
+        if (!user || !investor) return
+
+        setIsConnecting(true)
+        try {
+            await sendConnectionRequest(user.id, investor.id)
+            const status = await getConnectionStatus(user.id, investor.id)
+            setConnStatus(status)
+            toast("Connection request sent", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsConnecting(false)
+        }
+    }
+
+    const handleAccept = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await acceptConnectionRequest(connStatus.connectionId)
+            const status = await getConnectionStatus(user!.id, investor!.id)
+            setConnStatus(status)
+            toast("Connection accepted!", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    const handleDecline = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await declineConnectionRequest(connStatus.connectionId)
+            setConnStatus(null)
+            toast("Connection declined", "info")
+            onClose()
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
     const handleDisconnect = async () => {
         if (!user || !investor) return
 
@@ -52,9 +103,9 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
             toast("Connection removed", "info")
             onDisconnect?.()
             onClose()
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to disconnect", "error")
+            toast(`Failed to disconnect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsDisconnecting(false)
         }
@@ -202,9 +253,38 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
                                     <UserMinus className="h-4 w-4 mr-2" />
                                     {isDisconnecting ? "Disconnecting..." : "Disconnect"}
                                 </Button>
+                            ) : (connStatus?.status === 'pending' && connStatus.isIncoming) ? (
+                                <div className="flex gap-3">
+                                    <Button
+                                        size="lg"
+                                        onClick={handleAccept}
+                                        disabled={isProcessing}
+                                        className="flex-1 rounded-2xl h-12 text-base bg-black text-white hover:bg-gray-800"
+                                    >
+                                        {isProcessing ? "Processing..." : "Accept Request"}
+                                    </Button>
+                                    <Button
+                                        size="lg"
+                                        variant="outline"
+                                        onClick={handleDecline}
+                                        disabled={isProcessing}
+                                        className="flex-1 rounded-2xl h-12 text-base border-2 border-gray-100 hover:bg-gray-50 text-gray-600"
+                                    >
+                                        Decline
+                                    </Button>
+                                </div>
+                            ) : connStatus?.status === 'pending' ? (
+                                <Button size="lg" disabled className="w-full rounded-2xl h-12 text-base bg-gray-100 text-gray-400">
+                                    Request Pending
+                                </Button>
                             ) : (
-                                <Button size="lg" className="w-full rounded-2xl h-12 text-base">
-                                    Connect with Investor
+                                <Button
+                                    size="lg"
+                                    onClick={handleConnect}
+                                    disabled={isConnecting}
+                                    className="w-full rounded-2xl h-12 text-base"
+                                >
+                                    {isConnecting ? "Connecting..." : "Connect with Investor"}
                                 </Button>
                             )}
                         </div>

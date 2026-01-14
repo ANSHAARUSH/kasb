@@ -1,4 +1,4 @@
-import { Home, History, MessageSquare, User, FileText } from "lucide-react"
+import { Home, History, MessageSquare, User, FileText, BarChart3 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
@@ -14,12 +14,14 @@ export function BottomNav() {
     const messagesRoute = isStartupDashboard ? '/dashboard/startup/messages' : '/dashboard/investor/messages'
     const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/cheatsheet' : '/dashboard/investor/cheatsheet'
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
+    const analyticsRoute = '/dashboard/startup/analytics'
 
     const navItems = [
         { icon: Home, label: "Home", href: dashboardHome },
         { icon: History, label: "History", href: historyRoute },
         { icon: MessageSquare, label: "Chat", href: messagesRoute },
         { icon: FileText, label: "Cheat", href: cheatSheetRoute },
+        ...(isStartupDashboard ? [{ icon: BarChart3, label: "Data", href: analyticsRoute }] : []),
         { icon: User, label: "Profile", href: profileRoute },
     ]
 
@@ -45,7 +47,7 @@ export function BottomNav() {
                                 />
                             )}
                             <item.icon className={cn("h-6 w-6", isActive && "fill-current")} strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="text-[10px] font-medium">{item.label}</span>
+                            <span className="text-[10px] font-medium leading-none">{item.label}</span>
                         </Link>
                     )
                 })}

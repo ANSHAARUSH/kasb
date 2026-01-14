@@ -1,4 +1,4 @@
-import { Home, History, MessageSquare, FileText, User, LogOut } from "lucide-react"
+import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
@@ -17,6 +17,7 @@ export function SideNav() {
     const messagesRoute = isStartupDashboard ? '/dashboard/startup/messages' : '/dashboard/investor/messages'
     const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/cheatsheet' : '/dashboard/investor/cheatsheet'
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
+    const analyticsRoute = '/dashboard/startup/analytics'
 
     const navItems = [
         { icon: Home, label: "Feed", href: dashboardHome },
@@ -24,6 +25,7 @@ export function SideNav() {
         { icon: MessageSquare, label: "Messages", href: messagesRoute },
         { icon: FileText, label: "Cheat Sheet", href: cheatSheetRoute },
         { icon: User, label: "Profile", href: profileRoute },
+        ...(isStartupDashboard ? [{ icon: BarChart3, label: "Analytics", href: analyticsRoute }] : []),
     ]
 
     return (

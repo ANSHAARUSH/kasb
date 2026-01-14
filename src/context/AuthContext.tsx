@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useState, useRef } from "react"
 import { type Session, type User } from "@supabase/supabase-js"
 import { supabase } from "../lib/supabase"
 import { subscriptionManager, type SubscriptionTier } from "../lib/subscriptionManager"
@@ -27,6 +27,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [role, setRole] = useState<UserRole>(null)
     const [loading, setLoading] = useState(true)
 
+    // Refs to avoid stale closures in onAuthStateChange
+    const roleRef = useRef<UserRole>(null)
+    const userRef = useRef<User | null>(null)
+    const loadingRef = useRef(true)
+
+    useEffect(() => {
+        roleRef.current = role
+    }, [role])
+
+    useEffect(() => {
+        userRef.current = user
+    }, [user])
+
+    useEffect(() => {
+        loadingRef.current = loading
+    }, [loading])
+
     useEffect(() => {
         // Get initial session
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -44,13 +61,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for changes
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
+            console.log("Auth event:", event)
+
+            // Skip strict loading/role-check if it's just a token refresh and we already have the user and role
+            const isSameUser = session?.user?.id === userRef.current?.id
+            const hasRole = !!roleRef.current
+
+            if (event === 'TOKEN_REFRESHED' && isSameUser && hasRole) {
+                setSession(session)
+                setUser(session?.user ?? null) // Update user object but don't reset role/loading
+                return
+            }
+
             setSession(session)
             setUser(session?.user ?? null)
+
             if (session?.user) {
                 subscriptionManager.setUserId(session.user.id)
-                setLoading(true) // Start loading while we check role
-                checkUserRole(session.user.id)
+
+                // Only trigger loading if we don't have a role OR it's a different user
+                // This prevents re-loading on simple session updates (like SIGNED_IN firing again on focus)
+                if (!hasRole || !isSameUser) {
+                    setLoading(true)
+                    checkUserRole(session.user.id)
+                }
             } else {
                 subscriptionManager.setUserId(null)
                 setRole(null)
@@ -113,6 +148,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         await supabase.auth.signOut()
+        localStorage.removeItem('kasb_user_tier')
+        localStorage.removeItem('kasb_user_region')
+        localStorage.removeItem('kasb_usage')
         subscriptionManager.setUserId(null)
         setRole(null)
         setSession(null)

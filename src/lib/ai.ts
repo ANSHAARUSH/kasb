@@ -271,9 +271,7 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
     });
 
     try {
-        if (file.type === 'application/pdf') {
-            throw new Error("PDF processing not supported in current Vision model. Please upload an image (JPG/PNG).");
-        }
+        // PDF conversion is now handled in the UI layer before calling this
 
         const base64Image = await fileToBase64(file);
 
@@ -418,29 +416,39 @@ export async function generateInvestorSummary(
     });
 
     const prompt = `
-    TASK: Convert the following structured startup questionnaire answers into a professional investor - ready summary.
-
-        CONTEXT:
+    TASK: Convert the following structured startup questionnaire answers into a professional, high-impact investor summary.
+    
+    CONTEXT:
     Startup Stage: ${stage}
     Data: ${JSON.stringify(answers)}
 
-    CORE PRINCIPLES(STRICT ADHERENCE REQUIRED):
-    1. Use ONLY provided information.Do not infer, assume, or fabricate facts.
+    The data is organized into 10 critical investor sections:
+    1. Founder Snapshot (Background & Motivation)
+    2. Problem Clarity (Pain point & underserved segments)
+    3. Solution & Product Thinking (Core value prop & roadmap)
+    4. Market Understanding (TAM/SAM/SOM & competition)
+    5. Validation Signals (Experiments & early feedback)
+    6. Business Model Logic (Revenue streams & pricing)
+    7. Execution Readiness (Unit economics & milestones)
+    8. Legal & Ownership (Structure & IP)
+    9. Founder Integrity (Ethics & compliance)
+    10. Final Commitment (Burn rate & goals)
+
+    CORE PRINCIPLES (STRICT ADHERENCE REQUIRED):
+    1. Use ONLY provided information. Do not infer, assume, or fabricate facts.
     2. Omit sections where information is missing.
-    3. Preserve founder's intent. Rewrite ONLY for clarity, grammar, and professional structure.
-    4. TONE: Neutral, factual, and investor - appropriate.
-    5. PROHIBITED WORDS: "revolutionary", "game-changing", "world-class", "industry-leading", "next unicorn", "guaranteed", "massive growth", "huge demand".Replace with factual / measurable phrasing.
-    6. STANDARDIZATION: Paragraphs must be concise(max 5 lines).Use bullet points for features / risks.No emojis / slogans.
+    3. Rewrite for clarity, professional flow, and investor impact.
+    4. TONE: Objective, factual, and analytical. Avoid marketing hype.
+    5. STANDARDIZATION: Use clear headings. Use bullet points for key data points.
 
-    SECTION RULES:
-        - Problem: "[Customer segment] face [problem], currently addressed by [existing solutions]. Approach is inadequate due to [limitations], resulting in [impact]."
-            - Product: Describe what it does, then how it works, then key capabilities.
-    - Value Prop: Direct, factual comparisons. "Unlike [alternative], the product offers [difference]."
-        - Market: Use TAM / SAM / SOM exactly.Label as "founder estimates".
-    - Traction: Numeric validation with time context only.No qualitative summaries like "Strong growth".
-    - Risks: Neutral bullet points.No mitigations unless provided.
+    OUTPUT STRUCTURE:
+    - Executive Summary (Strong 2-3 sentence overview)
+    - Problem & Solution (Context and value proposition)
+    - Market & Competition (Scale and differentiation)
+    - Traction & Milestones (Current progress and near-term goals)
+    - Team & Vision (Why these founders?)
 
-        OUTPUT: Provide the summary as a structured professional narrative.
+    Provide the summary as a structured professional narrative.
     `;
 
     try {
@@ -546,4 +554,82 @@ export async function reviewPitchDeck(
         throw new Error("AI Pitch Deck Review failed");
     }
 }
+
+export async function analyzeStartupDocument(
+    file: File,
+    docType: string,
+    startupStage: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<AnalysisResult> {
+    const { type, content } = await extractDocumentContent(file);
+
+    const effectiveBaseUrl = baseUrl || (apiKey.startsWith('gsk_') ? "https://api.groq.com/openai/v1" : undefined);
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: effectiveBaseUrl,
+        dangerouslyAllowBrowser: true
+    });
+
+    const isVision = type === 'image';
+    const model = isVision ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+
+    const prompt = `
+    Analyze this startup document using investor due-diligence standards. 
+    Startup Stage: ${startupStage}
+    Document Type: ${docType}
+    Format: ${isVision ? 'Image/PDF' : 'Text-based'}
+
+    Tasks:
+    1. Summarize key information
+    2. Check alignment with required documents for this stage
+    3. Identify missing or weak sections
+    4. Detect investor risk signals (specifically for ${startupStage} stage)
+    5. Suggest improvements
+
+    Return the output ONLY as a valid JSON object with this exact structure:
+    {
+        "document_type": "string",
+        "stage_relevance": "Mandatory | Optional",
+        "sections_detected": ["string"],
+        "summary": "string",
+        "missing_sections": ["string"],
+        "risk_signals": ["string"],
+        "suggestions": ["string"]
+    }
+
+    ${!isVision ? `Document Content:\n${content}` : ''}
+    `;
+
+    try {
+        const messages: any[] = [
+            {
+                role: "user",
+                content: isVision ? [
+                    { type: "text", text: prompt },
+                    {
+                        type: "image_url",
+                        image_url: {
+                            url: `data:${(content as File).type}; base64, ${await fileToBase64(content as File)} `,
+                        },
+                    },
+                ] : prompt
+            }
+        ];
+
+        const response = await openai.chat.completions.create({
+            model: model,
+            messages: messages,
+        });
+
+        const text = response.choices[0].message.content || "{}";
+        return extractJSON<any>(text);
+    } catch (error: unknown) {
+        console.error("AI Document Analysis Error:", error);
+        throw new Error("AI Document Analysis failed");
+    }
+}
+
+import { extractDocumentContent } from "./documentExtraction";
+import type { AnalysisResult } from "./documentIntelligence";
 

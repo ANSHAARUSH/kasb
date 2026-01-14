@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react"
 import { Bell, MessageSquare } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { supabase } from "../../lib/supabase"
+import { supabase, acceptConnectionRequest, declineConnectionRequest } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "../ui/button"
+import { useToast } from "../../hooks/useToast"
 
 interface NotificationMessage {
     id: string
@@ -26,6 +27,7 @@ interface ConnectionRequest {
 export function NotificationBell() {
     const { user, role } = useAuth()
     const navigate = useNavigate()
+    const { toast } = useToast()
     const [unreadCount, setUnreadCount] = useState(0)
     const [recentMessages, setRecentMessages] = useState<NotificationMessage[]>([])
     const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([])
@@ -154,13 +156,22 @@ export function NotificationBell() {
     }
 
     const handleConnectionResponse = async (id: string, status: 'accepted' | 'rejected') => {
-        const { error } = await supabase
-            .from('connections')
-            .update({ status })
-            .eq('id', id)
-
-        if (!error) {
+        try {
+            if (status === 'accepted') {
+                await acceptConnectionRequest(id)
+                toast("Connection accepted!", "success")
+            } else {
+                await declineConnectionRequest(id)
+                toast("Connection declined", "info")
+            }
             setConnectionRequests(prev => prev.filter(c => c.id !== id))
+        } catch (error: any) {
+            console.error('Error handling connection response:', error)
+            toast(`Failed to ${status}: ${error.message || 'Unknown error'}`, "error")
+            // Still filter it out if it was a 404 or something that means it's gone anyway
+            if (error.code === 'PGRST116' || error.status === 404) {
+                setConnectionRequests(prev => prev.filter(c => c.id !== id))
+            }
         }
     }
 

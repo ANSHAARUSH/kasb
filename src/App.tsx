@@ -19,6 +19,7 @@ const CheatSheetPage = lazy(() => import("./pages/dashboard/CheatSheetPage").the
 const StartupCheatSheetPage = lazy(() => import("./pages/dashboard/StartupCheatSheetPage").then(m => ({ default: m.StartupCheatSheetPage })))
 const InvestorProfile = lazy(() => import("./pages/dashboard/InvestorProfile").then(m => ({ default: m.InvestorProfile })))
 const StartupProfile = lazy(() => import("./pages/dashboard/StartupProfile").then(m => ({ default: m.StartupProfile })))
+const StartupAnalyticsPage = lazy(() => import("./pages/dashboard/startup/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })))
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
 const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
 const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
@@ -82,6 +83,7 @@ function App() {
                   <Route path="startup/history" element={<StartupHistoryPage />} />
                   <Route path="startup/messages" element={<MessagesPage />} />
                   <Route path="startup/profile" element={<StartupProfile />} />
+                  <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
                   <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
 
                   {/* Shared Routes - Keep for fallbacks or generic access */}

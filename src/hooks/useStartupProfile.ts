@@ -65,17 +65,24 @@ export function useStartupProfile() {
         if (!startup) return false
         setSaving(true)
         try {
+            // Remove metadata and non-updatable fields
+            const { id, created_at, updated_at, email_verified, ...updateData } = formData as any
+
             const { error } = await supabase
                 .from('startups')
-                .update(formData)
+                .update(updateData)
                 .eq('id', startup.id)
 
-            if (error) throw error
+            if (error) {
+                console.error('Supabase update error:', error)
+                throw error
+            }
+
             setStartup(prev => prev ? { ...prev, ...formData } : null)
             return true
         } catch (error) {
             console.error('Error updating profile:', error)
-            alert('Failed to update profile')
+            alert('Failed to update profile. Check console for details.')
             return false
         } finally {
             setSaving(false)

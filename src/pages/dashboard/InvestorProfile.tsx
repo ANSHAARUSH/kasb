@@ -26,11 +26,15 @@ export function InvestorProfile() {
     const handleDeleteAccount = async () => {
         try {
             const { error } = await supabase.rpc('delete_user_account')
-            if (error) throw error
+            if (error) {
+                console.error('Account deletion error:', error)
+                const detailedError = error.details || error.hint || error.message
+                throw new Error(detailedError)
+            }
             await signOut()
             window.location.href = '/'
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "An unknown error occurred"
+        } catch (err: any) {
+            const message = err?.message || "An unknown error occurred"
             alert("Error deleting account: " + message)
         }
     }

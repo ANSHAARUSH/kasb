@@ -1,16 +1,18 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Startup } from "../../data/mockData"
-import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles } from "lucide-react"
+import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3 } from "lucide-react"
 import { Button } from "../ui/button"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { getConnectionStatus, disconnectConnection, sendConnectionRequest, getGlobalConfig, getUserSetting, type ConnectionStatus } from "../../lib/supabase"
+import { getConnectionStatus, disconnectConnection, sendConnectionRequest, getGlobalConfig, getUserSetting, trackProfileView, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
-import { Lock, BarChart3 } from "lucide-react"
+import { Lock } from "lucide-react"
 import { generateValuationInsights } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
+import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../lib/questionnaire"
+import { cn } from "../../lib/utils"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -28,12 +30,26 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const { user } = useAuth()
     const navigate = useNavigate()
     const { toast } = useToast()
+    const [activeTab, setActiveTab] = useState<'questions' | 'metrics'>('questions')
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
     const [isConnecting, setIsConnecting] = useState(false)
     const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
     const [valuationInsights, setValuationInsights] = useState<string | null>(null)
     const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
+    const [showLiteralAnswers, setShowLiteralAnswers] = useState(false)
+    const [isProcessing, setIsProcessing] = useState(false)
+
+    const stageConfig = useMemo(() => {
+        const stage = startup?.metrics.stage || 'Ideation'
+        let config = QUESTIONNAIRE_CONFIG[stage]
+        if (!config) {
+            config = DEFAULT_STAGE_CONFIG
+        }
+        return config
+    }, [startup?.metrics.stage])
+
+    const answers = startup?.questionnaire || {}
 
     useEffect(() => {
         if (!user || !startup?.id) return
@@ -50,13 +66,29 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const canView = subscriptionManager.canViewProfile(startup?.id) || connStatus?.status === 'accepted'
 
     useEffect(() => {
-        if (startup?.id && canView) {
-            subscriptionManager.trackView(startup.id)
+        if (startup?.id && canView && user) {
+            // Create a unique key for this view session
+            const viewKey = `view_${user.id}_${startup.id}`
+            const hasTracked = sessionStorage.getItem(viewKey)
+
+            if (!hasTracked) {
+                subscriptionManager.trackView(startup.id)
+                // Track in database for analytics (only once per session)
+                trackProfileView(user.id, startup.id, 'Unknown')
+                sessionStorage.setItem(viewKey, 'true')
+            }
         }
-    }, [startup?.id, canView])
+    }, [startup?.id, canView, user])
 
     const handleConnect = async () => {
         if (!user || !startup) return
+
+        if (!subscriptionManager.canContact()) {
+            toast("Connection limit reached. Upgrade to connect with more startups!", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
+
         setIsConnecting(true)
         try {
             await sendConnectionRequest(user.id, startup.id)
@@ -64,11 +96,44 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             setConnStatus({ status: 'pending', isIncoming: false })
             onConnectionChange?.(startup.id)
             toast("Connection request sent", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to send request", "error")
+            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsConnecting(false)
+        }
+    }
+
+    const handleAccept = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await acceptConnectionRequest(connStatus.connectionId)
+            const status = await getConnectionStatus(user!.id, startup!.id)
+            setConnStatus(status)
+            onConnectionChange?.(startup!.id)
+            toast("Connection accepted!", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    const handleDecline = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await declineConnectionRequest(connStatus.connectionId)
+            setConnStatus(null)
+            onConnectionChange?.(startup!.id)
+            toast("Connection declined", "info")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
         }
     }
 
@@ -83,9 +148,9 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             onDisconnect?.()
             onConnectionChange?.(startup.id)
             onClose()
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Failed to disconnect", "error")
+            toast(`Failed to disconnect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsDisconnecting(false)
         }
@@ -106,9 +171,9 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             const insights = await generateValuationInsights(startup, apiKey)
             setValuationInsights(insights)
             toast("Valuation insights generated", "success")
-        } catch (error) {
+        } catch (error: any) {
             console.error(error)
-            toast("Generation failed", "error")
+            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsGeneratingValuation(false)
         }
@@ -138,6 +203,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     // The previous implementation had fixed position and modal logic.
     // We will separate the Content from the Modal Wrapper.
 
+
     return (
         <div className="h-full flex flex-col bg-white overflow-hidden">
             {/* Header */}
@@ -152,13 +218,15 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                             />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold">{startup.name}</h2>
-                            <span className="text-sm text-gray-500">{startup.metrics.stage} • {startup.metrics.valuation}</span>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-2xl font-bold">{startup.name}</h2>
+                                <div className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border border-indigo-100">
+                                    {startup.metrics.stage}
+                                </div>
+                            </div>
+                            <span className="text-sm text-gray-500">{startup.industry || 'No industry set'} • {startup.metrics.valuation}</span>
                         </div>
                     </div>
-                    {/* Show close button only if onClose is meaningful/provided for mobile or specific flows */}
-                    {/* In panel mode, we might not want a close button, or maybe we do to deselect. */}
-                    {/* Let's keep it but styling might be different. */}
                     <div className="flex items-center gap-1">
                         {onResize && (
                             <>
@@ -176,136 +244,245 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 )}
                             </>
                         )}
-                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-100 lg:hidden">
+                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-100 hidden lg:flex">
                             <X className="h-5 w-5" />
                         </Button>
                     </div>
                 </div>
+
+                {/* Tab Navigation */}
+                <div className="flex mt-6 -mb-4">
+                    <button
+                        onClick={() => setActiveTab('questions')}
+                        className={cn(
+                            "flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                            activeTab === 'questions' ? "border-black text-black" : "border-transparent text-gray-400"
+                        )}
+                    >
+                        Stage Questions
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('metrics')}
+                        className={cn(
+                            "flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                            activeTab === 'metrics' ? "border-black text-black" : "border-transparent text-gray-400"
+                        )}
+                    >
+                        Metrics
+                    </button>
+                </div>
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                {/* Founder Section */}
-                <section>
-                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                        <span className="bg-black text-white h-6 w-6 rounded-full flex items-center justify-center text-xs">F</span>
-                        Founder
-                    </h3>
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50">
-                        <img src={startup.founder.avatar} alt={startup.founder.name} className="h-16 w-16 rounded-full object-cover" />
-                        <div>
-                            <h4 className="font-bold">{startup.founder.name}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{startup.founder.bio}</p>
-                            <div className="mt-2 flex flex-col gap-1 text-xs text-gray-500">
-                                <div className="flex items-center gap-1">
-                                    <GraduationCap className="h-3 w-3" /> {startup.founder.education}
+            <div className="flex-1 overflow-y-auto p-6">
+                {activeTab === 'questions' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Summary Section (Prioritized) */}
+                        {startup.aiSummary ? (
+                            <section className="bg-amber-50/50 rounded-3xl p-6 border border-amber-100 relative overflow-hidden">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Sparkles className="h-4 w-4 text-amber-600" />
+                                    <h3 className="text-xs font-bold text-amber-900 uppercase tracking-widest">
+                                        {startup.summaryStatus === 'final' ? 'Professional Summary' : 'AI Draft Summary'}
+                                    </h3>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                    <Briefcase className="h-3 w-3" /> {startup.founder.workHistory}
+
+                                <div className={cn(
+                                    "text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium",
+                                    !subscriptionManager.hasFeature('Advanced AI') && "blur-sm select-none"
+                                )}>
+                                    {startup.aiSummary}
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
-                {/* Metrics */}
-                <section>
-                    <h3 className="text-lg font-bold mb-4">Key Metrics</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm text-center">
-                            <p className="text-sm text-gray-500">Traction</p>
-                            <p className="text-xl font-bold text-green-600">{startup.metrics.traction}</p>
-                        </div>
-                        <div className="p-4 rounded-2xl border border-gray-100 bg-white shadow-sm text-center">
-                            <p className="text-sm text-gray-500">Valuation</p>
-                            <p className="text-xl font-bold">{startup.metrics.valuation}</p>
-                        </div>
-                    </div>
-
-                    {/* AI Valuation Insights Add-on */}
-                    <div className="mt-6">
-                        {!valuationInsights ? (
-                            <Button
-                                variant="outline"
-                                onClick={handleGenerateValuation}
-                                disabled={isGeneratingValuation}
-                                className="w-full rounded-2xl border-dashed border-2 hover:bg-gray-50 h-14"
-                            >
-                                <BarChart3 className="h-4 w-4 mr-2" />
-                                {isGeneratingValuation ? "Analyzing Market Data..." : "Get AI Valuation Insights"}
-                                {!subscriptionManager.hasFeature('Valuation') && (
-                                    <span className="ml-2 text-[10px] bg-black text-white px-2 py-0.5 rounded-full">UPGRADE</span>
+                                {!subscriptionManager.hasFeature('Advanced AI') && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] p-6 text-center">
+                                        <Lock className="h-6 w-6 text-amber-600 mb-2" />
+                                        <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Growth Tier Required</p>
+                                        <Button variant="outline" size="sm" className="mt-3 rounded-xl border-amber-200 text-amber-700 bg-white/80 h-8 text-[10px]" onClick={() => navigate('/dashboard/pricing')}>
+                                            View Plans
+                                        </Button>
+                                    </div>
                                 )}
-                            </Button>
+                            </section>
                         ) : (
-                            <div className="p-6 rounded-2xl bg-gray-900 text-white animate-in zoom-in-95 duration-300">
-                                <div className="flex items-center gap-2 mb-3 text-gray-400">
-                                    <Sparkles className="h-4 w-4" />
-                                    <span className="text-xs font-bold uppercase tracking-widest">Market Valuation Analysis</span>
-                                </div>
-                                <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-line leading-relaxed">
-                                    {valuationInsights}
-                                </div>
-                                <p className="mt-4 text-[10px] text-gray-500 italic">
-                                    * This is an AI-generated estimate based on provided metrics and typical sector multiples.
+                            <section className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
+                                <Sparkles className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
+                                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Summary Pending</h4>
+                                <p className="text-indigo-800/60 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
+                                    This startup is currently finalizing its AI-verified investor summary.
                                 </p>
-                            </div>
+                            </section>
                         )}
-                    </div>
-                </section>
 
-                {/* Professional Investor Summary (AI Generated) */}
-                {startup.summaryStatus === 'final' && startup.aiSummary && (
-                    <section className="bg-amber-50/30 -mx-6 px-6 py-8 border-y border-amber-100/50 relative overflow-hidden">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Sparkles className="h-5 w-5 text-amber-600" />
-                            <h3 className="text-lg font-bold text-amber-900">Professional Investor Summary</h3>
-                        </div>
+                        {/* Founder Section (Identity) */}
+                        <section>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="bg-gray-100 text-gray-500 h-5 w-5 rounded-full flex items-center justify-center text-[10px]">F</span>
+                                Founder Profile
+                            </h3>
+                            <div className="flex items-start gap-4 p-5 rounded-[2rem] bg-gray-50 border border-gray-100">
+                                <img src={startup.founder.avatar} alt={startup.founder.name} className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" />
+                                <div>
+                                    <h4 className="font-bold text-sm">{startup.founder.name}</h4>
+                                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{startup.founder.bio}</p>
+                                    <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-gray-500 font-medium">
+                                        <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                            <GraduationCap className="h-3 w-3" /> {startup.founder.education}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                            <Briefcase className="h-3 w-3" /> {startup.founder.workHistory}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
 
-                        <div className={`prose prose-sm max-w-none text-gray-800 leading-relaxed whitespace-pre-line font-medium ${!subscriptionManager.hasFeature('Advanced AI') ? 'blur-sm select-none' : ''}`}>
-                            {startup.aiSummary}
-                        </div>
-
-                        {!subscriptionManager.hasFeature('Advanced AI') && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] p-6 text-center">
-                                <Lock className="h-8 w-8 text-amber-600 mb-2" />
-                                <p className="text-sm font-bold text-amber-900">Growth Tier Required</p>
-                                <p className="text-xs text-amber-700 mt-1">Upgrade to unlock full AI-generated insights.</p>
-                                <Button variant="outline" size="sm" className="mt-4 rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => navigate('/dashboard/pricing')}>
-                                    View Plans
+                        {/* Literal Answers Toggle */}
+                        <div className="pt-4">
+                            {!showLiteralAnswers ? (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowLiteralAnswers(true)}
+                                    className="w-full rounded-2xl border-dashed border-2 text-gray-400 hover:text-black hover:bg-gray-50 h-14 font-bold text-xs uppercase tracking-widest"
+                                >
+                                    View literal answers supplied by founder
                                 </Button>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Questionnaire Data</h3>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setShowLiteralAnswers(false)}
+                                            className="h-8 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 px-3"
+                                        >
+                                            Hide Details
+                                        </Button>
+                                    </div>
 
-                        {subscriptionManager.hasFeature('Advanced AI') && (
-                            <p className="mt-4 text-[10px] text-amber-600/60 font-medium uppercase tracking-widest">
-                                Generated from structured founder inputs • Verified by Kasb.AI
-                            </p>
-                        )}
-                    </section>
+                                    {/* Problem & Description */}
+                                    <section className="space-y-6">
+                                        <div>
+                                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Problem Statement</h3>
+                                            <p className="text-[15px] text-gray-900 leading-relaxed font-medium bg-white p-4 rounded-2xl border border-gray-50">
+                                                {startup.problemSolving}
+                                            </p>
+                                        </div>
+
+                                        {startup.description && (
+                                            <div>
+                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Solution Context</h3>
+                                                <p className="text-[14px] text-gray-600 leading-relaxed bg-white p-4 rounded-2xl border border-gray-50">
+                                                    {startup.description}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </section>
+
+                                    {/* Stage Specific Questions */}
+                                    <section className="space-y-8">
+                                        {stageConfig.map(section => {
+                                            const sectionAnswers = answers[section.id] || {}
+                                            const hasAnswers = section.questions.some(q => sectionAnswers[q.id])
+                                            if (!hasAnswers) return null
+
+                                            return (
+                                                <div key={section.id} className="space-y-4">
+                                                    <h4 className="text-[11px] font-bold text-black uppercase tracking-widest border-b border-gray-100 pb-2">
+                                                        {section.title}
+                                                    </h4>
+                                                    <div className="grid gap-6">
+                                                        {section.questions.map(q => {
+                                                            const answer = sectionAnswers[q.id]
+                                                            if (!answer) return null
+                                                            return (
+                                                                <div key={q.id}>
+                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">{q.label}</p>
+                                                                    <p className="text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium">
+                                                                        {answer}
+                                                                    </p>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </section>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
 
-                {/* Problem & Description */}
-                <section>
-                    <h3 className="text-lg font-bold mb-2">Problem We're Solving</h3>
-                    <p className="text-gray-600 leading-relaxed">
-                        {startup.problemSolving}
-                    </p>
-                </section>
+                {activeTab === 'metrics' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Key Metrics Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <TrendingUp className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Traction</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.traction}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <BarChart3 className="h-5 w-5 text-emerald-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Valuation</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.valuation}</p>
+                            </div>
+                        </div>
 
-                {startup.description && (
-                    <section>
-                        <h3 className="text-lg font-bold mb-2">About the Solution</h3>
-                        <p className="text-gray-600 leading-relaxed">
-                            {startup.description}
-                        </p>
-                    </section>
+                        {/* AI Valuation Insights */}
+                        <section>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Strategic Insights</h3>
+                            {!valuationInsights ? (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleGenerateValuation}
+                                    disabled={isGeneratingValuation}
+                                    className="w-full rounded-[2rem] border-dashed border-2 hover:bg-gray-50 h-20 flex flex-col items-center justify-center gap-1"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-indigo-600" />
+                                        <span className="font-bold text-sm">
+                                            {isGeneratingValuation ? "Analyzing Market Data..." : "Generate AI Valuation Insights"}
+                                        </span>
+                                    </div>
+                                    {!subscriptionManager.hasFeature('Valuation') && (
+                                        <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-full font-bold">UPGRADE REQUIRED</span>
+                                    )}
+                                </Button>
+                            ) : (
+                                <div className="p-8 rounded-[2rem] bg-gray-900 text-white animate-in zoom-in-95 duration-500 shadow-xl border border-gray-800">
+                                    <div className="flex items-center gap-2 mb-4 text-indigo-400">
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Market Valuation Analysis</span>
+                                    </div>
+                                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                                        {valuationInsights}
+                                    </div>
+                                    <p className="mt-6 text-[9px] text-gray-500 italic border-t border-gray-800 pt-4">
+                                        * This is an AI-generated estimate based on provided metrics and typical sector multiples.
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Additional Metrics Placeholder */}
+                        <div className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
+                            <BarChart3 className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
+                            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Growth Charts</h4>
+                            <p className="text-indigo-800/60 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
+                                Visual traction charts and burn rate analysis will appear as the startup updates its monthly records.
+                            </p>
+                        </div>
+                    </div>
                 )}
 
                 {startup.history && (
-                    <section>
-                        <h3 className="text-lg font-bold mb-2">History</h3>
-                        <p className="text-gray-600 leading-relaxed">
+                    <section className="mt-8 px-1">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">History</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed font-sm">
                             {startup.history}
                         </p>
                     </section>
@@ -368,6 +545,26 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                             Disconnect
                         </Button>
                     )
+                ) : (connStatus?.status === 'pending' && connStatus.isIncoming) ? (
+                    <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Button
+                            size="lg"
+                            onClick={handleAccept}
+                            disabled={isProcessing}
+                            className="flex-1 rounded-2xl h-12 text-base bg-black text-white hover:bg-gray-800 shadow-lg shadow-black/5"
+                        >
+                            {isProcessing ? "Processing..." : "Accept Request"}
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={handleDecline}
+                            disabled={isProcessing}
+                            className="flex-1 rounded-2xl h-12 text-base border-2 border-gray-100 hover:bg-gray-50 text-gray-600"
+                        >
+                            Decline
+                        </Button>
+                    </div>
                 ) : connStatus?.status === 'pending' ? (
                     <Button size="lg" disabled className="w-full rounded-2xl h-12 text-base bg-gray-100 text-gray-400">
                         Request Pending
@@ -379,7 +576,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                         disabled={isConnecting}
                         className="w-full rounded-2xl h-12 text-base"
                     >
-                        {isConnecting ? "Sending Request..." : "Connect with Founder"}
+                        {isConnecting ? "Connecting..." : "Connect with Founder"}
                     </Button>
                 )}
             </div>

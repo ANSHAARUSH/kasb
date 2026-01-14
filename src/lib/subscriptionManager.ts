@@ -24,7 +24,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; conta
     'starter': { profileViews: 100, contacts: 10 },
     'growth': { profileViews: Infinity, contacts: Infinity },
     'fundraise_pro': { profileViews: Infinity, contacts: Infinity },
-    'explore': { profileViews: 5, contacts: 0 },
+    'explore': { profileViews: 20, contacts: 0 },
     'investor_basic': { profileViews: 100, contacts: 20 },
     'investor_pro': { profileViews: Infinity, contacts: Infinity },
     'institutional': { profileViews: Infinity, contacts: Infinity }
@@ -68,7 +68,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Explore',
         price: 0,
         currency: 'INR',
-        features: ['Browse startups', '5 AI matches/month', 'Basic filters', 'No direct contact']
+        features: ['View 20 startup profiles', 'No direct contact (Upgrade only)', 'Basic filters', 'AI match previews']
     },
     {
         id: 'investor_basic',

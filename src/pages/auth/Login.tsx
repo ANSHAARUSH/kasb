@@ -5,15 +5,27 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import { Eye, EyeOff } from "lucide-react"
+import { useAuth } from "../../context/AuthContext"
 
 export function Login() {
     const navigate = useNavigate()
+    const { user, role, loading: authLoading } = useAuth() // Use global auth state
     const [loading, setLoading] = useState(false)
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [needsVerification, setNeedsVerification] = useState(false)
     const [resendCooldown, setResendCooldown] = useState(0)
+
+    // Auto-redirect if already logged in (e.g. from email link)
+    useEffect(() => {
+        if (!authLoading && user && role) {
+            console.log("User already authenticated, redirecting...")
+            if (role === 'admin') navigate("/admin", { replace: true })
+            else if (role === 'startup') navigate("/dashboard/startup", { replace: true })
+            else if (role === 'investor') navigate("/dashboard/investor", { replace: true })
+        }
+    }, [user, role, authLoading, navigate])
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
