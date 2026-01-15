@@ -424,6 +424,7 @@ export function MessagesPage() {
 
         setIsRefining(true)
         try {
+            // Call AI to refine the message text
             const refined = await refineMessage(newMessage, apiKey)
             setNewMessage(refined)
             toast("Message refined!", "success")
