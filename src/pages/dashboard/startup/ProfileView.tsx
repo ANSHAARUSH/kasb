@@ -151,8 +151,8 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
             <Card className="border-0 shadow-none bg-transparent">
                 <CardContent className="p-0 space-y-8">
                     {/* Instagram Style Header */}
-                    <div className="flex items-start gap-8 sm:gap-12 px-4">
-                        <div className="relative group">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-12 px-4 text-center sm:text-left">
+                        <div className="relative group shrink-0">
                             <div className="h-24 w-24 sm:h-32 sm:w-32 flex items-center justify-center rounded-full bg-gray-50/50 border border-gray-100/50 overflow-hidden">
                                 <Avatar
                                     src={startup.logo}
@@ -163,10 +163,10 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                             </div>
                         </div>
 
-                        <div className="flex-1 space-y-4 pt-2">
-                            <div className="flex flex-wrap items-center gap-4">
-                                <h1 className="text-2xl font-bold tracking-tight">{startup.name}</h1>
-                                <div className="flex items-center gap-2">
+                        <div className="flex-1 space-y-4 pt-2 w-full">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 justify-center sm:justify-start">
+                                <h1 className="text-2xl font-bold tracking-tight break-words max-w-full">{startup.name}</h1>
+                                <div className="flex items-center gap-2 shrink-0">
                                     <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-indigo-100">
                                         {startup.stage || 'Ideation'}
                                     </div>
@@ -177,19 +177,19 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                             {/* Integrated Bio & Founder Section */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <p className="font-bold text-[15px] text-gray-900">{startup.industry || 'No industry set'}</p>
-                                    <p className="text-gray-800 leading-relaxed font-medium text-sm">
+                                    <p className="font-bold text-[15px] text-gray-900 break-words">{startup.industry || 'No industry set'}</p>
+                                    <p className="text-gray-800 leading-relaxed font-medium text-sm break-words">
                                         {startup.problem_solving}
                                     </p>
                                     {startup.description && (
-                                        <p className="text-gray-500 text-xs leading-relaxed max-w-xl">
+                                        <p className="text-gray-500 text-xs leading-relaxed max-w-xl mx-auto sm:mx-0 break-words">
                                             {startup.description}
                                         </p>
                                     )}
                                 </div>
 
-                                <div className="flex items-center gap-3 pt-2 border-t border-gray-100/50">
-                                    <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100">
+                                <div className="flex items-center justify-center sm:justify-start gap-3 pt-2 border-t border-gray-100/50">
+                                    <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100 shrink-0">
                                         <Avatar
                                             src={startup.founder_avatar}
                                             name={startup.founder_name}
@@ -197,7 +197,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                             fallbackClassName="text-xs text-gray-400"
                                         />
                                     </div>
-                                    <div>
+                                    <div className="text-left">
                                         <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Founded by</p>
                                         <p className="text-sm font-bold text-gray-900">{startup.founder_name || 'Founder'}</p>
                                     </div>
@@ -299,7 +299,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                 {section.questions.map(q => {
                                                     const answer = sectionAnswers[q.id]
                                                     return (
-                                                        <div key={q.id} className={q.type === 'textarea' ? 'col-span-2' : ''}>
+                                                        <div key={q.id} className={cn("min-w-0", q.type === 'textarea' ? 'col-span-2' : '')}>
                                                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
                                                                 {q.label}
                                                                 {isEditing && q.required && <span className="text-red-500 ml-1">*</span>}
@@ -309,7 +309,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                                 q.id === 'location' ? (
                                                                     <div className="grid grid-cols-2 gap-2">
                                                                         <select
-                                                                            className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-3 text-sm font-medium"
+                                                                            className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-3 text-base sm:text-sm font-medium"
                                                                             value={sectionAnswers[q.id]?.split(', ')[1] || ''}
                                                                             onChange={e => {
                                                                                 const country = e.target.value
@@ -323,7 +323,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                                             ))}
                                                                         </select>
                                                                         <select
-                                                                            className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-3 text-sm font-medium"
+                                                                            className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-3 text-base sm:text-sm font-medium"
                                                                             value={sectionAnswers[q.id]?.split(', ')[0] || ''}
                                                                             onChange={e => {
                                                                                 const state = e.target.value
@@ -340,14 +340,14 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                                     </div>
                                                                 ) : q.type === 'textarea' ? (
                                                                     <textarea
-                                                                        className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black min-h-[120px] p-4 text-sm font-medium leading-relaxed bg-gray-50/30"
+                                                                        className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black min-h-[120px] p-4 text-base sm:text-sm font-medium leading-relaxed bg-gray-50/30"
                                                                         value={sectionAnswers[q.id] || ''}
                                                                         onChange={e => handleAnswerChange(section.id, q.id, e.target.value)}
                                                                         placeholder={q.placeholder}
                                                                     />
                                                                 ) : q.type === 'select' ? (
                                                                     <select
-                                                                        className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-4 text-sm font-bold bg-gray-50/30"
+                                                                        className="w-full rounded-2xl border-gray-200 focus:border-black focus:ring-black p-4 text-base sm:text-sm font-bold bg-gray-50/30"
                                                                         value={sectionAnswers[q.id] || ''}
                                                                         onChange={e => handleAnswerChange(section.id, q.id, e.target.value)}
                                                                     >
@@ -367,7 +367,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                                 )
                                                             ) : (
                                                                 <p className={cn(
-                                                                    "leading-relaxed text-[15px]",
+                                                                    "leading-relaxed text-[15px] break-words",
                                                                     answer ? "text-gray-900 whitespace-pre-line font-medium" : "text-gray-300 italic"
                                                                 )}>
                                                                     {answer || 'Not provided'}

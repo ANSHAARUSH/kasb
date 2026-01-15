@@ -120,7 +120,7 @@ export function ChatDialog() {
                                                 Start a conversation with {activeUser.name}
                                             </div>
                                         )}
-                                        {messages.map((msg) => {
+                                        {messages.filter(m => !m.is_deleted).map((msg) => {
                                             const isMe = msg.sender_id === user?.id
                                             return (
                                                 <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -160,7 +160,10 @@ export function ChatDialog() {
                                             {recentChats.map(chat => (
                                                 <button
                                                     key={chat.id}
-                                                    onClick={() => openChat(chat)}
+                                                    onClick={() => {
+                                                        console.log("Clicked chat item in Dialog:", chat.name)
+                                                        openChat(chat)
+                                                    }}
                                                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors text-left"
                                                 >
                                                     <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-100 shadow-sm">

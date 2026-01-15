@@ -14,13 +14,62 @@ interface ConfigItem {
 }
 
 export function AdminSettings() {
+    // Existing Config State
     const [configs, setConfigs] = useState<ConfigItem[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
+    // AI Config State
+    const [apiKey, setApiKey] = useState("")
+    const [testing, setTesting] = useState(false)
+    const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle')
+    const [testMessage, setTestMessage] = useState("")
+
     useEffect(() => {
         fetchConfigs()
+        const storedKey = localStorage.getItem('groq_api_key')
+        if (storedKey) setApiKey(storedKey)
     }, [])
+
+    const saveApiKey = () => {
+        if (!apiKey.trim()) {
+            localStorage.removeItem('groq_api_key')
+            alert("API Key removed from browser storage.")
+        } else {
+            localStorage.setItem('groq_api_key', apiKey.trim())
+            alert("API Key saved to browser storage.")
+        }
+    }
+
+    const handleTestAI = async () => {
+        setTesting(true)
+        setTestStatus('idle')
+        setTestMessage("")
+
+        try {
+            const keyToUse = apiKey || import.meta.env.VITE_GROQ_API_KEY
+            if (!keyToUse) throw new Error("No API Key available to test.")
+
+            // Import dynamically or use the function if available in scope. 
+            // Since we are in pages/..., we can import from lib.
+            // We need to add the import statement at the top of the file separately.
+            const { chatWithAI } = await import("../../lib/ai")
+
+            const response = await chatWithAI("Hello, are you online?", [], keyToUse)
+            if (response) {
+                setTestStatus('success')
+                setTestMessage(`Success! AI replied: "${response.substring(0, 50)}..."`)
+            } else {
+                throw new Error("Empty response from AI")
+            }
+        } catch (err: any) {
+            console.error("AI Test Error:", err)
+            setTestStatus('error')
+            setTestMessage("Error: " + (err.message || String(err)))
+        } finally {
+            setTesting(false)
+        }
+    }
 
     const fetchConfigs = async () => {
         const { data, error } = await supabase
@@ -118,6 +167,46 @@ export function AdminSettings() {
                                 />
                             </div>
                         ))}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>AI Configuration</CardTitle>
+                        <CardDescription>Manage AI settings and test connection.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="apiKey">Groq API Key</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="apiKey"
+                                    type="password"
+                                    placeholder={import.meta.env.VITE_GROQ_API_KEY ? "Using ENV Variable (Hidden)" : "Enter API Key"}
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                />
+                                <Button onClick={saveApiKey} variant="outline">Save to Browser</Button>
+                            </div>
+                            <p className="text-xs text-gray-400">
+                                Current Data Source: {apiKey ? "Custom (Browser)" : (import.meta.env.VITE_GROQ_API_KEY ? "Environment Variable" : "Missing")}
+                            </p>
+                        </div>
+
+                        <div className="pt-2">
+                            <Button
+                                onClick={handleTestAI}
+                                disabled={testing}
+                                variant={testStatus === 'success' ? 'default' : (testStatus === 'error' ? 'destructive' : 'secondary')}
+                                className="w-full"
+                            >
+                                {testing ? "Testing..." : (testStatus === 'success' ? "Connection Verified ✅" : (testStatus === 'error' ? "Connection Failed ❌" : "Test AI Connection"))}
+                            </Button>
+                            {testMessage && (
+                                <p className={`text-sm mt-2 ${testStatus === 'error' ? 'text-red-500' : 'text-green-500'}`}>
+                                    {testMessage}
+                                </p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>

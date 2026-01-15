@@ -1,8 +1,8 @@
-import { LayoutDashboard, Users, ShieldAlert, MessageSquare, Settings, LogOut } from "lucide-react"
+import { LayoutDashboard, Users, ShieldAlert, MessageSquare, Settings, LogOut, Flag } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 
-export type AdminTab = 'overview' | 'users' | 'moderation' | 'messages' | 'settings'
+export type AdminTab = 'overview' | 'users' | 'moderation' | 'messages' | 'reports' | 'settings'
 
 interface AdminLayoutProps {
     children: React.ReactNode
@@ -16,6 +16,7 @@ export function AdminLayout({ children, activeTab, setActiveTab, onLogout }: Adm
         { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'users', label: 'User Management', icon: Users },
         { id: 'moderation', label: 'Moderation', icon: ShieldAlert },
+        { id: 'reports', label: 'Reports', icon: Flag },
         { id: 'messages', label: 'Messages', icon: MessageSquare },
         { id: 'settings', label: 'Settings', icon: Settings },
     ] as const

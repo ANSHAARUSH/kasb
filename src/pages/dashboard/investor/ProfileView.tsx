@@ -15,20 +15,22 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
     return (
         <div className="space-y-6">
             <Card>
-                <CardHeader className="flex flex-row items-center gap-4">
-                    <div className="h-20 w-20 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm">
+                <CardHeader className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+                    <div className="h-20 w-20 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm mx-auto sm:mx-0">
                         <Avatar
                             src={investor.avatar}
                             name={investor.name}
                             fallbackClassName="text-2xl text-gray-500"
                         />
                     </div>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <CardTitle className="text-2xl">{investor.name}</CardTitle>
-                            <VerificationBadge level={investor.verification_level} />
+                    <div className="space-y-1 w-full">
+                        <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2">
+                            <CardTitle className="text-2xl break-words max-w-full">{investor.name}</CardTitle>
+                            <div className="shrink-0">
+                                <VerificationBadge level={investor.verification_level} />
+                            </div>
                         </div>
-                        <p className="text-gray-500">{investor.title || 'Investor'}</p>
+                        <p className="text-gray-500 break-words">{investor.title || 'Investor'}</p>
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 pt-6">

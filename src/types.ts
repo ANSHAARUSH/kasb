@@ -44,6 +44,8 @@ export interface Message {
     content: string
     created_at: string
     is_read: boolean
+    is_deleted?: boolean
+    last_edited_at?: string
 }
 
 export interface ChatUser {

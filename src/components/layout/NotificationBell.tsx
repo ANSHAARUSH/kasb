@@ -38,30 +38,41 @@ export function NotificationBell() {
         if (!user) return
 
         const fetchUnread = async () => {
-            const { data, count, error } = await supabase
+            // 1. Get total unread count for badge
+            const { count } = await supabase
                 .from('messages')
-                .select('*', { count: 'exact' })
+                .select('*', { count: 'exact', head: true })
                 .eq('receiver_id', user.id)
+                .is('is_deleted', false)
                 .eq('is_read', false)
+
+            setUnreadCount(count || 0)
+
+            // 2. Get recent messages (read or unread) for dropdown
+            const { data: recent, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('receiver_id', user.id)
+                .is('is_deleted', false)
                 .order('created_at', { ascending: false })
                 .limit(5)
 
-            if (!error && data) {
-                setUnreadCount(count || 0)
-
+            if (!error && recent) {
                 // Fetch sender names for the dropdown
-                const senderIds = data.map(m => m.sender_id)
+                const senderIds = recent.map(m => m.sender_id)
                 if (senderIds.length > 0) {
                     const { data: startups } = await supabase.from('startups').select('id, name').in('id', senderIds)
                     const { data: investors } = await supabase.from('investors').select('id, name').in('id', senderIds)
+                    const { data: admins } = await supabase.from('admins').select('id').in('id', senderIds)
 
                     const profileMap = new Map()
                     startups?.forEach(s => profileMap.set(s.id, s.name))
                     investors?.forEach(i => profileMap.set(i.id, i.name))
+                    admins?.forEach(a => profileMap.set(a.id, 'Kasb.AI'))
 
-                    setRecentMessages(data.map(m => ({
+                    setRecentMessages(recent.map(m => ({
                         ...m,
-                        sender_name: profileMap.get(m.sender_id) || 'Someone'
+                        sender_name: profileMap.get(m.sender_id) || 'Unknown User'
                     })))
                 } else {
                     setRecentMessages([])
@@ -108,7 +119,7 @@ export function NotificationBell() {
             .on(
                 'postgres_changes',
                 {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
                     table: 'messages',
                     filter: `receiver_id=eq.${user.id}`,
@@ -144,6 +155,22 @@ export function NotificationBell() {
             document.removeEventListener('mousedown', handleClickOutside)
         }
     }, [user])
+
+    // Mark messages as read when dropdown opens
+    useEffect(() => {
+        if (isOpen && recentMessages.some(m => !m.is_read)) {
+            const unreadIds = recentMessages.filter(m => !m.is_read).map(m => m.id)
+
+            if (unreadIds.length > 0) {
+                // Optimistic update
+                setRecentMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, is_read: true } : m))
+                setUnreadCount(prev => Math.max(0, prev - unreadIds.length))
+
+                // DB Update
+                void supabase.from('messages').update({ is_read: true }).in('id', unreadIds)
+            }
+        }
+    }, [isOpen, recentMessages])
 
     const handleMessageClick = (msg?: NotificationMessage) => {
         setIsOpen(false)

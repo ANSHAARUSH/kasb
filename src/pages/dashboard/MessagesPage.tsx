@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Input } from "../../components/ui/input"
 import { Button } from "../../components/ui/button"
-import { Search, Send, ArrowLeft, MessageSquare } from "lucide-react"
+import { Search, Send, ArrowLeft, MessageSquare, MoreVertical, Trash2, Pencil, X, Check } from "lucide-react"
 import { supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { Avatar } from "../../components/ui/Avatar"
 import { Link } from "react-router-dom"
+import { useToast } from "../../hooks/useToast"
+import { chatWithAIStream, refineMessage } from "../../lib/ai"
+import { Wand2 } from "lucide-react"
 
 interface Message {
     id: string
@@ -14,6 +17,8 @@ interface Message {
     receiver_id: string
     content: string
     is_read: boolean
+    is_deleted?: boolean
+    last_edited_at?: string
 }
 
 interface Conversation {
@@ -27,12 +32,83 @@ interface Conversation {
 
 export function MessagesPage() {
     const { user } = useAuth()
+    const { toast } = useToast()
     const [selectedChat, setSelectedChat] = useState<string | null>(null)
     const [messages, setMessages] = useState<Message[]>([])
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [newMessage, setNewMessage] = useState("")
     const [loading, setLoading] = useState(true)
+    const [activeMenuMessageId, setActiveMenuMessageId] = useState<string | null>(null)
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+    const [editContent, setEditContent] = useState("")
+    const [isRefining, setIsRefining] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
+
+    // Click outside to close menu
+    useEffect(() => {
+        const handleClickOutside = () => setActiveMenuMessageId(null)
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [])
+
+    const handleReportMessage = async (msg: Message) => {
+        if (!user) return
+        try {
+            const { error } = await supabase.from('reports').insert({
+                reporter_id: user.id,
+                reported_message_id: msg.id,
+                conversation_partner_id: msg.sender_id === user.id ? msg.receiver_id : msg.sender_id,
+                reason: 'User reported message',
+                status: 'pending'
+            })
+            if (error) throw error
+            toast("Report submitted successfully", "success")
+        } catch (err) {
+            console.error(err)
+            toast("Failed to submit report", "error")
+        }
+    }
+
+    const handleDeleteMessage = async (msgId: string) => {
+        // Optimistic update
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true } : m))
+
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .update({ is_deleted: true })
+                .eq('id', msgId)
+
+            if (error) throw error
+        } catch (err) {
+            console.error(err)
+            toast("Failed to delete message", "error")
+            // Revert optimistic? Complicated without deep cloning state, usually fine to verify on refresh
+        }
+    }
+
+    const handleSaveEdit = async (msgId: string) => {
+        if (!editContent.trim()) return
+
+        // Optimistic update
+        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, content: editContent, last_edited_at: new Date().toISOString() } : m))
+        setEditingMessageId(null)
+
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .update({
+                    content: editContent,
+                    last_edited_at: new Date().toISOString()
+                })
+                .eq('id', msgId)
+
+            if (error) throw error
+        } catch (err) {
+            console.error(err)
+            toast("Failed to update message", "error")
+        }
+    }
 
     // Process raw messages into conversations list
     const processConversations = useCallback(async (msgs: Message[]) => {
@@ -41,20 +117,34 @@ export function MessagesPage() {
         const conversationMap = new Map<string, Message>()
 
         msgs.forEach(msg => {
+            if (msg.is_deleted) return
             const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
             conversationMap.set(otherId, msg) // Keeps the latest one because we sorted by time
         })
 
         const otherIds = Array.from(conversationMap.keys())
-        if (otherIds.length === 0) {
-            setConversations([])
+
+        // Filter out the AI bot (it's not in the database)
+        const realUserIds = otherIds.filter(id => id !== 'kasb-ai-bot')
+
+        if (realUserIds.length === 0) {
+            // Only AI bot, no need to query database
+            const aiBot: Conversation = {
+                userId: 'kasb-ai-bot',
+                name: 'Kasb AI',
+                avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=KasbAI',
+                lastMessage: 'AI Assistant',
+                time: '',
+                unread: 0
+            }
+            setConversations([aiBot])
             return
         }
 
         // Fetch details
-        const { data: startupData } = await supabase.from('startups').select('id, name, founder_name, logo').in('id', otherIds)
-        const { data: investorData } = await supabase.from('investors').select('id, name, avatar').in('id', otherIds)
-        const { data: adminData } = await supabase.from('admins').select('id').in('id', otherIds)
+        const { data: startupData } = await supabase.from('startups').select('id, name, founder_name, logo').in('id', realUserIds)
+        const { data: investorData } = await supabase.from('investors').select('id, name, avatar').in('id', realUserIds)
+        const { data: adminData } = await supabase.from('admins').select('id').in('id', realUserIds)
 
         const adminIds = new Set(adminData?.map(a => a.id) || [])
 
@@ -88,7 +178,17 @@ export function MessagesPage() {
                 }
             })
 
-        setConversations(formatted)
+        // Always prepend Kasb AI Bot
+        const aiBot: Conversation = {
+            userId: 'kasb-ai-bot',
+            name: 'Kasb AI',
+            avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=KasbAI',
+            lastMessage: 'AI Assistant',
+            time: '',
+            unread: 0
+        }
+
+        setConversations([aiBot, ...formatted])
     }, [user, setConversations]) // Added user and setConversations to dependencies
 
     // Fetch messages on mount
@@ -137,12 +237,31 @@ export function MessagesPage() {
         }
     }, [user, processConversations]) // Added processConversations to dependencies
 
-    // Scroll to bottom on new message
+    // Track previous state for smart scrolling
+    const prevActiveLen = useRef(0)
+    const prevChat = useRef<string | null>(null)
+
+    const activeMessages = messages.filter(m =>
+        ((m.sender_id === user?.id && m.receiver_id === selectedChat) ||
+            (m.sender_id === selectedChat && m.receiver_id === user?.id)) &&
+        !m.is_deleted
+    )
+
+    // Scroll to bottom logic
     useEffect(() => {
-        if (scrollRef.current) {
+        if (!scrollRef.current) return
+
+        const shouldScroll =
+            selectedChat !== prevChat.current ||
+            activeMessages.length > prevActiveLen.current
+
+        if (shouldScroll) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [messages, selectedChat])
+
+        prevActiveLen.current = activeMessages.length
+        prevChat.current = selectedChat
+    }, [activeMessages.length, selectedChat])
 
     // Effect to update conversations when messages change (e.g. real-time)
     useEffect(() => {
@@ -152,19 +271,48 @@ export function MessagesPage() {
         }
     }, [messages, processConversations]) // Added processConversations to dependencies
 
+    // Load AI chat history from localStorage when selecting AI bot
+    useEffect(() => {
+        if (!user || selectedChat !== 'kasb-ai-bot') return
+
+        const stored = localStorage.getItem(`kasb_ai_chat_${user.id}`)
+        if (stored) {
+            const aiHistory = JSON.parse(stored) as Message[]
+            setMessages(prev => {
+                // Remove any existing AI messages and add stored ones
+                const nonAI = prev.filter(m =>
+                    m.sender_id !== 'kasb-ai-bot' && m.receiver_id !== 'kasb-ai-bot'
+                )
+                return [...nonAI, ...aiHistory]
+            })
+        } else {
+            // Show welcome message
+            const welcomeMsg: Message = {
+                id: 'welcome-ai',
+                sender_id: 'kasb-ai-bot',
+                receiver_id: user.id,
+                content: "Hello! I am Kasb AI, your assistant. How can I help you today?",
+                created_at: new Date().toISOString(),
+                is_read: true
+            }
+            setMessages(prev => {
+                const nonAI = prev.filter(m =>
+                    m.sender_id !== 'kasb-ai-bot' && m.receiver_id !== 'kasb-ai-bot'
+                )
+                return [...nonAI, welcomeMsg]
+            })
+        }
+    }, [user, selectedChat])
+
 
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !user || !selectedChat) return
 
-        const msg = {
-            sender_id: user.id,
-            receiver_id: selectedChat,
-            content: newMessage,
-        }
+        console.log("handleSendMessage called. Selected chat:", selectedChat)
 
         // Optimistic update
         const tempMsg: Message = {
-            id: Math.random().toString(),
+            id: 'temp-' + Date.now(),
             created_at: new Date().toISOString(),
             sender_id: user.id,
             receiver_id: selectedChat,
@@ -174,17 +322,120 @@ export function MessagesPage() {
         setMessages(prev => [...prev, tempMsg])
         setNewMessage("")
 
+        // Handle AI Bot
+        if (selectedChat === 'kasb-ai-bot') {
+            console.log("Sending to AI bot...")
+            const currentHistory = [...messages.filter(m =>
+                (m.sender_id === user.id && m.receiver_id === 'kasb-ai-bot') ||
+                (m.sender_id === 'kasb-ai-bot' && m.receiver_id === user.id)
+            ), tempMsg]
+            localStorage.setItem(`kasb_ai_chat_${user.id}`, JSON.stringify(currentHistory))
+
+            try {
+                const historyForAI = currentHistory.map(m => ({
+                    role: m.sender_id === user.id ? 'user' : 'assistant',
+                    content: m.content
+                })) as { role: 'user' | 'assistant', content: string }[]
+
+                const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
+                console.log("API Key present:", !!apiKey)
+
+                if (!apiKey) {
+                    const errorMsg: Message = {
+                        id: 'ai-err-' + Date.now(),
+                        sender_id: 'kasb-ai-bot',
+                        receiver_id: user.id,
+                        content: "I'm sorry, my AI brain is not configured. Please check Admin Settings.",
+                        created_at: new Date().toISOString(),
+                        is_read: true
+                    }
+                    setMessages(prev => [...prev, errorMsg])
+                    return
+                }
+
+                // Create placeholder AI message for streaming
+                const aiMsgId = 'ai-' + Date.now();
+                const placeholderMsg: Message = {
+                    id: aiMsgId,
+                    sender_id: 'kasb-ai-bot',
+                    receiver_id: user.id,
+                    content: "",
+                    created_at: new Date().toISOString(),
+                    is_read: true
+                };
+                setMessages(prev => [...prev, placeholderMsg]);
+
+                console.log("Calling chatWithAIStream...");
+
+                // Use streaming version
+                const responseText = await chatWithAIStream(
+                    newMessage,
+                    historyForAI,
+                    apiKey,
+                    (chunk) => {
+                        // Update message content in real-time
+                        setMessages(prev => prev.map(m =>
+                            m.id === aiMsgId
+                                ? { ...m, content: m.content + chunk }
+                                : m
+                        ));
+                    }
+                );
+
+                console.log("AI stream completed");
+
+                // Save to localStorage
+                setMessages(prev => {
+                    const aiHistory = prev.filter(m =>
+                        (m.sender_id === user.id && m.receiver_id === 'kasb-ai-bot') ||
+                        (m.sender_id === 'kasb-ai-bot' && m.receiver_id === user.id)
+                    );
+                    localStorage.setItem(`kasb_ai_chat_${user.id}`, JSON.stringify(aiHistory));
+                    return prev;
+                });
+            } catch (err) {
+                console.error("AI Error:", err);
+                toast("AI failed to respond", "error");
+            }
+            return
+        }
+
+        // Regular message
+        const msg = {
+            sender_id: user.id,
+            receiver_id: selectedChat,
+            content: newMessage,
+        }
+
         const { error } = await supabase.from('messages').insert([msg])
         if (error) {
             console.error('Error sending message:', error)
-            // Revert optimistic update ideally
         }
     }
 
-    const activeMessages = messages.filter(m =>
-        (m.sender_id === user?.id && m.receiver_id === selectedChat) ||
-        (m.sender_id === selectedChat && m.receiver_id === user?.id)
-    )
+    const handleRefineMessage = async () => {
+        if (!newMessage.trim()) return
+
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
+        if (!apiKey) {
+            toast("API Key missing. Please check Admin Settings.", "error")
+            return
+        }
+
+        setIsRefining(true)
+        try {
+            const refined = await refineMessage(newMessage, apiKey)
+            setNewMessage(refined)
+            toast("Message refined!", "success")
+        } catch (err) {
+            console.error(err)
+            toast("Failed to refine message", "error")
+        } finally {
+            setIsRefining(false)
+        }
+    }
+
+
 
     if (!user && !loading) {
         return (
@@ -279,7 +530,6 @@ export function MessagesPage() {
                                 </div>
                                 <div>
                                     <h4 className="font-bold">{conversations.find(c => c.userId === selectedChat)?.name}</h4>
-                                    <span className="text-xs text-green-500 font-medium">Online</span>
                                 </div>
                             </div>
                         </div>
@@ -288,20 +538,139 @@ export function MessagesPage() {
                         <div className="flex-1 min-h-0 p-4 overflow-y-auto space-y-4 bg-gray-50/50" ref={scrollRef}>
                             {activeMessages.map((msg, i) => {
                                 const isMe = msg.sender_id === user?.id
+                                const isEditing = editingMessageId === msg.id
+                                const isMenuOpen = activeMenuMessageId === msg.id
+
+                                // Check if editable (within 15 mins)
+                                const canEdit = isMe && (new Date().getTime() - new Date(msg.created_at).getTime() < 15 * 60 * 1000)
+
                                 return (
-                                    <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`p-3 rounded-2xl max-w-[80%] text-sm ${isMe
-                                            ? 'bg-black text-white rounded-tr-sm'
-                                            : 'bg-white border border-gray-200 rounded-tl-sm shadow-sm'
-                                            }`}>
-                                            {msg.content}
+                                    <div key={msg.id || i} className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}>
+                                        {!isMe && (
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setActiveMenuMessageId(isMenuOpen ? null : msg.id)
+                                                    }}
+                                                    className={`p-1 rounded-full hover:bg-gray-200 text-gray-400 ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                                                >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </button>
+                                                {isMenuOpen && (
+                                                    <div className="absolute left-0 bottom-8 z-10 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleReportMessage(msg)
+                                                                setActiveMenuMessageId(null)
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600 font-medium"
+                                                        >
+                                                            Report
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className={`relative max-w-[80%] ${isEditing ? 'w-full max-w-[90%]' : ''}`}>
+                                            {isEditing ? (
+                                                <form
+                                                    onSubmit={(e) => {
+                                                        e.preventDefault()
+                                                        handleSaveEdit(msg.id)
+                                                    }}
+                                                    className="flex gap-2 items-end"
+                                                >
+                                                    <Input
+                                                        value={editContent}
+                                                        onChange={e => setEditContent(e.target.value)}
+                                                        className="min-w-[200px] bg-white"
+                                                        autoFocus
+                                                    />
+                                                    <div className="flex gap-1 shrink-0">
+                                                        <Button type="button" size="sm" variant="ghost" onClick={() => setEditingMessageId(null)} className="h-8 w-8 p-0 rounded-full text-red-500">
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button type="submit" size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full text-green-600">
+                                                            <Check className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </form>
+                                            ) : (
+                                                <div
+                                                    className={`p-3 rounded-2xl text-sm ${msg.is_deleted
+                                                        ? 'bg-gray-100 text-gray-400 italic border border-gray-200'
+                                                        : isMe
+                                                            ? 'bg-black text-white rounded-tr-sm'
+                                                            : 'bg-white border border-gray-200 rounded-tl-sm shadow-sm'
+                                                        }`}
+                                                >
+                                                    {msg.is_deleted ? (
+                                                        <span className="flex items-center gap-2">
+                                                            <Trash2 className="h-3 w-3" />
+                                                            Message deleted
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            {msg.content}
+                                                            {msg.last_edited_at && (
+                                                                <span className="text-[10px] opacity-50 block text-right mt-1">edited</span>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
+
+                                        {isMe && !msg.is_deleted && !isEditing && (
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setActiveMenuMessageId(isMenuOpen ? null : msg.id)
+                                                        // Pre-fill edit content if opening menu? No, only on 'Edit' click
+                                                    }}
+                                                    className={`p-1 rounded-full hover:bg-gray-200 text-gray-400 ${isMenuOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                                                >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </button>
+
+                                                {isMenuOpen && (
+                                                    <div className="absolute right-0 bottom-8 z-10 w-32 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                                        {canEdit && (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setEditingMessageId(msg.id)
+                                                                    setEditContent(msg.content)
+                                                                    setActiveMenuMessageId(null)
+                                                                }}
+                                                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-gray-700 font-medium flex items-center gap-2"
+                                                            >
+                                                                <Pencil className="h-3 w-3" /> Edit
+                                                            </button>
+                                                        )}
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                handleDeleteMessage(msg.id)
+                                                                setActiveMenuMessageId(null)
+                                                            }}
+                                                            className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-600 font-medium flex items-center gap-2"
+                                                        >
+                                                            <Trash2 className="h-3 w-3" /> Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 )
                             })}
                         </div>
 
-                        {/* Input */}
                         <div className="p-3 md:p-4 bg-white border-t border-gray-100 shrink-0">
                             <form
                                 className="flex gap-2"
@@ -310,13 +679,31 @@ export function MessagesPage() {
                                     handleSendMessage()
                                 }}
                             >
-                                <Input
-                                    value={newMessage}
-                                    onChange={e => setNewMessage(e.target.value)}
-                                    placeholder="Type a message..."
-                                    className="flex-1 rounded-full bg-gray-50 border-0 focus:ring-black text-sm md:text-base h-10"
-                                />
-                                <Button type="submit" size="icon" className="rounded-full h-10 w-10 shrink-0 bg-black text-white hover:bg-gray-800">
+                                <div className="relative flex-1">
+                                    <Input
+                                        value={newMessage}
+                                        onChange={e => setNewMessage(e.target.value)}
+                                        placeholder="Type a message..."
+                                        className="w-full rounded-full bg-gray-50 border-0 focus:ring-black text-sm md:text-base h-10 pr-10"
+                                        disabled={isRefining}
+                                    />
+                                    {newMessage.trim() && !isRefining && (
+                                        <button
+                                            type="button"
+                                            onClick={handleRefineMessage}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 transition-colors"
+                                            title="Refine with AI"
+                                        >
+                                            <Wand2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                    {isRefining && (
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                            <div className="h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
+                                </div>
+                                <Button type="submit" size="icon" className="rounded-full h-10 w-10 shrink-0 bg-black text-white hover:bg-gray-800" disabled={isRefining}>
                                     <Send className="h-4 w-4" />
                                 </Button>
                             </form>

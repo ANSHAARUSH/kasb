@@ -73,7 +73,7 @@ export function StartupProfile() {
     }
 
     return (
-        <div className="pb-24 max-w-4xl mx-auto px-4 pt-8">
+        <div className="pb-24 max-w-4xl mx-auto px-4 pt-4 sm:pt-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
@@ -116,7 +116,7 @@ export function StartupProfile() {
             />
 
             {/* AI Pitch Deck Review Section */}
-            <div className="mt-12 p-8 rounded-[2.5rem] bg-indigo-50 border border-indigo-100 relative overflow-hidden">
+            <div className="mt-8 sm:mt-12 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-indigo-50 border border-indigo-100 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4">
                     <Sparkles className="h-8 w-8 text-indigo-200" />
                 </div>

@@ -1,5 +1,7 @@
 import OpenAI from "openai";
 import type { Startup } from "../data/mockData";
+import { extractDocumentContent } from "./documentExtraction";
+import type { AnalysisResult } from "./documentIntelligence";
 
 export interface ComparisonResult {
     verdict: string;
@@ -43,6 +45,97 @@ function extractJSON<T>(text: string): T {
         }
         throw new Error("No JSON object found in AI response");
     }
+}
+
+/**
+ * Retry a function with exponential backoff
+ */
+async function retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries = 3,
+    baseDelay = 1000
+): Promise<T> {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (error: any) {
+            if (i === maxRetries - 1) {
+                // Last attempt failed, throw with better error message
+                throw new Error(`AI request failed after ${maxRetries} attempts: ${error.message}`);
+            }
+
+            // Calculate delay with exponential backoff
+            const delay = baseDelay * Math.pow(2, i);
+            console.warn(`AI request failed (attempt ${i + 1}/${maxRetries}), retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
+    throw new Error("Max retries exceeded");
+}
+
+/**
+ * Simple in-memory cache for AI responses
+ */
+interface CacheEntry<T> {
+    data: T;
+    timestamp: number;
+    ttl: number;
+}
+
+class AICache {
+    private cache = new Map<string, CacheEntry<any>>();
+
+    set<T>(key: string, data: T, ttl: number): void {
+        this.cache.set(key, {
+            data,
+            timestamp: Date.now(),
+            ttl
+        });
+    }
+
+    get<T>(key: string): T | null {
+        const entry = this.cache.get(key);
+        if (!entry) return null;
+
+        const age = Date.now() - entry.timestamp;
+        if (age > entry.ttl) {
+            this.cache.delete(key);
+            return null;
+        }
+
+        return entry.data as T;
+    }
+
+    clear(): void {
+        this.cache.clear();
+    }
+
+    size(): number {
+        return this.cache.size;
+    }
+}
+
+// Global cache instance
+const aiCache = new AICache();
+
+/**
+ * Get cached response or fetch new one
+ */
+async function getCachedOrFetch<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    ttl: number = 3600000 // 1 hour default
+): Promise<T> {
+    const cached = aiCache.get<T>(key);
+    if (cached !== null) {
+        console.log(`Cache hit for: ${key}`);
+        return cached;
+    }
+
+    console.log(`Cache miss for: ${key}, fetching...`);
+    const result = await fetcher();
+    aiCache.set(key, result, ttl);
+    return result;
 }
 
 export async function compareStartups(startup1: Startup, startup2: Startup, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
@@ -157,13 +250,20 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
         throw new Error("AI Comparison not available. API Key is required.");
     }
 
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
+    // Cache key based on industry name
+    const cacheKey = `industry_insights_${industry.toLowerCase().replace(/\s+/g, '_')}`;
 
-    const prompt = `
+    // Try to get from cache (24 hour TTL for industry insights)
+    return getCachedOrFetch(
+        cacheKey,
+        async () => {
+            const openai = new OpenAI({
+                apiKey: apiKey,
+                baseURL: baseUrl || "https://api.groq.com/openai/v1",
+                dangerouslyAllowBrowser: true
+            });
+
+            const prompt = `
     Provide realistic and data-driven investment insights for the industry: "${industry}" in the Indian market context.
     
     Return the output in valid JSON format ONLY, with this structure:
@@ -186,19 +286,25 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     6. Ensure the response is strictly JSON.
     `;
 
-    try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
+            // Wrap API call in retry logic
+            return retryWithBackoff(async () => {
+                try {
+                    const completion = await openai.chat.completions.create({
+                        messages: [{ role: "user", content: prompt }],
+                        model: "llama-3.3-70b-versatile",
+                    });
 
-        const text = completion.choices[0].message.content || "{}";
-        return extractJSON<IndustryInsight>(text);
-    } catch (error: unknown) {
-        console.error("AI Industry Insight Error:", error);
-        const message = error instanceof Error ? error.message : "Failed to generate insights";
-        throw new Error(`AI API Error: ${message}`);
-    }
+                    const text = completion.choices[0].message.content || "{}";
+                    return extractJSON<IndustryInsight>(text);
+                } catch (error: unknown) {
+                    console.error("AI Industry Insight Error:", error);
+                    const message = error instanceof Error ? error.message : "Failed to generate insights";
+                    throw new Error(`AI API Error: ${message}`);
+                }
+            });
+        },
+        24 * 60 * 60 * 1000 // 24 hours TTL
+    );
 }
 export async function analyzeDocument(docType: string, file?: File, apiKey?: string, baseUrl?: string): Promise<{ status: 'verified' | 'flagged'; feedback: string }> {
     if (!file) throw new Error("No file uploaded");
@@ -378,15 +484,29 @@ export async function refineProblemStatement(rawProblem: string, apiKey: string,
         dangerouslyAllowBrowser: true
     });
 
-    const prompt = `
-    Refine the following startup problem statement into a powerful, concise one - line value proposition.
+    const prompt = `You are an expert startup advisor. Analyze and refine this problem statement using a proven framework.
 
-        Formula: "helps (who) achieves (outcome) by (unique method)"
-    
-    Raw Statement: "${rawProblem}"
-    
-    Return ONLY the refined one - line statement.No other text, no intro, no "Refined:".
-    `;
+PROBLEM STATEMENT: "${rawProblem}"
+
+REFINEMENT FRAMEWORK:
+1. **Clarity**: Is the problem clearly defined and easy to understand?
+2. **Specificity**: Is it specific enough to be actionable?
+3. **Impact**: Does it convey the scale and importance?
+4. **Target Audience**: Is the affected user group clearly identified?
+5. **Uniqueness**: Does it highlight what makes this solution different?
+
+OUTPUT FORMAT (return ONLY this, no other text):
+{
+  "refined": "[One powerful sentence using: 'We help [WHO] achieve [OUTCOME] by [UNIQUE METHOD]']",
+  "improvements": ["List 2-3 specific improvements made"],
+  "scores": {
+    "clarity": [1-10],
+    "specificity": [1-10],
+    "impact": [1-10]
+  }
+}
+
+Ensure the refined statement is concise (under 25 words), compelling, and investor-ready.`;
 
     try {
         const completion = await openai.chat.completions.create({
@@ -630,6 +750,152 @@ export async function analyzeStartupDocument(
     }
 }
 
-import { extractDocumentContent } from "./documentExtraction";
-import type { AnalysisResult } from "./documentIntelligence";
+
+export async function chatWithAI(
+    userMessage: string,
+    history: { role: 'user' | 'assistant', content: string }[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing for AI Chat.");
+
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+
+    const systemPrompt = `You are Kasb AI, a helpful and intelligent assistant for the Kasb.AI platform. 
+    Kasb.AI is a platform connecting startups with investors.
+    
+    Your goal is to assist users (Startups or Investors) with:
+    1. Platform navigation and features.
+    2. General startup advice (pitch decks, validation, funding).
+    3. General investment advice (due diligence, market trends).
+    
+    Keep responses concise, professional, and helpful. Use emojis sparingly.
+    If you don't know something about the user's specific data (e.g. "Who looked at my profile?"), explain that you don't have access to their private real-time analytics yet.`;
+
+    // Wrap in retry logic for better reliability
+    return retryWithBackoff(async () => {
+        try {
+            const messages: any[] = [
+                { role: "system", content: systemPrompt },
+                ...history.map(h => ({ role: h.role, content: h.content })),
+                { role: "user", content: userMessage }
+            ];
+
+            const completion = await openai.chat.completions.create({
+                messages: messages,
+                model: "llama-3.3-70b-versatile",
+            });
+
+            return completion.choices[0].message.content?.trim() || "I'm having trouble thinking right now. Please try again.";
+        } catch (error: unknown) {
+            console.error("AI Chat Error:", error);
+            throw new Error("Chat request failed"); // Let retry logic handle it
+        }
+    }).catch(() => {
+        // After all retries failed, return user-friendly message
+        return "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
+    });
+}
+
+/**
+ * Streaming version of chatWithAI - streams response in real-time
+ * @param onChunk - Callback function called for each chunk of text
+ */
+export async function chatWithAIStream(
+    userMessage: string,
+    history: { role: 'user' | 'assistant', content: string }[],
+    apiKey: string,
+    onChunk: (chunk: string) => void,
+    baseUrl?: string
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing for AI Chat.");
+
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+
+    const systemPrompt = `You are Kasb AI, a helpful and intelligent assistant for the Kasb.AI platform. 
+    Kasb.AI is a platform connecting startups with investors.
+    
+    Your goal is to assist users (Startups or Investors) with:
+    1. Platform navigation and features.
+    2. General startup advice (pitch decks, validation, funding).
+    3. General investment advice (due diligence, market trends).
+    
+    Keep responses concise, professional, and helpful. Use emojis sparingly.
+    If you don't know something about the user's specific data (e.g. "Who looked at my profile?"), explain that you don't have access to their private real-time analytics yet.`;
+
+    return retryWithBackoff(async () => {
+        try {
+            const messages: any[] = [
+                { role: "system", content: systemPrompt },
+                ...history.map(h => ({ role: h.role, content: h.content })),
+                { role: "user", content: userMessage }
+            ];
+
+            const stream = await openai.chat.completions.create({
+                messages: messages,
+                model: "llama-3.3-70b-versatile",
+                stream: true, // Enable streaming
+            });
+
+            let fullResponse = "";
+            for await (const chunk of stream) {
+                const content = chunk.choices[0]?.delta?.content || "";
+                if (content) {
+                    fullResponse += content;
+                    onChunk(content); // Call the callback with each chunk
+                }
+            }
+
+            return fullResponse || "I'm having trouble thinking right now. Please try again.";
+        } catch (error: unknown) {
+            console.error("AI Chat Stream Error:", error);
+            throw new Error("Chat stream failed");
+        }
+    }).catch(() => {
+        return "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
+    });
+}
+
+export async function refineMessage(
+    message: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing for message refinement.");
+
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+
+    const prompt = `
+    Refine the following message to be more professional, clear, and concise, while maintaining the original intent and tone suitable for a startup-investor context.
+
+    Original Message: "${message}"
+
+    Return ONLY the refined message as a plain string. Do not add quotes or explanations.
+    `;
+
+    try {
+        const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: "llama-3.3-70b-versatile",
+        });
+
+        return completion.choices[0].message.content?.trim() || message;
+    } catch (error: unknown) {
+        console.error("AI Refinement Error:", error);
+        throw new Error("Failed to refine message");
+    }
+}
+
 
