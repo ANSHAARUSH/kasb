@@ -27,7 +27,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const fetchRecentChats = useCallback(async () => {
         if (!user) return
 
-        const { data, error } = await supabase
+        const { data } = await supabase
             .from('messages')
             .select('sender_id, receiver_id')
             .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
