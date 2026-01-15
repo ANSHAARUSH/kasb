@@ -368,7 +368,7 @@ export function MessagesPage() {
                 console.log("Calling chatWithAIStream...");
 
                 // Use streaming version
-                const responseText = await chatWithAIStream(
+                await chatWithAIStream(
                     newMessage,
                     historyForAI,
                     apiKey,
