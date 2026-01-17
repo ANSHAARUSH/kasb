@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Check, Globe, Zap, Sparkles, Building2, UserCircle2 } from "lucide-react"
+import { Check, Zap, Sparkles, Building2, UserCircle2, TrendingUp } from "lucide-react"
 import { Button } from "../ui/button"
 import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { PaymentModal } from "./PaymentModal"
@@ -14,12 +14,12 @@ interface PricingViewProps {
 }
 
 export function PricingView({ defaultView = 'investor', lockView = false }: PricingViewProps) {
-    const { user } = useAuth()
+    const { user, role } = useAuth()
     const navigate = useNavigate()
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
     const [region] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
-    const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number } | null>(null)
+    const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number, points?: number } | null>(null)
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
     useEffect(() => {
@@ -37,7 +37,8 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
         setSelectedTier({
             id: tier.id,
             name: tier.name,
-            price: tier.price
+            price: tier.price,
+            points: tier.points
         })
         setIsPaymentModalOpen(true)
     }
@@ -186,40 +187,49 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
                     })}
                 </div>
 
-                {/* Add-ons Section */}
-                <div className="mt-32">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold mb-4">Precision AI Add-ons</h2>
-                        <p className="text-gray-500">Premium intelligence on demand, no subscription required.</p>
-                    </div>
+                {/* Impact Points Section - Investors Only */}
+                {role === 'investor' && (
+                    <div className="mt-32">
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl font-bold mb-4">Refill Your Boosting Budget</h2>
+                            <p className="text-gray-500">Purchase Impact Points to continue supporting your favorite startups and influening rankings.</p>
+                        </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            { name: 'AI Pitch Deck Review', price: 499, icon: Sparkles, roles: ['startup'] },
-                            { name: 'AI Investor Readiness', price: 999, icon: Zap, roles: ['startup'] },
-                            { name: 'AI Valuation Insights', price: 1999, icon: Globe, roles: ['startup', 'investor'] },
-                            { name: 'Warm Intro Booster', price: 2999, icon: Sparkles, roles: ['startup'] },
-                            { name: 'Due Diligence Assistant', price: 4999, icon: Check, roles: ['investor'] },
-                            { name: 'Market Intelligence Report', price: 1499, icon: Globe, roles: ['investor'] },
-                        ]
-                            .filter(addon => addon.roles.includes(view))
-                            .map((addon, idx) => {
-                                const priceInfo = subscriptionManager.formatPrice(addon.price);
+                        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                            {[
+                                { name: 'Silver Boost', points: 50, price: 50, icon: Zap, color: 'text-gray-400' },
+                                { name: 'Gold Boost', points: 150, price: 75, icon: TrendingUp, color: 'text-yellow-500', isPopular: true },
+                                { name: 'Platinum Boost', points: 350, price: 100, icon: Sparkles, color: 'text-indigo-500' },
+                            ].map((pack, idx) => {
+                                const priceInfo = subscriptionManager.formatPrice(pack.price);
                                 return (
-                                    <div key={idx} className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col items-center text-center group hover:bg-white hover:shadow-lg transition-all">
-                                        <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                            <addon.icon className="h-6 w-6 text-black" />
+                                    <div key={idx} className={`relative p-8 rounded-[2.5rem] border ${pack.isPopular ? 'border-black shadow-xl ring-1 ring-black/5 bg-white' : 'border-gray-100 bg-gray-50/50'} flex flex-col items-center text-center group hover:scale-[1.02] transition-all`}>
+                                        {pack.isPopular && (
+                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">
+                                                Best Value
+                                            </div>
+                                        )}
+                                        <div className={`h-16 w-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform`}>
+                                            <pack.icon className={`h-8 w-8 ${pack.color}`} />
                                         </div>
-                                        <h4 className="font-bold mb-1">{addon.name}</h4>
-                                        <p className="text-lg font-black">{priceInfo.symbol}{priceInfo.value}</p>
-                                        <button className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
-                                            One-time purchase
-                                        </button>
+                                        <h4 className="text-xl font-bold mb-1">{pack.name}</h4>
+                                        <p className="text-gray-500 text-sm mb-4">+{pack.points} Impact Points</p>
+                                        <div className="mt-auto">
+                                            <p className="text-3xl font-black mb-6">{priceInfo.symbol}{priceInfo.value}</p>
+                                            <Button
+                                                variant={pack.isPopular ? 'default' : 'outline'}
+                                                className="w-full rounded-xl font-bold"
+                                                onClick={() => handleUpgradeClick({ id: 'addon' as any, name: pack.name, price: pack.price, points: pack.points })}
+                                            >
+                                                Buy Now
+                                            </Button>
+                                        </div>
                                     </div>
                                 );
                             })}
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Pitch Section */}
                 <div className="mt-32 max-w-4xl mx-auto p-12 rounded-[3.5rem] bg-black text-white relative overflow-hidden text-center">

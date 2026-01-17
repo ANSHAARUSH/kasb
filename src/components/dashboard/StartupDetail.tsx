@@ -1,18 +1,34 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Startup } from "../../data/mockData"
-import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3 } from "lucide-react"
+import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, Lock, ShieldCheck } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
-import { getConnectionStatus, disconnectConnection, sendConnectionRequest, getGlobalConfig, getUserSetting, trackProfileView, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import {
+    supabase,
+    getConnectionStatus,
+    disconnectConnection,
+    sendConnectionRequest,
+    getGlobalConfig,
+    getUserSetting,
+    trackProfileView,
+    acceptConnectionRequest,
+    declineConnectionRequest,
+    type ConnectionStatus,
+    hasInvestorBoosted,
+    boostStartup,
+    getStartupBoosts
+} from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
-import { Lock } from "lucide-react"
+import { calculateImpactScore } from "../../lib/scoring"
+import { type Investor } from "../../data/mockData"
+import { Input } from "../ui/input"
 import { generateValuationInsights } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../lib/questionnaire"
-import { cn } from "../../lib/utils"
+import { cn, parseRevenue } from "../../lib/utils"
 import { ValuationCalculator } from "./ValuationCalculator"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
@@ -28,7 +44,7 @@ interface StartupDetailProps {
 }
 
 export function StartupDetail({ startup, onClose, onDisconnect, onResize, currentSize = 'default', triggerUpdate, onConnectionChange }: StartupDetailProps) {
-    const { user } = useAuth()
+    const { user, role } = useAuth()
     const navigate = useNavigate()
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<'questions' | 'metrics'>('questions')
@@ -40,6 +56,11 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
     const [showLiteralAnswers, setShowLiteralAnswers] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
+    const [hasBoosted, setHasBoosted] = useState(false)
+    const [isBoosting, setIsBoosting] = useState(false)
+    const [boostAmount, setBoostAmount] = useState(50)
+    const [investorBudget, setInvestorBudget] = useState(0)
+    const [impactPoints, setImpactPoints] = useState(startup?.impactPoints || 0)
 
     const stageConfig = useMemo(() => {
         const stage = startup?.metrics.stage || 'Ideation'
@@ -56,13 +77,65 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         if (!user || !startup?.id) return
 
         setShowDisconnectConfirm(false) // Reset on startup change
+        setValuationInsights(null)
+        setIsGeneratingValuation(false)
+        setIsProcessing(false)
+        setShowLiteralAnswers(false)
 
         async function checkStatus() {
-            const status = await getConnectionStatus(user!.id, startup!.id)
-            setConnStatus(status)
+            try {
+                const [status, boosted, points] = await Promise.all([
+                    getConnectionStatus(user!.id, startup!.id),
+                    hasInvestorBoosted(user!.id, startup!.id),
+                    getStartupBoosts(startup!.id)
+                ])
+                setConnStatus(status)
+                setHasBoosted(boosted)
+
+                // Calculate TOTAL impact points (Base + Boosts)
+                const total = calculateImpactScore({
+                    ...startup!,
+                    communityBoosts: points
+                }).total
+                setImpactPoints(total)
+
+                // Fetch budget if investor
+                if (role === 'investor') {
+                    const [
+                        investorRes,
+                        boostRes,
+                        purchaseRes
+                    ] = await Promise.all([
+                        supabase.from('investors').select('*').eq('id', user!.id).single(),
+                        supabase.from('investor_boosts').select('points_awarded').eq('investor_id', user!.id),
+                        supabase.from('point_purchases').select('points').eq('investor_id', user!.id)
+                    ])
+
+                    if (investorRes.error) console.error('Investor fetch error:', investorRes.error)
+                    if (boostRes.error) console.error('Boost fetch error:', boostRes.error)
+                    if (purchaseRes.error) console.error('Purchase fetch error:', purchaseRes.error)
+
+                    if (investorRes.data) {
+                        const spent = boostRes.data?.reduce((sum: number, b: any) => sum + (b.points_awarded || 0), 0) || 0
+                        const purchased = purchaseRes.data?.reduce((sum: number, p: any) => sum + (p.points || 0), 0) || 0
+                        const totalEarned = calculateImpactScore({
+                            ...investorRes.data,
+                            fundsAvailable: investorRes.data.funds_available,
+                            investments: investorRes.data.investments_count,
+                            expertise: investorRes.data.expertise || []
+                        } as Investor).total
+
+                        const finalBudget = Math.max(0, totalEarned + purchased - spent)
+                        console.log('Budget Calculation Success:', { totalEarned, purchased, spent, finalBudget })
+                        setInvestorBudget(finalBudget)
+                    }
+                }
+            } catch (err) {
+                console.error('Critical error in checkStatus:', err)
+            }
         }
         checkStatus()
-    }, [user, startup?.id, triggerUpdate, startup?.logo])
+    }, [user, startup?.id, triggerUpdate, startup?.logo, role])
 
     const canView = subscriptionManager.canViewProfile(startup?.id) || connStatus?.status === 'accepted'
 
@@ -180,6 +253,52 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         }
     }
 
+    const handleBoost = async () => {
+        if (!user || !startup || role !== 'investor') return
+
+        const currentTier = subscriptionManager.getTier()
+        const isFreeTier = currentTier === 'explore'
+
+        if (isFreeTier) {
+            toast("Investor Basic plan required to boost startups.", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
+
+        if (boostAmount <= 0) {
+            toast("Please enter a valid amount of points.", "error")
+            return
+        }
+
+        if (boostAmount > investorBudget) {
+            toast(`Insufficient points! Your budget is ${investorBudget}.`, "error")
+            return
+        }
+
+        setIsBoosting(true)
+        try {
+            await boostStartup(user.id, startup.id, boostAmount)
+            setHasBoosted(true)
+            setInvestorBudget(prev => prev - boostAmount)
+
+            // Refresh impact points
+            const boostCount = await getStartupBoosts(startup.id)
+            const total = calculateImpactScore({
+                ...startup,
+                communityBoosts: boostCount
+            }).total
+            setImpactPoints(total)
+
+            onConnectionChange?.(startup.id) // Trigger refresh in feed
+            toast(`Startup boosted! +${boostAmount} Impact Points awarded.`, "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(error.message || "Failed to boost startup", "error")
+        } finally {
+            setIsBoosting(false)
+        }
+    }
+
     if (!startup) {
         return (
             <div className="hidden lg:flex h-full items-center justify-center text-gray-400 p-8 text-center border-l border-gray-200">
@@ -290,15 +409,15 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
                                 <div className={cn(
                                     "text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium",
-                                    !subscriptionManager.hasFeature('Advanced AI') && "blur-sm select-none"
+                                    !subscriptionManager.hasFeature('AI Startup Summaries') && "blur-sm select-none"
                                 )}>
                                     {startup.aiSummary}
                                 </div>
 
-                                {!subscriptionManager.hasFeature('Advanced AI') && (
+                                {!subscriptionManager.hasFeature('AI Startup Summaries') && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] p-6 text-center">
                                         <Lock className="h-6 w-6 text-amber-600 mb-2" />
-                                        <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Growth Tier Required</p>
+                                        <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Premium Plan Required</p>
                                         <Button variant="outline" size="sm" className="mt-3 rounded-xl border-amber-200 text-amber-700 bg-white/80 h-8 text-[10px]" onClick={() => navigate('/dashboard/pricing')}>
                                             View Plans
                                         </Button>
@@ -322,7 +441,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 Founder Profile
                             </h3>
                             <div className="flex items-start gap-4 p-5 rounded-[2rem] bg-gray-50 border border-gray-100">
-                                <img src={startup.founder.avatar} alt={startup.founder.name} className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" />
+                                <img src={startup.founder.avatar || null as any} alt={startup.founder.name} className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" />
                                 <div>
                                     <h4 className="font-bold text-sm">{startup.founder.name}</h4>
                                     <p className="text-xs text-gray-600 mt-1 leading-relaxed">{startup.founder.bio}</p>
@@ -420,7 +539,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                 {activeTab === 'metrics' && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Key Metrics Grid */}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
                                 <TrendingUp className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Traction</p>
@@ -430,6 +549,16 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 <BarChart3 className="h-5 w-5 text-emerald-600 mx-auto mb-2" />
                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Valuation</p>
                                 <p className="text-xl font-bold text-gray-900">{startup.metrics.valuation}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-orange-50/50 border border-orange-100 text-center">
+                                <Sparkles className="h-5 w-5 text-orange-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">Impact Points</p>
+                                <p className="text-xl font-bold text-orange-900">{impactPoints.toLocaleString()}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <ShieldCheck className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Stage</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.stage}</p>
                             </div>
                         </div>
 
@@ -449,7 +578,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                             {isGeneratingValuation ? "Analyzing Market Data..." : "Generate AI Valuation Insights"}
                                         </span>
                                     </div>
-                                    {!subscriptionManager.hasFeature('Valuation') && (
+                                    {!subscriptionManager.hasFeature('AI Valuation Insights') && (
                                         <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-full font-bold">UPGRADE REQUIRED</span>
                                     )}
                                 </Button>
@@ -471,7 +600,11 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
                         {/* Valuation Calculator */}
                         <div className="mb-8">
-                            <ValuationCalculator />
+                            <ValuationCalculator
+                                initialRevenue={parseRevenue(startup.metrics.traction).toString()}
+                                initialIndustry={startup.industry}
+                                readOnly={role === 'investor'}
+                            />
                         </div>
 
                         {/* Additional Metrics Placeholder */}
@@ -491,6 +624,63 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                         <p className="text-sm text-gray-600 leading-relaxed font-sm">
                             {startup.history}
                         </p>
+                    </section>
+                )}
+
+                {/* Investor Boost Section */}
+                {role === 'investor' && (
+                    <section className="mt-12 pt-8 border-t border-gray-100 mb-12">
+                        <div className="bg-orange-50/50 rounded-[2.5rem] p-8 border border-orange-100 text-center relative overflow-hidden group/boost">
+                            <div className="absolute top-0 right-0 p-4 opacity-10">
+                                <TrendingUp className="h-24 w-24 text-orange-600 rotate-12" />
+                            </div>
+
+                            <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-4" />
+                            <h3 className="text-sm font-bold text-orange-900 uppercase tracking-[0.2em] mb-2">Push this startup up</h3>
+                            <p className="text-orange-800/60 text-xs leading-relaxed max-w-[240px] mx-auto font-medium mb-6">
+                                Believe in this team? Award them Impact Points to help them climb the High Impact rankings.
+                            </p>
+
+                            <div className="flex flex-col items-center gap-4">
+                                {hasBoosted && (
+                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/50 text-orange-600 rounded-full border border-orange-100 text-[10px] font-bold shadow-sm mb-2 animate-in fade-in slide-in-from-top-1">
+                                        <Sparkles className="h-3 w-3" />
+                                        You have previously boosted this team
+                                    </div>
+                                )}
+                                <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className="text-[10px] font-bold text-orange-900/50 uppercase tracking-widest">Amount</span>
+                                        <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Budget: {investorBudget}</span>
+                                    </div>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            value={boostAmount}
+                                            onChange={(e) => setBoostAmount(parseInt(e.target.value) || 0)}
+                                            className="bg-white/50 border-orange-200 focus:border-orange-500 rounded-2xl h-12 text-center font-bold text-orange-900"
+                                            min={1}
+                                            max={investorBudget}
+                                        />
+                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-orange-400 uppercase">Pts</div>
+                                    </div>
+                                </div>
+
+                                <Button
+                                    onClick={handleBoost}
+                                    disabled={isBoosting || boostAmount <= 0}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8 h-12 text-sm font-bold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95 translate-y-0 w-full max-w-[200px]"
+                                >
+                                    {isBoosting ? "Boosting..." : hasBoosted ? "Boost Again" : "Award Impact Points"}
+                                </Button>
+
+                                {subscriptionManager.getTier() === 'explore' && (
+                                    <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
+                                        Partner or Pro Plan Required
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </section>
                 )}
             </div>

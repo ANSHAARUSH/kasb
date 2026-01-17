@@ -5,6 +5,9 @@ import { Award } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { cn } from "../../../lib/utils"
 import { Avatar } from "../../../components/ui/Avatar"
+import { calculateImpactScore } from "../../../lib/scoring"
+import { type Investor } from "../../../data/mockData"
+import { TrendingUp } from "lucide-react"
 
 interface ProfileViewProps {
     investor: InvestorProfileData
@@ -31,6 +34,27 @@ export function ProfileView({ investor, onRequestReview }: ProfileViewProps) {
                             </div>
                         </div>
                         <p className="text-gray-500 break-words">{investor.title || 'Investor'}</p>
+                    </div>
+
+                    {/* Impact Points Counter */}
+                    <div className="shrink-0 flex items-center gap-4 px-6 py-4 bg-orange-50/50 rounded-3xl border border-orange-100">
+                        <div className="h-10 w-10 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
+                            <TrendingUp className="h-5 w-5" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-[10px] font-bold text-orange-900 uppercase tracking-widest leading-none mb-1">Boosting Budget</p>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-black text-orange-600">
+                                    {Math.max(0, calculateImpactScore({
+                                        ...investor,
+                                        fundsAvailable: investor.funds_available,
+                                        investments: investor.investments_count,
+                                        expertise: investor.expertise || []
+                                    } as Investor).total + (investor.purchasedPoints || 0) - (investor.spentPoints || 0))}
+                                </span>
+                                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Points</span>
+                            </div>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 pt-6">

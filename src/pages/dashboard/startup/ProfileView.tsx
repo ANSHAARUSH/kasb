@@ -6,8 +6,8 @@ import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Lo
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
-import { cn } from "../../../lib/utils"
-import { getProfileViewsCount, getConnectionStats, calculateProfileStrength } from "../../../lib/supabase"
+import { cn, parseRevenue } from "../../../lib/utils"
+import { getConnectionStats, getStartupBoosts } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
@@ -15,6 +15,7 @@ import { generateInvestorSummary } from "../../../lib/ai"
 import { useToast } from "../../../hooks/useToast"
 import { COUNTRIES } from "../../../lib/locationData"
 import { ValuationCalculator } from "../../../components/dashboard/ValuationCalculator"
+import { calculateImpactScore } from "../../../lib/scoring"
 
 interface ProfileViewProps {
     startup: StartupProfileData
@@ -32,11 +33,32 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
     const [localAnswers, setLocalAnswers] = useState<Record<string, Record<string, string>>>({})
     const [localStartup, setLocalStartup] = useState<Partial<StartupProfileData>>({})
     const [generatingSummary, setGeneratingSummary] = useState(false)
+
     const [stats, setStats] = useState({
-        views: 0,
-        connections: 0,
-        strength: 0
+        boosts: 0
     })
+
+    const totalImpactPoints = useMemo(() => {
+        if (!startup) return 0;
+        return calculateImpactScore({
+            ...startup,
+            problemSolving: startup.problem_solving,
+            metrics: {
+                valuation: startup.valuation,
+                stage: startup.stage,
+                traction: startup.traction
+            },
+            founder: {
+                name: startup.founder_name,
+                avatar: startup.founder_avatar,
+                bio: startup.founder_bio,
+                education: '',
+                workHistory: ''
+            },
+            tags: startup.tags || [],
+            communityBoosts: stats.boosts
+        } as any).total
+    }, [startup, stats.boosts])
 
     useEffect(() => {
         if (startup) {
@@ -49,15 +71,9 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
         const fetchStats = async () => {
             if (!user) return
             try {
-                const [viewsCount, connectionStats, profileStrength] = await Promise.all([
-                    getProfileViewsCount(user.id),
-                    getConnectionStats(user.id),
-                    calculateProfileStrength(user.id)
-                ])
+                const boostCount = await getStartupBoosts(user.id)
                 setStats({
-                    views: viewsCount,
-                    connections: connectionStats.accepted,
-                    strength: profileStrength
+                    boosts: boostCount
                 })
             } catch (err) {
                 console.error("Error fetching stats:", err)
@@ -451,7 +467,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
 
                         {activeTab === 'metrics' && (
                             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
                                         <TrendingUp className="h-5 w-5 text-indigo-600 mb-2" />
                                         <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Valuation</p>
@@ -467,15 +483,19 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                         <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Traction</p>
                                         <p className="text-xl font-bold">{startup.traction || '0'}</p>
                                     </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <Sparkles className="h-5 w-5 text-purple-600 mb-2" />
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Impact Points</p>
-                                        <p className="text-xl font-bold">{stats.strength * 10}</p>
+                                    <div className="p-6 rounded-3xl bg-orange-50/50 border border-orange-100">
+                                        <Sparkles className="h-5 w-5 text-orange-600 mb-2" />
+                                        <p className="text-[10px] font-bold text-orange-400 uppercase mb-1">Impact Points</p>
+                                        <p className="text-xl font-bold">{totalImpactPoints.toLocaleString()}</p>
                                     </div>
                                 </div>
 
                                 {/* Valuation Calculator */}
-                                <ValuationCalculator />
+                                <ValuationCalculator
+                                    initialRevenue={parseRevenue(startup.traction).toString()}
+                                    initialIndustry={startup.industry}
+                                    readOnly={false}
+                                />
 
                                 {/* KPI Placeholder */}
                                 <div className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100">

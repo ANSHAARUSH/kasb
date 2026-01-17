@@ -1,7 +1,7 @@
 import type { Startup } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles } from "lucide-react"
+import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles, TrendingUp } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { useState, useEffect } from "react"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
@@ -23,9 +23,10 @@ interface StartupCardProps {
     triggerUpdate?: { startupId: string; timestamp: number } | null
     onConnectionChange?: (startupId: string) => void
     isRecommended?: boolean
+    showImpactPoints?: boolean
 }
 
-export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended }: StartupCardProps) {
+export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended, showImpactPoints }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -197,6 +198,12 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-tighter shadow-sm">
                                             <Sparkles className="w-2.5 h-2.5" />
                                             AI Suggested
+                                        </span>
+                                    )}
+                                    {showImpactPoints && startup.impactPoints !== undefined && (
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-black text-orange-600 border border-orange-100 uppercase tracking-tighter shadow-sm">
+                                            <TrendingUp className="w-2.5 h-2.5" />
+                                            {startup.impactPoints} pts
                                         </span>
                                     )}
                                 </div>

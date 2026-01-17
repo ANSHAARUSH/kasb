@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
-import { type Investor, MOCK_INVESTORS } from "../data/mockData"
+import { type Investor } from "../data/mockData"
+import { calculateImpactScore } from "../lib/scoring"
 
 export function useInvestors() {
-    const [investors, setInvestors] = useState<Investor[]>(MOCK_INVESTORS)
+    const [investors, setInvestors] = useState<Investor[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<unknown>(null)
 
@@ -16,18 +17,26 @@ export function useInvestors() {
                     .select('*')
 
                 if (data && data.length > 0) {
-                    const mappedInvestors: Investor[] = data.map(i => ({
-                        id: i.id,
-                        name: i.name,
-                        avatar: i.avatar || 'https://i.pravatar.cc/150',
-                        bio: i.bio || 'Active Investor',
-                        fundsAvailable: i.funds_available || '$0',
-                        investments: i.investments_count || 0,
-                        expertise: i.expertise || []
-                    }))
-                    setInvestors([...mappedInvestors, ...MOCK_INVESTORS])
+                    const mappedInvestors: Investor[] = data.map(i => {
+                        const baseInvestor: Investor = {
+                            id: i.id,
+                            name: i.name,
+                            avatar: i.avatar || 'https://i.pravatar.cc/150',
+                            title: i.title,
+                            bio: i.bio || 'Active Investor',
+                            fundsAvailable: i.funds_available || '$0',
+                            investments: i.investments_count || 0,
+                            expertise: i.expertise || []
+                        };
+                        const scoreResult = calculateImpactScore(baseInvestor);
+                        return {
+                            ...baseInvestor,
+                            impactPoints: scoreResult.total
+                        };
+                    })
+                    setInvestors(mappedInvestors)
                 } else {
-                    setInvestors(MOCK_INVESTORS)
+                    setInvestors([])
                 }
 
                 if (error) {

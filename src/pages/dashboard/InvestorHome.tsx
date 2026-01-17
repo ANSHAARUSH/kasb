@@ -18,7 +18,9 @@ import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { parseRevenue, cn } from "../../lib/utils"
 import { useStartups } from "../../hooks/useStartups"
 import { useInvestorProfile } from "../../hooks/useInvestorProfile"
+import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { subscriptionManager } from "../../lib/subscriptionManager"
+import type { Investor } from "../../data/mockData"
 
 export function InvestorHome() {
     // const { user } = useAuth()
@@ -36,10 +38,20 @@ export function InvestorHome() {
     const loading = startupsLoading || savedLoading
     const [searchQuery, setSearchQuery] = useState("")
     const [connectionUpdate, setConnectionUpdate] = useState<{ startupId: string; timestamp: number } | null>(null)
+    const { investor } = useInvestorProfile()
 
     const handleConnectionChange = (startupId: string) => {
         setConnectionUpdate({ startupId, timestamp: Date.now() })
     }
+
+    // Track impact points for notifications
+    useImpactPointsTracker(investor ? {
+        ...investor,
+        fundsAvailable: investor.funds_available,
+        investments: investor.investments_count,
+        expertise: investor.expertise || []
+    } as Investor : null)
+
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
     const [searchParams, setSearchParams] = useSearchParams()
 
@@ -90,6 +102,8 @@ export function InvestorHome() {
     // Helper to parse revenue string (e.g., "$1M ARR" -> 1000000) - Moved to utils
 
 
+    const [activeFeed, setActiveFeed] = useState<'discover' | 'high-impact'>('discover')
+
     // Filter logic remains the same
     const activeFilterCount =
         filters.stages.length +
@@ -134,7 +148,6 @@ export function InvestorHome() {
         return true
     })
 
-    const { investor } = useInvestorProfile()
     const canSeeAISuggestions = subscriptionManager.hasFeature('AI warm intros') // Proxy for AI match previews/suggestions
 
     const displayStartups = filteredStartups.map(startup => {
@@ -147,6 +160,18 @@ export function InvestorHome() {
 
         return { ...startup, isRecommended: hasExpertiseMatch };
     }).sort((a, b) => {
+        // High Impact Sort
+        if (activeFeed === 'high-impact') {
+            const pointDiff = (b.impactPoints || 0) - (a.impactPoints || 0);
+            if (pointDiff !== 0) return pointDiff;
+
+            // Tie-breaker: Valuation
+            const valA = parseRevenue(a.metrics.valuation);
+            const valB = parseRevenue(b.metrics.valuation);
+            return valB - valA;
+        }
+
+        // Default Sort (Discover)
         // Prioritize recommended ones if they have the feature
         if (canSeeAISuggestions) {
             if (a.isRecommended && !b.isRecommended) return -1;
@@ -154,6 +179,7 @@ export function InvestorHome() {
         }
         return 0;
     });
+
     // Only on mount or when list changes significantly, but ideally just defaulting to the first one for the view
     useEffect(() => {
         // Only auto-select on desktop (lg breakpoint is 1024px)
@@ -200,9 +226,32 @@ export function InvestorHome() {
                 {/* Scrollable Feed List */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 scrollbar-hide">
                     <div className="max-w-2xl mx-auto space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-xl font-bold">Discover Startups</h1>
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <h1 className="text-xl font-bold hidden sm:block">Discover Startups</h1>
+
+                            {/* Tabs */}
+                            <div className="flex p-1 bg-white border border-gray-200 rounded-xl self-start sm:self-auto">
+                                <button
+                                    onClick={() => setActiveFeed('discover')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                        activeFeed === 'discover' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
+                                    )}
+                                >
+                                    Discover
+                                </button>
+                                <button
+                                    onClick={() => setActiveFeed('high-impact')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                        activeFeed === 'high-impact' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
+                                    )}
+                                >
+                                    High Impact
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3 ml-auto sm:ml-0">
                                 <Link to="/dashboard/investor/cheatsheet" className="md:hidden">
                                     <Button variant="outline" size="sm" className="h-8 rounded-lg gap-1.5 border-gray-200 text-gray-600">
                                         <FileText className="h-3.5 w-3.5" />
@@ -252,6 +301,7 @@ export function InvestorHome() {
                                         triggerUpdate={connectionUpdate}
                                         onConnectionChange={handleConnectionChange}
                                         isRecommended={startup.isRecommended}
+                                        showImpactPoints={activeFeed === 'high-impact'}
                                     />
                                 </div>
                             ))

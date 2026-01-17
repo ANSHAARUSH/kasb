@@ -4,7 +4,7 @@ import { Check, Loader2, X, CreditCard, ShieldCheck } from "lucide-react"
 import { Button } from "../ui/button"
 import { subscriptionManager, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { useAuth } from "../../context/AuthContext"
-import { supabase } from "../../lib/supabase"
+import { supabase, purchaseImpactPoints } from "../../lib/supabase"
 
 interface PaymentModalProps {
     isOpen: boolean
@@ -13,6 +13,7 @@ interface PaymentModalProps {
         id: SubscriptionTier
         name: string
         price: number
+        points?: number
     } | null
 }
 
@@ -31,28 +32,34 @@ export function PaymentModal({ isOpen, onClose, tier }: PaymentModalProps) {
         setStatus('processing')
 
         try {
-            // Update Supabase
-            const table = role === 'startup' ? 'startups' : 'investors'
-            const { error } = await supabase
-                .from(table)
-                .update({ subscription_tier: tier.id })
-                .eq('id', user.id)
+            if (tier.id === 'addon' as any && tier.points) {
+                // Handle Impact Point purchase
+                await purchaseImpactPoints(user.id, tier.points, tier.price)
+            } else {
+                // Update Supabase for Tier subscription
+                const table = role === 'startup' ? 'startups' : 'investors'
+                const { error } = await supabase
+                    .from(table)
+                    .update({ subscription_tier: tier.id })
+                    .eq('id', user.id)
 
-            if (error) throw error
+                if (error) throw error
+                subscriptionManager.setTier(tier.id)
+                subscriptionManager.resetUsage()
+            }
 
             // Simulate network delay for UX
             await new Promise(resolve => setTimeout(resolve, 1500))
 
-            subscriptionManager.setTier(tier.id)
-            subscriptionManager.resetUsage()
             setStatus('success')
 
             // Final delay before closing
-            await new Promise(resolve => setTimeout(resolve, 1500))
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            onClose()
             window.location.reload()
-        } catch (error) {
+        } catch (error: any) {
             console.error('Upgrade error:', error)
-            alert('Failed to upgrade plan. Please try again.')
+            alert(`Failed to process payment: ${error.message || 'Unknown error'}. Please ensure you have run the required SQL script in Supabase.`)
             setStatus('idle')
         }
     }

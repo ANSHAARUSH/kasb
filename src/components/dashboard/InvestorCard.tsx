@@ -156,9 +156,11 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                     <div className="flex-1">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase">{investor.name}</h3>
-                            <span className="text-[10px] font-black bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-100 uppercase tracking-tighter">
-                                {investor.fundsAvailable}
-                            </span>
+                            <div className="flex flex-col items-end gap-1.5">
+                                <span className="text-[10px] font-black bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-100 uppercase tracking-tighter">
+                                    {investor.fundsAvailable}
+                                </span>
+                            </div>
                         </div>
                         <p className="text-xs font-medium text-gray-400 mt-1 line-clamp-1 italic">"{investor.bio}"</p>
 

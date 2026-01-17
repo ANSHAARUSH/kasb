@@ -50,7 +50,7 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Growth',
         price: 2499,
         currency: 'INR',
-        features: ['Unlimited discovery', 'Advanced AI match scoring', 'AI pitch deck feedback', 'Investor interest signals'],
+        features: ['Unlimited discovery', 'Advanced AI match scoring', 'AI Startup Summaries', 'AI Valuation Insights', 'AI pitch deck feedback', 'Investor interest signals'],
         isPopular: true
     },
     {
@@ -58,7 +58,7 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Fundraise Pro',
         price: 4999,
         currency: 'INR',
-        features: ['Featured startup badge', 'AI warm intros', 'Fundraising timeline tracking', 'Dedicated success manager']
+        features: ['Featured startup badge', 'AI Startup Summaries', 'AI Valuation Insights', 'AI warm intros', 'Fundraising timeline tracking', 'Dedicated success manager']
     }
 ];
 
@@ -75,14 +75,14 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Investor Basic',
         price: 4999,
         currency: 'INR',
-        features: ['AI-curated startup feed', '20 startup contacts/month', 'Industry/Geo filters', 'Bookmarking tools']
+        features: ['AI-curated startup feed', 'AI Startup Summaries', '20 startup contacts/month', 'Industry/Geo filters', 'Bookmarking tools']
     },
     {
         id: 'investor_pro',
         name: 'Investor Pro',
         price: 9999,
         currency: 'INR',
-        features: ['Unlimited startup access', 'Advanced AI scoring (Team/Risk)', 'Deal-flow analytics', 'CRM-style tracking'],
+        features: ['Unlimited startup access', 'AI Startup Summaries', 'AI Valuation Insights', 'Advanced AI scoring (Team/Risk)', 'Deal-flow analytics', 'CRM-style tracking'],
         isPopular: true
     },
     {
@@ -90,7 +90,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Institutional / VC+',
         price: 24999,
         currency: 'INR',
-        features: ['Custom AI thesis matching', 'API & data export', 'Multiple team seats', 'White-label reports']
+        features: ['Custom AI thesis matching', 'AI Startup Summaries', 'AI Valuation Insights', 'API & data export', 'Multiple team seats', 'White-label reports']
     }
 ];
 

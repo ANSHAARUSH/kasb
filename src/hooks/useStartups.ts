@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
-import { type Startup, MOCK_STARTUPS } from "../data/mockData"
+import { type Startup } from "../data/mockData"
 import { isProfileComplete } from "../lib/questionnaire"
+import { calculateImpactScore } from "../lib/scoring"
 
 export function useStartups() {
-    const [startups, setStartups] = useState<Startup[]>(MOCK_STARTUPS)
+    const [startups, setStartups] = useState<Startup[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<unknown>(null)
 
@@ -18,6 +19,16 @@ export function useStartups() {
                     .eq('show_in_feed', true)
 
                 if (data && data.length > 0) {
+                    // Fetch all boosts
+                    const { data: boostData } = await supabase
+                        .from('investor_boosts')
+                        .select('startup_id, points_awarded')
+
+                    const boostMap: Record<string, number> = {}
+                    boostData?.forEach(b => {
+                        boostMap[b.startup_id] = (boostMap[b.startup_id] || 0) + (b.points_awarded || 0)
+                    })
+
                     const mappedStartups: Startup[] = data.map(s => ({
                         id: s.id,
                         name: s.name,
@@ -44,19 +55,26 @@ export function useStartups() {
                         industry: s.industry,
                         aiSummary: s.ai_summary,
                         summaryStatus: s.summary_status,
-                        questionnaire: s.questionnaire
+                        questionnaire: s.questionnaire,
+                        communityBoosts: boostMap[s.id] || 0
                     }))
 
-                    // Filter out startups that aren't verified AND don't have complete profiles
-                    const visibleStartups = mappedStartups.filter(s => {
+                    // Calculate scores and filter
+                    const visibleStartups = mappedStartups.map(s => {
+                        const scoreResult = calculateImpactScore(s);
+                        return {
+                            ...s,
+                            impactPoints: scoreResult.total
+                        };
+                    }).filter(s => {
                         const isVerified = s.verificationLevel === 'verified' || s.verificationLevel === 'trusted'
                         const isComplete = isProfileComplete(s.metrics.stage, s.questionnaire)
                         return isVerified || isComplete
                     })
 
-                    setStartups([...visibleStartups, ...MOCK_STARTUPS])
+                    setStartups(visibleStartups)
                 } else {
-                    setStartups(MOCK_STARTUPS)
+                    setStartups([])
                 }
 
                 if (error) {

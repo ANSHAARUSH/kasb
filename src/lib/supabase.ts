@@ -341,3 +341,82 @@ export async function calculateProfileStrength(startupId: string): Promise<numbe
 
     return Math.round(score)
 }
+
+export async function boostStartup(investorId: string, startupId: string, points: number = 50) {
+    const { error } = await supabase
+        .from('investor_boosts')
+        .insert({
+            investor_id: investorId,
+            startup_id: startupId,
+            points_awarded: points
+        })
+
+    if (error) throw error
+}
+
+export async function getStartupBoosts(startupId: string): Promise<number> {
+    const { data, error } = await supabase
+        .from('investor_boosts')
+        .select('points_awarded')
+        .eq('startup_id', startupId)
+
+    if (error || !data) return 0
+    return data.reduce((sum, boost) => sum + (boost.points_awarded || 0), 0)
+}
+
+export async function getStartupProfile(userId: string) {
+    const { data, error } = await supabase
+        .from('startups')
+        .select('*')
+        .eq('id', userId)
+        .single()
+
+    if (error) return null
+    return data
+}
+
+export async function getRecentBoosts(startupId: string) {
+    const { data, error } = await supabase
+        .from('investor_boosts')
+        .select('created_at, points_awarded, investor_id')
+        .eq('startup_id', startupId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+    if (error) return []
+    return data
+}
+
+export async function getStartupSaveCount(startupId: string): Promise<number> {
+    const { count, error } = await supabase
+        .from('future_plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('startup_id', startupId)
+
+    if (error) return 0
+    return count || 0
+}
+
+export async function hasInvestorBoosted(investorId: string, startupId: string): Promise<boolean> {
+    const { data, error } = await supabase
+        .from('investor_boosts')
+        .select('id')
+        .eq('investor_id', investorId)
+        .eq('startup_id', startupId)
+        .maybeSingle()
+
+    if (error || !data) return false
+    return true
+}
+
+export async function purchaseImpactPoints(investorId: string, points: number, price: number) {
+    const { error } = await supabase
+        .from('point_purchases')
+        .insert({
+            investor_id: investorId,
+            points: points,
+            price: price
+        })
+
+    if (error) throw error
+}

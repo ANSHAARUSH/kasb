@@ -25,6 +25,8 @@ export interface Startup {
     aiSummary?: string
     summaryStatus?: 'draft' | 'final'
     questionnaire?: Record<string, Record<string, string>>
+    impactPoints?: number
+    communityBoosts?: number
 }
 
 export const MOCK_STARTUPS: Startup[] = [
@@ -1384,10 +1386,12 @@ export interface Investor {
     id: string
     name: string
     avatar: string
+    title?: string
     bio: string
     fundsAvailable: string
     investments: number
     expertise: string[]
+    impactPoints?: number
 }
 
 export const MOCK_INVESTORS: Investor[] = [

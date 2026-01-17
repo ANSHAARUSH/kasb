@@ -10,7 +10,9 @@ import {
     Activity,
     CheckCircle2,
     Clock,
-    XCircle
+    XCircle,
+    Sparkles,
+    Bookmark
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
 import { useAuth } from "../../../context/AuthContext"
@@ -19,8 +21,12 @@ import {
     getViewsTimeseries,
     getViewsGeography,
     getConnectionStats,
-    calculateProfileStrength
+    getStartupBoosts,
+    getRecentBoosts,
+    getStartupSaveCount,
+    getStartupProfile
 } from "../../../lib/supabase"
+import { calculateImpactScore } from "../../../lib/scoring"
 import { motion } from "framer-motion"
 import {
     AreaChart,
@@ -42,10 +48,12 @@ export function AnalyticsPage() {
         pendingRequests: 0,
         acceptedRequests: 0,
         rejectedRequests: 0,
-        profileScore: 85
+        totalSaves: 0,
+        impactPoints: 0
     })
     const [viewData, setViewData] = useState<any[]>([])
     const [geoData, setGeoData] = useState<any[]>([])
+    const [recentBoosts, setRecentBoosts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -59,13 +67,38 @@ export function AnalyticsPage() {
 
         try {
             // Fetch all analytics data in parallel
-            const [viewsCount, timeseries, geography, connectionStats, profileStrength] = await Promise.all([
+            const [viewsCount, timeseries, geography, connectionStats, saveCount, impactPoints, recentBoostsData, profileData] = await Promise.all([
                 getProfileViewsCount(user.id),
                 getViewsTimeseries(user.id, 7),
                 getViewsGeography(user.id),
                 getConnectionStats(user.id),
-                calculateProfileStrength(user.id)
+                getStartupSaveCount(user.id),
+                getStartupBoosts(user.id),
+                getRecentBoosts(user.id),
+                getStartupProfile(user.id)
             ])
+
+            // Calculate TOTAL impact points (Base + Boosts)
+            let totalImpactScore = impactPoints
+            if (profileData) {
+                totalImpactScore = calculateImpactScore({
+                    ...profileData,
+                    communityBoosts: impactPoints,
+                    problemSolving: profileData.problem_solving,
+                    metrics: {
+                        valuation: profileData.valuation,
+                        stage: profileData.stage,
+                        traction: profileData.traction
+                    },
+                    founder: {
+                        name: profileData.founder_name,
+                        avatar: profileData.founder_avatar,
+                        bio: profileData.founder_bio,
+                        education: '',
+                        workHistory: ''
+                    }
+                } as any).total
+            }
 
             // Calculate view change (mock calculation based on recent activity)
             const viewChange = viewsCount > 0 ? Math.min(Math.round((connectionStats.recentChange / viewsCount) * 100), 50) : 0
@@ -78,7 +111,8 @@ export function AnalyticsPage() {
                 pendingRequests: connectionStats.pending,
                 acceptedRequests: connectionStats.accepted,
                 rejectedRequests: connectionStats.rejected,
-                profileScore: profileStrength
+                totalSaves: saveCount,
+                impactPoints: totalImpactScore
             })
 
             setViewData(timeseries.length > 0 ? timeseries : [
@@ -94,6 +128,8 @@ export function AnalyticsPage() {
             setGeoData(geography.length > 0 ? geography : [
                 { country: 'No data yet', views: 0, percentage: 0 }
             ])
+
+            setRecentBoosts(recentBoostsData)
         } catch (err) {
             console.error("Error fetching analytics:", err)
         } finally {
@@ -142,7 +178,7 @@ export function AnalyticsPage() {
             </div>
 
             {/* Summary Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 <StatCard
                     title="Investor Views"
                     value={stats.totalViews}
@@ -164,10 +200,16 @@ export function AnalyticsPage() {
                     color="bg-emerald-500 text-emerald-500"
                 />
                 <StatCard
-                    title="Profile Strength"
-                    value={`${stats.profileScore}%`}
-                    icon={TrendingUp}
+                    title="Investor Saves"
+                    value={stats.totalSaves}
+                    icon={Bookmark}
                     color="bg-amber-500 text-amber-500"
+                />
+                <StatCard
+                    title="Impact Points"
+                    value={stats.impactPoints.toLocaleString()}
+                    icon={Sparkles}
+                    color="bg-orange-500 text-orange-500"
                 />
             </div>
 
@@ -314,6 +356,42 @@ export function AnalyticsPage() {
                                 </div>
                             ))}
                         </div>
+                    </CardContent>
+                </Card>
+
+                {/* Recent Support History */}
+                <Card className="border-gray-100">
+                    <CardHeader>
+                        <CardTitle className="text-lg font-bold flex items-center gap-2">
+                            <Sparkles className="h-5 w-5 text-orange-500" />
+                            Recent Support
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {recentBoosts.length === 0 ? (
+                            <div className="py-8 text-center text-gray-400">
+                                <p className="text-sm">No boosts received yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {recentBoosts.map((boost, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded-lg bg-orange-100 text-orange-600">
+                                                <TrendingUp className="h-4 w-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold">Investor Boost</p>
+                                                <p className="text-[10px] text-gray-500">{new Date(boost.created_at).toLocaleDateString()} at {new Date(boost.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-orange-600 font-bold text-sm">
+                                            +{boost.points_awarded}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

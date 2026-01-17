@@ -28,6 +28,9 @@ export function InvestorDetail({ investor, onClose, onDisconnect }: InvestorDeta
 
     useEffect(() => {
         if (!user || !investor?.id) return
+        setIsConnecting(false)
+        setIsDisconnecting(false)
+        setIsProcessing(false)
 
         async function checkStatus() {
             const status = await getConnectionStatus(user!.id, investor!.id)

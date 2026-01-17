@@ -8,10 +8,13 @@ import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 import { useChat } from "../../hooks/useChat"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { useInvestors } from "../../hooks/useInvestors"
+import { useStartupProfile } from "../../hooks/useStartupProfile"
+import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
+import { type Startup } from "../../data/mockData"
 import { FileText } from "lucide-react"
 
 export function StartupHome() {
@@ -29,6 +32,29 @@ export function StartupHome() {
     const loading = investorsLoading || savedLoading
 
     const [searchQuery, setSearchQuery] = useState("")
+    const { startup: profileStartup } = useStartupProfile()
+
+    // Track impact points for notifications
+    useImpactPointsTracker(profileStartup ? {
+        ...profileStartup,
+        problemSolving: profileStartup.problem_solving,
+        metrics: {
+            valuation: profileStartup.valuation,
+            stage: profileStartup.stage,
+            traction: profileStartup.traction
+        },
+        founder: {
+            name: profileStartup.founder_name,
+            avatar: profileStartup.founder_avatar,
+            bio: profileStartup.founder_bio,
+            education: '',
+            workHistory: ''
+        },
+        tags: profileStartup.tags || [],
+        emailVerified: profileStartup.email_verified || false,
+        showInFeed: profileStartup.show_in_feed || false
+    } as Startup : null)
+
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
     const filteredInvestors = investors.filter(investor => {

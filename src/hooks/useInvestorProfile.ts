@@ -18,6 +18,8 @@ export interface InvestorProfileData {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     expertise?: string[]
+    spentPoints?: number
+    purchasedPoints?: number
 }
 
 export function useInvestorProfile() {
@@ -34,15 +36,29 @@ export function useInvestorProfile() {
                 return
             }
 
-            const { data, error } = await supabase
-                .from('investors')
-                .select('*')
-                .eq('id', user.id)
-                .single()
+            const [
+                investorRes,
+                boostRes,
+                purchaseRes
+            ] = await Promise.all([
+                supabase.from('investors').select('*').eq('id', user.id).single(),
+                supabase.from('investor_boosts').select('points_awarded').eq('investor_id', user.id),
+                supabase.from('point_purchases').select('points').eq('investor_id', user.id)
+            ])
 
-            if (error) throw error
-            if (data) {
-                setInvestor(data)
+            if (investorRes.error) console.error('Profile Investor fetch error:', investorRes.error)
+            if (boostRes.error) console.error('Profile Boost fetch error:', boostRes.error)
+            if (purchaseRes.error) console.error('Profile Purchase fetch error:', purchaseRes.error)
+
+            if (investorRes.data) {
+                const spent = boostRes.data?.reduce((sum, b) => sum + (b.points_awarded || 0), 0) || 0
+                const purchased = purchaseRes.data?.reduce((sum, p) => sum + (p.points || 0), 0) || 0
+                console.log('Profile Budget Trace:', { purchased, spent })
+                setInvestor({
+                    ...investorRes.data,
+                    spentPoints: spent,
+                    purchasedPoints: purchased
+                })
             }
         } catch (error) {
             console.error('Error fetching profile:', error)
