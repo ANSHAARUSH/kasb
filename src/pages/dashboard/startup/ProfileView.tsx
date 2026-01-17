@@ -14,6 +14,7 @@ import { Input } from "../../../components/ui/input"
 import { generateInvestorSummary } from "../../../lib/ai"
 import { useToast } from "../../../hooks/useToast"
 import { COUNTRIES } from "../../../lib/locationData"
+import { ValuationCalculator } from "../../../components/dashboard/ValuationCalculator"
 
 interface ProfileViewProps {
     startup: StartupProfileData
@@ -473,7 +474,10 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                     </div>
                                 </div>
 
-                                {/* Placeholder for more detailed metrics if needed */}
+                                {/* Valuation Calculator */}
+                                <ValuationCalculator />
+
+                                {/* KPI Placeholder */}
                                 <div className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100">
                                     <h4 className="text-sm font-bold text-indigo-900 mb-4 flex items-center gap-2">
                                         <BarChart3 className="h-4 w-4" />

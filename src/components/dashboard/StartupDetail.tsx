@@ -13,6 +13,7 @@ import { generateValuationInsights } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../lib/questionnaire"
 import { cn } from "../../lib/utils"
+import { ValuationCalculator } from "./ValuationCalculator"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -467,6 +468,11 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 </div>
                             )}
                         </section>
+
+                        {/* Valuation Calculator */}
+                        <div className="mb-8">
+                            <ValuationCalculator />
+                        </div>
 
                         {/* Additional Metrics Placeholder */}
                         <div className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
