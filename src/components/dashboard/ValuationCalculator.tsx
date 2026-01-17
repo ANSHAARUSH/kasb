@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { DollarSign, TrendingUp, Users, Target, Rocket, Calculator } from "lucide-react"
+import { DollarSign, TrendingUp, Users, Target, Rocket, Calculator, Sparkles } from "lucide-react"
 import { Input } from "../ui/input"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 

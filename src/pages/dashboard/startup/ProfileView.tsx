@@ -7,7 +7,7 @@ import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questio
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
 import { cn, parseRevenue } from "../../../lib/utils"
-import { getConnectionStats, getStartupBoosts } from "../../../lib/supabase"
+import { getStartupBoosts } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
