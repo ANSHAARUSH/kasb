@@ -148,6 +148,11 @@ export function SignUp() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {error && (
+                            <div className="p-4 rounded-2xl bg-red-50 text-red-600 text-sm font-bold border border-red-100 mb-4">
+                                {error}
+                            </div>
+                        )}
                         <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 italic text-gray-600 text-sm">
                             "Transparency and verification are the cornerstones of successful partnerships."
                         </div>
