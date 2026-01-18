@@ -34,3 +34,5 @@ export const EXPERTISE_AREAS = [
     'Web3',
     'Others'
 ] as const;
+
+export const APP_URL = 'https://anshaarush.github.io/kasb/#/login';

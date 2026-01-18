@@ -12,7 +12,7 @@ import { InvestorFields } from "./signup/InvestorFields"
 import { refineProblemStatement } from "../../lib/ai"
 import { getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
-import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
+import { INDUSTRIES, EXPERTISE_AREAS, APP_URL } from "../../lib/constants"
 
 
 export function SignUp() {
@@ -114,7 +114,7 @@ export function SignUp() {
                 email,
                 password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/login`,
+                    emailRedirectTo: APP_URL,
                     data: metadata
                 }
             })
@@ -162,7 +162,7 @@ export function SignUp() {
                                     type: 'signup',
                                     email,
                                     options: {
-                                        emailRedirectTo: `${window.location.origin}/login`
+                                        emailRedirectTo: APP_URL
                                     }
                                 })
                                 if (error) setError(error.message)
