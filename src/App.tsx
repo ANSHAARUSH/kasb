@@ -3,6 +3,11 @@ import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AdminRoute } from "./components/admin/AdminRoute"
 import { PublicLayout } from "./layouts/PublicLayout"
 import { DashboardLayout } from "./layouts/DashboardLayout"
+import { AuthProvider } from "./context/AuthContext"
+import { ToastProvider } from "./components/ui/use-toast"
+import { ChatProvider } from "./context/ChatContext"
+import { ChatDialog } from "./components/chat/ChatDialog"
+import { AuthEventHandler } from "./components/auth/AuthEventHandler"
 
 // Lazy load pages for code splitting
 const Landing = lazy(() => import("./pages/Landing").then(m => ({ default: m.Landing })))
@@ -23,13 +28,7 @@ const StartupAnalyticsPage = lazy(() => import("./pages/dashboard/startup/Analyt
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
 const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
 const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
-
-import { AuthProvider } from "./context/AuthContext"
-import { ToastProvider } from "./components/ui/use-toast"
-
-import { ChatProvider } from "./context/ChatContext"
-import { ChatDialog } from "./components/chat/ChatDialog"
-import { AuthEventHandler } from "./components/auth/AuthEventHandler"
+const InvestorPublicProfile = lazy(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
 
 function App() {
   console.log("App component rendering");
@@ -77,6 +76,7 @@ function App() {
                   <Route path="investor/messages" element={<MessagesPage />} />
                   <Route path="investor/profile" element={<InvestorProfile />} />
                   <Route path="investor/cheatsheet" element={<CheatSheetPage />} />
+                  <Route path="investor/:id" element={<InvestorPublicProfile />} />
 
                   {/* Startup Dashboard & Routes */}
                   <Route path="startup" element={<StartupHome />} />

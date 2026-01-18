@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { type Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
-import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 // import { supabase } from "../../lib/supabase"
 // import { useAuth } from "../../context/AuthContext"
 // import { useToast } from "../../hooks/useToast"
@@ -12,7 +11,7 @@ import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { type Startup } from "../../data/mockData"
 import { FileText } from "lucide-react"
@@ -20,8 +19,6 @@ import { FileText } from "lucide-react"
 export function StartupHome() {
     // const { user } = useAuth()
     const { openChat } = useChat()
-    const [selectedId, setSelectedId] = useState<string | null>(null)
-    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
     const { investors, loading: investorsLoading } = useInvestors()
     // const [savedInvestorIds, setSavedInvestorIds] = useState<string[]>([])
     const { savedIds: savedInvestorIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
@@ -68,13 +65,14 @@ export function StartupHome() {
 
 
 
+    const navigate = useNavigate()
+
     const handleCardClick = (id: string) => {
-        setSelectedId(id)
+        navigate(`/dashboard/investor/${id}`)
     }
 
     const handleCardDoubleClick = (investor: Investor) => {
-        setDetailInvestor(investor)
-        setSelectedId(investor.id)
+        navigate(`/dashboard/investor/${investor.id}`)
     }
 
     const handleMessageClick = (investor: Investor) => {
@@ -135,7 +133,7 @@ export function StartupHome() {
                         >
                             <InvestorCard
                                 investor={investor}
-                                isSelected={selectedId === investor.id}
+                                isSelected={false}
                                 isSaved={savedInvestorIds.includes(investor.id)}
                                 onMessageClick={handleMessageClick}
                                 onToggleSave={() => handleToggleSave(investor.id, "Investor")}
@@ -159,11 +157,6 @@ export function StartupHome() {
                     />
                 </div>
             </div>
-
-            <InvestorDetail
-                investor={detailInvestor}
-                onClose={() => setDetailInvestor(null)}
-            />
         </div>
     )
 }

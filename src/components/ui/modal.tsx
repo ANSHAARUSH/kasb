@@ -3,14 +3,17 @@ import type { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "./button";
 
+import { cn } from "../../lib/utils";
+
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
     title: string;
     children: ReactNode;
+    className?: string;
 }
 
-export function Modal({ isOpen, onClose, title, children }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -27,7 +30,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="bg-white rounded-2xl shadow-xl w-full max-w-lg pointer-events-auto overflow-hidden flex flex-col max-h-[90vh]"
+                            className={cn("bg-white rounded-2xl shadow-xl w-full max-w-lg pointer-events-auto overflow-hidden flex flex-col max-h-[90vh]", className)}
                         >
                             <div className="flex items-center justify-between p-6 border-b border-gray-100">
                                 <h2 className="text-xl font-bold">{title}</h2>

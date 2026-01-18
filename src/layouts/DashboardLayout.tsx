@@ -21,9 +21,21 @@ export function DashboardLayout() {
 
         // RBAC Redirection
         if (role === 'startup' && location.pathname.startsWith('/dashboard/investor')) {
-            navigate('/dashboard/startup', { replace: true })
+            // Allow access to investor public profiles and cheatsheet
+            const isPublicProfile = location.pathname.match(/^\/dashboard\/investor\/[a-f0-9-]+$/)
+            const isCheatsheet = location.pathname.includes('/cheatsheet')
+
+            if (!isPublicProfile && !isCheatsheet) {
+                navigate('/dashboard/startup', { replace: true })
+            }
         } else if (role === 'investor' && location.pathname.startsWith('/dashboard/startup')) {
-            navigate('/dashboard/investor', { replace: true })
+            // Allow access to startup public profiles and cheatsheet (if implemented later)
+            const isPublicProfile = location.pathname.match(/^\/dashboard\/startup\/[a-f0-9-]+$/)
+            const isCheatsheet = location.pathname.includes('/cheatsheet')
+
+            if (!isPublicProfile && !isCheatsheet) {
+                navigate('/dashboard/investor', { replace: true })
+            }
         }
     }, [user, role, loading, location.pathname, navigate])
 

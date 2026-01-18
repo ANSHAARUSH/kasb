@@ -20,6 +20,54 @@ export interface InvestorProfileData {
     expertise?: string[]
     spentPoints?: number
     purchasedPoints?: number
+    profile_details?: InvestorProfileDetails
+}
+
+export interface InvestorProfileDetails {
+    investment_preferences?: {
+        stage: string[]
+        ticket_size_min: number
+        ticket_size_max: number
+        industry_focus: string[]
+        geographic_preference: string[]
+        business_model: string[]
+        revenue_preference: string
+        ownership_percentage_min: number
+        ownership_percentage_max: number
+    }
+    decision_process?: {
+        speed: 'Fast' | 'Moderate' | 'Long-term'
+        due_diligence: 'Light' | 'Standard' | 'Deep'
+        follow_on: boolean
+        syndication: 'Solo' | 'Co-invests' | 'Lead'
+        hands_on_level: 'Mentor' | 'Board Member' | 'Strategic Advisor' | 'Passive'
+    }
+    value_add?: {
+        expertise: string[]
+        network: string[]
+        has_founder_experience: boolean
+        exits_count: number
+    }
+    portfolio?: {
+        stage_breakdown: Record<string, number>
+        active_count: number
+        exited_count: number
+        notable_investments: string[]
+        average_check_size: number
+        success_stories: string[]
+    }
+    communication?: {
+        pitch_format: string[]
+        contact_mode: string[]
+        office_hours: string
+        response_time: string
+    }
+    social_proof?: {
+        linkedin: string
+        website: string
+        investor_type: string
+        references: string[]
+    }
 }
 
 export function useInvestorProfile() {
@@ -51,6 +99,7 @@ export function useInvestorProfile() {
             if (purchaseRes.error) console.error('Profile Purchase fetch error:', purchaseRes.error)
 
             if (investorRes.data) {
+                console.log('Fetched Investor Data:', investorRes.data)
                 const spent = boostRes.data?.reduce((sum, b) => sum + (b.points_awarded || 0), 0) || 0
                 const purchased = purchaseRes.data?.reduce((sum, p) => sum + (p.points || 0), 0) || 0
                 console.log('Profile Budget Trace:', { purchased, spent })
@@ -74,9 +123,12 @@ export function useInvestorProfile() {
     const updateProfile = async (formData: Partial<InvestorProfileData>) => {
         if (!investor) return false
         setSaving(true)
+        console.log('Updating profile with:', formData)
         try {
-            // Remove metadata and non-updatable fields
-            const { id, created_at, updated_at, email_verified, ...updateData } = formData as any
+            // Remove metadata, non-updatable fields, and computed fields
+            const { id, created_at, updated_at, email_verified, spentPoints, purchasedPoints, expertise, ...updateData } = formData as any
+
+            console.log('Payload sent to Supabase:', updateData)
 
             const { error } = await supabase
                 .from('investors')
@@ -88,6 +140,7 @@ export function useInvestorProfile() {
                 throw error
             }
 
+            console.log('Update success, updating local state')
             setInvestor(prev => prev ? { ...prev, ...formData } : null)
             return true
         } catch (error) {
