@@ -117,9 +117,9 @@ export function Login() {
         <div className="flex min-h-[80vh] items-center justify-center px-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
-                    <CardDescription>
-                        Enter your email and password to access your account
+                    <CardTitle className="text-4xl font-extrabold tracking-tight">Log In</CardTitle>
+                    <CardDescription className="text-gray-500 font-medium text-lg">
+                        Welcome back! Please log in to your account.
                     </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleLogin}>
@@ -163,12 +163,12 @@ export function Login() {
                         <Button className="w-full" size="lg" type="submit" disabled={loading}>
                             {loading ? "Signing in..." : "Sign In"}
                         </Button>
-                        <div className="text-center text-sm text-gray-500">
+                        <p className="text-gray-500 font-medium">
                             Don't have an account?{" "}
-                            <Link to="/signup" className="font-semibold text-black hover:underline">
+                            <Link to="/signup" className="text-black font-black hover:underline underline-offset-4 decoration-2">
                                 Sign up
                             </Link>
-                        </div>
+                        </p>
                         {needsVerification && (
                             <Button
                                 type="button"

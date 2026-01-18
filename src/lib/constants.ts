@@ -35,4 +35,4 @@ export const EXPERTISE_AREAS = [
     'Others'
 ] as const;
 
-export const APP_URL = 'https://anshaarush.github.io/kasb';
+export const APP_URL = 'https://anshaarush.github.io/kasb/';

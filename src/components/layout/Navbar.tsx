@@ -34,7 +34,7 @@ export function Navbar() {
 
                 <div className="flex items-center gap-4">
                     <Link to="/login" className="text-sm font-medium text-gray-200 hover:text-white hidden md:block">
-                        Sign In
+                        Log In
                     </Link>
                     <div className="hidden md:block">
                         <Button asChild className="rounded-full bg-white text-black hover:bg-gray-100 shadow-lg shadow-white/10">
@@ -109,7 +109,7 @@ export function Navbar() {
                                     className="text-center py-2.5 text-gray-600 font-medium hover:text-black transition-colors"
                                     onClick={() => setIsOpen(false)}
                                 >
-                                    Sign In
+                                    Log In
                                 </Link>
                                 <Button asChild className="w-full h-12 rounded-full text-lg shadow-xl shadow-indigo-100">
                                     <Link to="/signup" onClick={() => setIsOpen(false)}>Get Started</Link>

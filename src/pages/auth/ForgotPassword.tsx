@@ -57,7 +57,7 @@ export function ForgotPassword() {
                         <Button variant="ghost" asChild>
                             <Link to="/login" className="flex items-center gap-2">
                                 <ArrowLeft className="h-4 w-4" />
-                                Back to Sign In
+                                Back to Log In
                             </Link>
                         </Button>
                     </CardFooter>
@@ -103,7 +103,7 @@ export function ForgotPassword() {
                         <Button variant="link" asChild className="text-sm text-gray-500">
                             <Link to="/login" className="flex items-center gap-2">
                                 <ArrowLeft className="h-4 w-4" />
-                                Back to Sign In
+                                Back to Log In
                             </Link>
                         </Button>
                     </CardFooter>

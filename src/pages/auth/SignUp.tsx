@@ -177,7 +177,7 @@ export function SignUp() {
                             {resendCooldown > 0 ? `Resend email in ${resendCooldown}s` : 'Resend verification email'}
                         </Button>
                         <Link to="/login" className="text-sm font-bold text-gray-400 hover:text-black transition-colors underline decoration-2 underline-offset-4">
-                            Back to sign in
+                            Back to log in
                         </Link>
                     </CardFooter>
                 </Card>
@@ -337,7 +337,7 @@ export function SignUp() {
                                 to="/login"
                                 className="text-black font-black hover:underline underline-offset-4 decoration-2"
                             >
-                                Sign in
+                                Log in
                             </Link>
                         </p>
                     </CardFooter>
