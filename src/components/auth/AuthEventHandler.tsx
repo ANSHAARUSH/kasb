@@ -9,9 +9,21 @@ export function AuthEventHandler() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (event, _session) => {
-            if (event === 'PASSWORD_RECOVERY') {
-                console.log("Password recovery event detected, redirecting...")
+            console.log("Auth Event:", event)
+
+            // Check for hash parameters first (Supabase flow)
+            const hash = window.location.hash
+            const isRecovery = hash.includes('type=recovery') || event === 'PASSWORD_RECOVERY'
+            const isSignup = hash.includes('type=signup')
+
+            if (isRecovery) {
+                console.log("Password recovery detected")
                 navigate('/update-password', { replace: true })
+            } else if (isSignup) {
+                console.log("Signup confirmation detected")
+                // Sign out to force login flow as requested
+                await supabase.auth.signOut()
+                navigate('/email-confirmed', { replace: true })
             }
         })
 

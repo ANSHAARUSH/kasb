@@ -29,6 +29,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ 
 const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
 const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
 const InvestorPublicProfile = lazy(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
+const EmailConfirmed = lazy(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
 
 function App() {
   console.log("App component rendering");
@@ -45,6 +46,7 @@ function App() {
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
+                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/update-password" element={<UpdatePassword />} />
                   <Route path="/pricing" element={<PricingPage />} />
