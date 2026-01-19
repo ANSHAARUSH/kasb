@@ -4,11 +4,11 @@ import { NotificationBell } from "../components/layout/NotificationBell"
 import { UsageBell } from "../components/layout/UsageBell"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { KYCVerification } from "../components/dashboard/KYCVerification"
+// import { KYCVerification } from "../components/dashboard/KYCVerification"
 import { useEffect } from "react"
 
 export function DashboardLayout() {
-    const { user, role, kycStatus, loading } = useAuth()
+    const { user, role, /* kycStatus, */ loading } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
 
