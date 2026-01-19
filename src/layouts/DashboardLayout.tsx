@@ -4,10 +4,11 @@ import { NotificationBell } from "../components/layout/NotificationBell"
 import { UsageBell } from "../components/layout/UsageBell"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { KYCVerification } from "../components/dashboard/KYCVerification"
 import { useEffect } from "react"
 
 export function DashboardLayout() {
-    const { user, role, loading } = useAuth()
+    const { user, role, kycStatus, loading } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
 
@@ -81,6 +82,12 @@ export function DashboardLayout() {
 
                 <main className="flex-1 px-4 md:py-6 pt-0 pb-24 md:pb-6">
                     <div className="max-w-7xl mx-auto">
+                        {/* Temporarily disabled KYC requirement */}
+                        {/* kycStatus === 'verified' ? (
+                            <Outlet />
+                        ) : (
+                            <KYCVerification />
+                        ) */}
                         <Outlet />
                     </div>
                 </main>

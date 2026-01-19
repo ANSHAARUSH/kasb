@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabase"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
-import { Check, X, AlertTriangle } from "lucide-react"
+import { Check, X, AlertTriangle, ShieldCheck } from "lucide-react"
 import { Avatar } from "../../components/ui/Avatar"
 
 interface ModerationItem {
@@ -15,6 +15,8 @@ interface ModerationItem {
     description?: string
     founder_bio?: string
     adhaar_doc_url?: string
+    kyc_status?: string
+    adhaar_number_last_four?: string
 }
 
 export function ModerationQueue() {
@@ -32,7 +34,7 @@ export function ModerationQueue() {
             const { data: startups, error: startupError } = await supabase
                 .from('startups')
                 .select('*')
-                .eq('review_requested', true)
+                .or('review_requested.eq.true,kyc_status.eq.submitted')
                 .limit(20)
 
             if (startupError) throw startupError
@@ -40,7 +42,7 @@ export function ModerationQueue() {
             const { data: investors, error: investorError } = await supabase
                 .from('investors')
                 .select('*')
-                .eq('review_requested', true)
+                .or('review_requested.eq.true,kyc_status.eq.submitted')
                 .limit(20)
 
             if (investorError) throw investorError
@@ -62,7 +64,8 @@ export function ModerationQueue() {
         await supabase.from(table).update({
             verification_level: 'verified',
             review_requested: false,
-            show_in_feed: true
+            show_in_feed: true,
+            kyc_status: 'verified'
         }).eq('id', item.id)
 
         setQueue(prev => prev.filter(i => i.id !== item.id))
@@ -70,9 +73,10 @@ export function ModerationQueue() {
 
     const handleReject = async (item: ModerationItem) => {
         const table = item.type === 'startup' ? 'startups' : 'investors'
-        // For now just clear the review flag, effectively "ignoring" or "rejecting" the request
+        // For now just clear the review flag and reject KYC if it was submitted
         await supabase.from(table).update({
-            review_requested: false
+            review_requested: false,
+            kyc_status: item.kyc_status === 'submitted' ? 'rejected' : item.kyc_status
         }).eq('id', item.id)
 
         setQueue(prev => prev.filter(i => i.id !== item.id))
@@ -111,6 +115,12 @@ export function ModerationQueue() {
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${item.type === 'startup' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
                                             {item.type}
                                         </span>
+                                        {item.kyc_status === 'submitted' && (
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 uppercase tracking-tight">
+                                                <ShieldCheck className="h-2.5 w-2.5" />
+                                                KYC Verification (•••• {item.adhaar_number_last_four || 'XXXX'})
+                                            </span>
+                                        )}
                                         {item.review_requested && (
                                             <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-tight">
                                                 <AlertTriangle className="h-2.5 w-2.5" />

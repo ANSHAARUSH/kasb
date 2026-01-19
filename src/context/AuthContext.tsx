@@ -4,27 +4,33 @@ import { supabase } from "../lib/supabase"
 import { subscriptionManager, type SubscriptionTier } from "../lib/subscriptionManager"
 
 type UserRole = 'investor' | 'startup' | 'admin' | null
+export type KYCStatus = 'pending' | 'submitted' | 'verified' | 'rejected' | null
 
 interface AuthContextType {
     session: Session | null
     user: User | null
     role: UserRole
+    kycStatus: KYCStatus
     loading: boolean
     signOut: () => Promise<void>
+    refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
     session: null,
     user: null,
     role: null,
+    kycStatus: null,
     loading: true,
     signOut: async () => { },
+    refreshUser: async () => { },
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null)
     const [user, setUser] = useState<User | null>(null)
     const [role, setRole] = useState<UserRole>(null)
+    const [kycStatus, setKycStatus] = useState<KYCStatus>(null)
     const [loading, setLoading] = useState(true)
 
     // Refs to avoid stale closures in onAuthStateChange
@@ -102,18 +108,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const { data: adminData } = await supabase.from('admins').select('id').eq('id', userId).single()
             if (adminData) {
                 setRole('admin')
+                setKycStatus('verified') // Admins are always verified
                 return
             }
 
             // 2. Check Startup
             const { data: startupData, error: startupError } = await supabase
                 .from('startups')
-                .select('id, subscription_tier')
+                .select('id, subscription_tier, kyc_status')
                 .eq('id', userId)
                 .single()
 
             if (startupData) {
                 setRole('startup')
+                setKycStatus(startupData.kyc_status as KYCStatus || 'pending')
                 const tier = (startupData.subscription_tier || 'discovery') as SubscriptionTier
                 subscriptionManager.setTier(tier)
                 return
@@ -122,12 +130,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // 3. Check Investor
             const { data: investorData, error: investorError } = await supabase
                 .from('investors')
-                .select('id, subscription_tier')
+                .select('id, subscription_tier, kyc_status')
                 .eq('id', userId)
                 .single()
 
             if (investorData) {
                 setRole('investor')
+                setKycStatus(investorData.kyc_status as KYCStatus || 'pending')
                 const tier = (investorData.subscription_tier || 'explore') as SubscriptionTier
                 subscriptionManager.setTier(tier)
                 return
@@ -138,11 +147,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (investorError && investorError.code !== 'PGRST116') console.error('Investor check error:', investorError)
 
             setRole(null)
+            setKycStatus(null)
         } catch (error) {
             console.error('Critical Auth Error:', error)
             setRole(null)
+            setKycStatus(null)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const refreshUser = async () => {
+        if (user) {
+            await checkUserRole(user.id)
         }
     }
 
@@ -158,7 +175,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ session, user, role, loading, signOut }}>
+        <AuthContext.Provider value={{ session, user, role, kycStatus, loading, signOut, refreshUser }}>
             {children}
         </AuthContext.Provider>
     )

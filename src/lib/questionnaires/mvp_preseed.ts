@@ -66,6 +66,7 @@ export const MVP_PRESEED_CONFIG: Section[] = [
         id: 'execution_capital',
         title: 'Section 8: Execution & Capital Plan',
         questions: [
+            { id: 'funding_amount', label: 'Funding Requirement (Amount you are looking to raise)', type: 'text', required: true, placeholder: 'e.g., $500k, ₹50L, etc.' },
             { id: 'yearly_goals', label: 'Next 12 Months Goals (Product, Users, Revenue)', type: 'textarea', required: true },
             { id: 'use_of_funds', label: 'Use of Funds (Product, Hiring, GTM, Ops %)', type: 'textarea', required: true }
         ]

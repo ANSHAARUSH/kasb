@@ -316,11 +316,23 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                 {section.questions.map(q => {
                                                     const answer = sectionAnswers[q.id]
                                                     return (
-                                                        <div key={q.id} className={cn("min-w-0", q.type === 'textarea' ? 'col-span-2' : '')}>
-                                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                                                {q.label}
-                                                                {isEditing && q.required && <span className="text-red-500 ml-1">*</span>}
-                                                            </label>
+                                                        <div key={q.id} className={cn(
+                                                            "min-w-0 rounded-2xl transition-all duration-300",
+                                                            q.type === 'textarea' ? 'col-span-2' : '',
+                                                            q.id === 'funding_amount' ? 'bg-indigo-50/50 p-6 ring-1 ring-indigo-100 border-2 border-indigo-200 shadow-sm' : ''
+                                                        )}>
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                                                    {q.label}
+                                                                    {isEditing && q.required && <span className="text-red-500 ml-1">*</span>}
+                                                                </label>
+                                                                {q.id === 'funding_amount' && (
+                                                                    <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
+                                                                        <Sparkles className="h-2.5 w-2.5" />
+                                                                        Strategic Metric
+                                                                    </span>
+                                                                )}
+                                                            </div>
 
                                                             {isEditing ? (
                                                                 q.id === 'location' ? (

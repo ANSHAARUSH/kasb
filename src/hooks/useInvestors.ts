@@ -26,7 +26,9 @@ export function useInvestors() {
                             bio: i.bio || 'Active Investor',
                             fundsAvailable: i.funds_available || '$0',
                             investments: i.investments_count || 0,
-                            expertise: i.expertise || []
+                            expertise: i.expertise || [],
+                            verificationLevel: i.verification_level,
+                            profile_details: i.profile_details
                         };
                         const scoreResult = calculateImpactScore(baseInvestor);
                         return {

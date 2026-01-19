@@ -17,6 +17,7 @@
   }
 
   html {
+    font-size: 110%;
     scroll-behavior: smooth;
     scroll-padding-top: 64px;
     /* Account for fixed navbar height */

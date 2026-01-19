@@ -313,7 +313,12 @@ export function InvestorHome() {
                 </div>
 
                 {/* Fixed Bottom Search & Filter Bar */}
-                <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)] pointer-events-none">
+                <div className={cn(
+                    "fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto transition-all duration-300 pointer-events-none",
+                    panelSize === 'minimized'
+                        ? "lg:w-[calc(100%-256px)]"
+                        : "lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)]"
+                )}>
                     <div className="max-w-md mx-auto flex items-center gap-2 pointer-events-auto">
                         <div className="flex-1">
                             <SearchInput

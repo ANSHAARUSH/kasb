@@ -158,6 +158,40 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
                         </div>
                     </div>
 
+                    <div className="space-y-2 bg-indigo-50/30 p-4 rounded-2xl border border-indigo-100/50">
+                        <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Funding Requirement</label>
+                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-500 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
+                                <Sparkles className="h-2.5 w-2.5" />
+                                Highlighted Metric
+                            </span>
+                        </div>
+                        <Input
+                            className="rounded-2xl border-indigo-200 focus:border-indigo-600 focus:ring-indigo-600 h-12 bg-white"
+                            value={answers['execution_readiness']?.['funding_amount'] ||
+                                answers['execution_capital']?.['funding_amount'] ||
+                                answers['fundraise_details']?.['funding_amount'] ||
+                                answers['fundraise_strategy']?.['funding_amount'] || ''}
+                            onChange={e => {
+                                const val = e.target.value;
+                                // Update in the correct section based on stage
+                                let sectionId = 'execution_readiness';
+                                if (editForm.stage === 'Pre-seed' || editForm.stage === 'MVP') sectionId = 'execution_capital';
+                                if (editForm.stage === 'Seed') sectionId = 'fundraise_details';
+                                if (editForm.stage === 'Series A+') sectionId = 'fundraise_strategy';
+
+                                setAnswers(prev => ({
+                                    ...prev,
+                                    [sectionId]: {
+                                        ...prev[sectionId],
+                                        funding_amount: val
+                                    }
+                                }));
+                            }}
+                            placeholder="e.g. $500k, ₹1Cr"
+                        />
+                    </div>
+
                     {/* About the Problem Field */}
                     <div className="space-y-3 pt-4 border-t border-gray-50">
                         <div className="flex items-center justify-between">

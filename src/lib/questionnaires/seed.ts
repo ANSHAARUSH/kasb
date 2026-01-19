@@ -54,6 +54,7 @@ export const SEED_CONFIG: Section[] = [
         id: 'fundraise_details',
         title: 'Section 7: Fundraise Details',
         questions: [
+            { id: 'funding_amount', label: 'Funding Requirement (Amount you are looking to raise)', type: 'text', required: true, placeholder: 'e.g., $1M, ₹10Cr, etc.' },
             { id: 'round_details', label: 'Round Details (Amount, Valuation/SAFE/Notes)', type: 'textarea', required: true },
             { id: 'use_of_funds', label: 'Use of funds (Detailed allocation)', type: 'textarea', required: true }
         ]

@@ -15,15 +15,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [recentChats, setRecentChats] = useState<ChatUser[]>([])
     const [loading, setLoading] = useState(false)
 
-    // Clear state on logout
-    useEffect(() => {
+    const [prevUserId, setPrevUserId] = useState(user?.id)
+
+    if (user?.id !== prevUserId) {
+        setPrevUserId(user?.id)
         if (!user) {
             setRecentChats([])
             setMessages([])
             setActiveUser(null)
             setIsOpen(false)
         }
-    }, [user])
+    }
     const fetchRecentChats = useCallback(async () => {
         if (!user) return
 
@@ -86,7 +88,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const aiBot: ChatUser = {
             id: 'kasb-ai-bot',
             name: 'Kasb AI',
-            avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=KasbAI',
+            avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
             role: 'investor' // Use investor role for admin-like styling
         }
 

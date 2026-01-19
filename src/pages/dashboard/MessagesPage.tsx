@@ -132,7 +132,7 @@ export function MessagesPage() {
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
-                avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=KasbAI',
+                avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
                 lastMessage: 'AI Assistant',
                 time: '',
                 unread: 0
@@ -182,7 +182,7 @@ export function MessagesPage() {
         const aiBot: Conversation = {
             userId: 'kasb-ai-bot',
             name: 'Kasb AI',
-            avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=KasbAI',
+            avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
             lastMessage: 'AI Assistant',
             time: '',
             unread: 0

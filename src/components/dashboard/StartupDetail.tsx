@@ -27,7 +27,7 @@ import { type Investor } from "../../data/mockData"
 import { Input } from "../ui/input"
 import { generateValuationInsights } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
-import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../lib/questionnaire"
+import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section, type Question } from "../../lib/questionnaire"
 import { cn, parseRevenue } from "../../lib/utils"
 import { ValuationCalculator } from "./ValuationCalculator"
 
@@ -61,6 +61,18 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [boostAmount, setBoostAmount] = useState(50)
     const [investorBudget, setInvestorBudget] = useState(0)
     const [impactPoints, setImpactPoints] = useState(startup?.impactPoints || 0)
+    const [prevStartupId, setPrevStartupId] = useState(startup?.id)
+
+    if (startup?.id !== prevStartupId) {
+        setPrevStartupId(startup?.id)
+        setShowDisconnectConfirm(false)
+        setValuationInsights(null)
+        setIsGeneratingValuation(false)
+        setIsProcessing(false)
+        setShowLiteralAnswers(false)
+        setConnStatus(null)
+        if (startup) setImpactPoints(startup.impactPoints || 0)
+    }
 
     const stageConfig = useMemo(() => {
         const stage = startup?.metrics.stage || 'Ideation'
@@ -75,12 +87,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
     useEffect(() => {
         if (!user || !startup?.id) return
-
-        setShowDisconnectConfirm(false) // Reset on startup change
-        setValuationInsights(null)
-        setIsGeneratingValuation(false)
-        setIsProcessing(false)
-        setShowLiteralAnswers(false)
 
         async function checkStatus() {
             try {
@@ -135,7 +141,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             }
         }
         checkStatus()
-    }, [user, startup?.id, triggerUpdate, startup?.logo, role])
+    }, [user, startup?.id, triggerUpdate, role])
 
     const canView = subscriptionManager.canViewProfile(startup?.id) || connStatus?.status === 'accepted'
 
@@ -502,9 +508,9 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
                                     {/* Stage Specific Questions */}
                                     <section className="space-y-8">
-                                        {stageConfig.map(section => {
+                                        {stageConfig.map((section: Section) => {
                                             const sectionAnswers = answers[section.id] || {}
-                                            const hasAnswers = section.questions.some(q => sectionAnswers[q.id])
+                                            const hasAnswers = section.questions.some((q: Question) => sectionAnswers[q.id])
                                             if (!hasAnswers) return null
 
                                             return (
@@ -513,13 +519,27 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                                         {section.title}
                                                     </h4>
                                                     <div className="grid gap-6">
-                                                        {section.questions.map(q => {
+                                                        {section.questions.map((q: Question) => {
                                                             const answer = sectionAnswers[q.id]
                                                             if (!answer) return null
                                                             return (
-                                                                <div key={q.id}>
-                                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">{q.label}</p>
-                                                                    <p className="text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium">
+                                                                <div key={q.id} className={cn(
+                                                                    "transition-all duration-300 rounded-2xl",
+                                                                    q.id === 'funding_amount' ? "bg-indigo-50/50 p-6 border-2 border-indigo-100/50 shadow-sm ring-1 ring-indigo-50" : ""
+                                                                )}>
+                                                                    <div className="flex items-center justify-between mb-1.5">
+                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.label}</p>
+                                                                        {q.id === 'funding_amount' && (
+                                                                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
+                                                                                <Sparkles className="h-2.5 w-2.5" />
+                                                                                Strategic Metric
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className={cn(
+                                                                        "text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium",
+                                                                        q.id === 'funding_amount' ? "text-indigo-900 text-lg" : ""
+                                                                    )}>
                                                                         {answer}
                                                                     </p>
                                                                 </div>

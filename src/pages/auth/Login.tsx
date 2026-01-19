@@ -115,7 +115,7 @@ export function Login() {
 
     return (
         <div className="flex min-h-[80vh] items-center justify-center px-4">
-            <Card className="w-full max-w-md">
+            <Card className="w-full max-w-md transition-all duration-300 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 border-2 border-black/5 hover:border-black">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-4xl font-extrabold tracking-tight">Log In</CardTitle>
                     <CardDescription className="text-gray-500 font-medium text-lg">

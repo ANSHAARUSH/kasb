@@ -44,6 +44,7 @@ export const SERIES_A_CONFIG: Section[] = [
         id: 'fundraise_strategy',
         title: 'Section 6: Fundraise Strategy',
         questions: [
+            { id: 'funding_amount', label: 'Funding Requirement (Amount you are looking to raise)', type: 'text', required: true, placeholder: 'e.g., $5M+, etc.' },
             { id: 'capital_ask', label: 'Capital Ask (Amount, Use of funds, Milestones)', type: 'textarea', required: true }
         ]
     },

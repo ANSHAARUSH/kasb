@@ -158,19 +158,20 @@ export function NotificationBell() {
 
     // Mark messages as read when dropdown opens
     useEffect(() => {
-        if (isOpen && recentMessages.some(m => !m.is_read)) {
-            const unreadIds = recentMessages.filter(m => !m.is_read).map(m => m.id)
+        if (!isOpen) return
 
-            if (unreadIds.length > 0) {
-                // Optimistic update
-                setRecentMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, is_read: true } : m))
-                setUnreadCount(prev => Math.max(0, prev - unreadIds.length))
+        const unreadMessages = recentMessages.filter(m => !m.is_read)
+        if (unreadMessages.length === 0) return
 
-                // DB Update
-                void supabase.from('messages').update({ is_read: true }).in('id', unreadIds)
-            }
-        }
-    }, [isOpen, recentMessages])
+        const unreadIds = unreadMessages.map(m => m.id)
+
+        // Optimistic update
+        setRecentMessages(prev => prev.map(m => unreadIds.includes(m.id) ? { ...m, is_read: true } : m))
+        setUnreadCount(prev => Math.max(0, prev - unreadIds.length))
+
+        // DB Update
+        void supabase.from('messages').update({ is_read: true }).in('id', unreadIds)
+    }, [isOpen]) // Only depend on isOpen
 
     const handleMessageClick = (msg?: NotificationMessage) => {
         setIsOpen(false)

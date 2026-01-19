@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { cn } from "../../lib/utils"
 
 interface AvatarProps {
@@ -10,14 +10,15 @@ interface AvatarProps {
 
 export function Avatar({ src, name, className, fallbackClassName }: AvatarProps) {
     const [error, setError] = useState(false)
+    const [prevSrc, setPrevSrc] = useState(src)
 
-    // Reset error state when src changes
-    useEffect(() => {
+    if (src !== prevSrc) {
+        setPrevSrc(src)
         setError(false)
-    }, [src])
+    }
 
     const isInternalOrExternal = (path: string) => {
-        return path.startsWith('http') || path.startsWith('/') || path.startsWith('data:')
+        return path.startsWith('http') || path.startsWith('/') || path.startsWith('.') || path.startsWith('data:') || (!path.includes('://') && path.includes('.'))
     }
 
     const getInitials = (n?: string | null) => {

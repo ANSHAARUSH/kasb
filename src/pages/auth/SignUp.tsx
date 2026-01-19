@@ -198,7 +198,7 @@ export function SignUp() {
                     </Link>
                 </div>
 
-                <Card className="border-0 shadow-2xl rounded-[3rem] bg-white overflow-hidden ring-1 ring-gray-100">
+                <Card className="border-0 shadow-2xl rounded-[3rem] bg-white overflow-hidden ring-1 ring-gray-100 transition-all duration-300 hover:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:ring-2 hover:ring-black">
                     <CardHeader className="p-8 pb-4 text-center">
                         <CardTitle className="text-4xl font-extrabold tracking-tight">Create Account</CardTitle>
                         <CardDescription className="text-gray-500 font-medium text-lg">

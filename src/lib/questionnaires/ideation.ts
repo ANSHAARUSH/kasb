@@ -60,6 +60,7 @@ export const IDEATION_CONFIG: Section[] = [
         id: 'execution_readiness',
         title: 'Execution Readiness',
         questions: [
+            { id: 'funding_amount', label: 'Funding Requirement (Amount you are looking to raise)', type: 'text', required: true, placeholder: 'e.g., $500k, ₹50L, etc.' },
             { id: 'milestones_12m', label: 'Next 12 Months (Top 3 Milestones)', type: 'textarea', required: true },
             { id: 'fund_allocation', label: 'Fund Use (%) - Product, Hiring, Marketing', type: 'textarea', required: true, placeholder: 'e.g., Product: 50%, Hiring: 30%, Marketing: 20%' }
         ]

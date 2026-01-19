@@ -1382,6 +1382,53 @@ export const MOCK_STARTUPS: Startup[] = [
     }
 ];
 
+export interface InvestorProfileDetails {
+    investment_preferences?: {
+        stage: string[]
+        ticket_size_min: number
+        ticket_size_max: number
+        industry_focus: string[]
+        geographic_preference: string[]
+        business_model: string[]
+        revenue_preference: string
+        ownership_percentage_min: number
+        ownership_percentage_max: number
+    }
+    decision_process?: {
+        speed: 'Fast' | 'Moderate' | 'Long-term'
+        due_diligence: 'Light' | 'Standard' | 'Deep'
+        follow_on: boolean
+        syndication: 'Solo' | 'Co-invests' | 'Lead'
+        hands_on_level: 'Mentor' | 'Board Member' | 'Strategic Advisor' | 'Passive'
+    }
+    value_add?: {
+        expertise: string[]
+        network: string[]
+        has_founder_experience: boolean
+        exits_count: number
+    }
+    portfolio?: {
+        stage_breakdown: Record<string, number>
+        active_count: number
+        exited_count: number
+        notable_investments: string[]
+        average_check_size: number
+        success_stories: string[]
+    }
+    communication?: {
+        pitch_format: string[]
+        contact_mode: string[]
+        office_hours: string
+        response_time: string
+    }
+    social_proof?: {
+        linkedin: string
+        website: string
+        investor_type: string
+        references: string[]
+    }
+}
+
 export interface Investor {
     id: string
     name: string
@@ -1392,6 +1439,8 @@ export interface Investor {
     investments: number
     expertise: string[]
     impactPoints?: number
+    verificationLevel?: 'basic' | 'verified' | 'trusted'
+    profile_details?: InvestorProfileDetails
 }
 
 export const MOCK_INVESTORS: Investor[] = [
