@@ -2,7 +2,7 @@
 
 @theme {
   --color-soft-black: #171717;
-  --color-off-white: #F5F5F7;
+  --color-off-white: #fdf7e1;
   --color-accent-blue: #007AFF;
   --color-accent-indigo: #5856D6;
 
@@ -24,7 +24,7 @@
   }
 
   body {
-    @apply bg-white text-soft-black antialiased font-sans selection:bg-gray-200 selection:text-black;
+    @apply bg-off-white text-soft-black antialiased font-sans selection:bg-gray-200 selection:text-black;
   }
 }
 
