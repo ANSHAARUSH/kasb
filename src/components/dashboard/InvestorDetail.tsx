@@ -140,6 +140,20 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                         <div>
                             <div className="flex items-center gap-2">
                                 <h2 className="text-2xl font-bold">{investor.name}</h2>
+                                {investor.last_active_at && (
+                                    <span className="flex items-center gap-1 font-bold text-[10px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        Active {(() => {
+                                            const diff = Date.now() - new Date(investor.last_active_at).getTime()
+                                            const minutes = Math.floor(diff / 60000)
+                                            if (minutes < 5) return 'now'
+                                            if (minutes < 60) return `${minutes}m ago`
+                                            const hours = Math.floor(minutes / 60)
+                                            if (hours < 24) return `${hours}h ago`
+                                            return `${Math.floor(hours / 24)}d ago`
+                                        })()}
+                                    </span>
+                                )}
                                 {investor.verificationLevel && (
                                     <div className="shrink-0">
                                         <VerificationBadge level={investor.verificationLevel} />

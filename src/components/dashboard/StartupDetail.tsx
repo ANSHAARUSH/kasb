@@ -349,6 +349,20 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 <div className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border border-indigo-100">
                                     {startup.metrics.stage}
                                 </div>
+                                {startup.last_active_at && (
+                                    <span className="flex items-center gap-1 font-bold text-[10px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        Active {(() => {
+                                            const diff = Date.now() - new Date(startup.last_active_at).getTime()
+                                            const minutes = Math.floor(diff / 60000)
+                                            if (minutes < 5) return 'now'
+                                            if (minutes < 60) return `${minutes}m ago`
+                                            const hours = Math.floor(minutes / 60)
+                                            if (hours < 24) return `${hours}h ago`
+                                            return `${Math.floor(hours / 24)}d ago`
+                                        })()}
+                                    </span>
+                                )}
                             </div>
                             <span className="text-sm text-gray-500">{startup.industry || 'No industry set'} • {startup.metrics.valuation}</span>
                         </div>
@@ -447,7 +461,13 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 Founder Profile
                             </h3>
                             <div className="flex items-start gap-4 p-5 rounded-[2rem] bg-gray-50 border border-gray-100">
-                                <img src={startup.founder.avatar || null as any} alt={startup.founder.name} className="h-14 w-14 rounded-full object-cover border-2 border-white shadow-sm" />
+                                <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                    <Avatar
+                                        src={startup.founder.avatar}
+                                        name={startup.founder.name}
+                                        fallbackClassName="text-xl text-gray-400"
+                                    />
+                                </div>
                                 <div>
                                     <h4 className="font-bold text-sm">{startup.founder.name}</h4>
                                     <p className="text-xs text-gray-600 mt-1 leading-relaxed">{startup.founder.bio}</p>

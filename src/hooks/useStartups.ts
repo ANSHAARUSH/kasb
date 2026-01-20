@@ -56,7 +56,8 @@ export function useStartups() {
                         aiSummary: s.ai_summary,
                         summaryStatus: s.summary_status,
                         questionnaire: s.questionnaire,
-                        communityBoosts: boostMap[s.id] || 0
+                        communityBoosts: boostMap[s.id] || 0,
+                        last_active_at: s.last_active_at
                     }))
 
                     // Calculate scores and filter
@@ -70,7 +71,7 @@ export function useStartups() {
                         const isVerified = s.verificationLevel === 'verified' || s.verificationLevel === 'trusted'
                         const isComplete = isProfileComplete(s.metrics.stage, s.questionnaire)
                         return isVerified || isComplete
-                    })
+                    }).sort((a, b) => (b.impactPoints || 0) - (a.impactPoints || 0))
 
                     setStartups(visibleStartups)
                 } else {

@@ -10,7 +10,8 @@ import type { Startup } from "../../data/mockData"
 import type { StartupDB } from "../../types"
 import { compareStartups, type ComparisonResult } from "../../lib/ai"
 import { Button } from "../../components/ui/button"
-import { Sparkles } from "lucide-react"
+import { Sparkles, Lock } from "lucide-react"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function HistoryPage() {
     const { user } = useAuth()
@@ -172,6 +173,11 @@ export function HistoryPage() {
     }
 
     const handleCompare = async () => {
+        if (!subscriptionManager.hasPaidPlan()) {
+            toast("Access to AI Comparison requires a Growth or Investor Pro plan.", "error")
+            return
+        }
+
         if (selectedIds.length !== 2) {
             if (selectedIds.length === 0) toast("Please select 2 startups to compare first.", "info")
             return
@@ -299,17 +305,21 @@ export function HistoryPage() {
                     >
                         <Button
                             size="lg"
-                            className="rounded-full shadow-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-bold"
+                            className="rounded-full shadow-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-6 text-lg font-bold group"
                             onClick={handleCompare}
                             disabled={isComparing}
                         >
-                            {isComparing ? (
+                            {!subscriptionManager.hasPaidPlan() ? (
+                                <span className="flex items-center gap-2">
+                                    <Lock className="h-4 w-4 transition-transform group-hover:rotate-12" /> Unlock AI Compare
+                                </span>
+                            ) : isComparing ? (
                                 <span className="flex items-center gap-2">
                                     <Sparkles className="animate-spin h-5 w-5" /> Analyzing...
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5" /> Compare with AI
+                                    <Sparkles className="h-5 w-5 transition-transform group-hover:scale-110" /> Compare with AI
                                 </span>
                             )}
                         </Button>

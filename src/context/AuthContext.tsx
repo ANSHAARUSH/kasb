@@ -102,42 +102,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => subscription.unsubscribe()
     }, [])
 
+    const updateLastActive = async (userId: string, userRole: UserRole) => {
+        if (!userId || !userRole || userRole === 'admin') return
+
+        const targetTable = userRole === 'startup' ? 'startups' : 'investors'
+
+        await supabase
+            .from(targetTable)
+            .update({ last_active_at: new Date().toISOString() })
+            .eq('id', userId)
+    }
+
+    useEffect(() => {
+        if (!user || !role || role === 'admin') return
+
+        // Update immediately on mount/role change
+        updateLastActive(user.id, role)
+
+        // Then every 5 minutes
+        const interval = setInterval(() => {
+            updateLastActive(user.id, role)
+        }, 1000 * 60 * 5)
+
+        return () => clearInterval(interval)
+    }, [user?.id, role])
+
     const checkUserRole = async (userId: string) => {
         try {
             // 1. Check Admin
             const { data: adminData } = await supabase.from('admins').select('id').eq('id', userId).single()
             if (adminData) {
                 setRole('admin')
-                setKycStatus('verified') // Admins are always verified
+                setKycStatus('verified')
                 return
             }
 
-            // 2. Check Startup
+            // 2. Fetch Subscription Tier first or in parallel
+            // This is now central
+            const { data: subData } = await supabase
+                .from('user_subscriptions')
+                .select('tier')
+                .eq('user_id', userId)
+                .single()
+
+            // 3. Check Startup
             const { data: startupData, error: startupError } = await supabase
                 .from('startups')
-                .select('id, subscription_tier, kyc_status')
+                .select('id, kyc_status')
                 .eq('id', userId)
                 .single()
 
             if (startupData) {
                 setRole('startup')
                 setKycStatus(startupData.kyc_status as KYCStatus || 'pending')
-                const tier = (startupData.subscription_tier || 'discovery') as SubscriptionTier
+                const tier = (subData?.tier || 'discovery') as SubscriptionTier
                 subscriptionManager.setTier(tier)
                 return
             }
 
-            // 3. Check Investor
+            // 4. Check Investor
             const { data: investorData, error: investorError } = await supabase
                 .from('investors')
-                .select('id, subscription_tier, kyc_status')
+                .select('id, kyc_status')
                 .eq('id', userId)
                 .single()
 
             if (investorData) {
                 setRole('investor')
                 setKycStatus(investorData.kyc_status as KYCStatus || 'pending')
-                const tier = (investorData.subscription_tier || 'explore') as SubscriptionTier
+                const tier = (subData?.tier || 'explore') as SubscriptionTier
                 subscriptionManager.setTier(tier)
                 return
             }

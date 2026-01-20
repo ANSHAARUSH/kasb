@@ -28,12 +28,20 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
 
     const tiers = view === 'startup' ? STARTUP_TIERS : INVESTOR_TIERS
 
-    const handleUpgradeClick = (tier: any) => {
+    const handleUpgradeClick = async (tier: any) => {
         if (!user) {
             navigate('/login')
             return
         }
-        if (tier.price === 0) return
+
+        // Handle free tier / downgrade immediately
+        if (tier.price === 0) {
+            await subscriptionManager.setTier(tier.id)
+            // Force reload to apply subscription changes across the app
+            window.location.reload()
+            return
+        }
+
         setSelectedTier({
             id: tier.id,
             name: tier.name,

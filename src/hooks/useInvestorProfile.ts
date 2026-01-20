@@ -20,6 +20,7 @@ export interface InvestorProfileData {
     expertise?: string[]
     spentPoints?: number
     purchasedPoints?: number
+    last_active_at?: string
     profile_details?: InvestorProfileDetails
 }
 

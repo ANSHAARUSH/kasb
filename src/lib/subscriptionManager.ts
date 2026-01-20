@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export type SubscriptionTier =
     | 'discovery' | 'starter' | 'growth' | 'fundraise_pro'
     | 'explore' | 'investor_basic' | 'investor_pro' | 'institutional';
@@ -20,12 +22,12 @@ export const REGION_CONFIG: Record<UserRegion, { multiplier: number; exchangeRat
 };
 
 export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; contacts: number }> = {
-    'discovery': { profileViews: 2, contacts: 0 },
-    'starter': { profileViews: 100, contacts: 10 },
+    'discovery': { profileViews: Infinity, contacts: 0 },
+    'starter': { profileViews: Infinity, contacts: 10 },
     'growth': { profileViews: Infinity, contacts: Infinity },
     'fundraise_pro': { profileViews: Infinity, contacts: Infinity },
-    'explore': { profileViews: 20, contacts: 0 },
-    'investor_basic': { profileViews: 100, contacts: 20 },
+    'explore': { profileViews: Infinity, contacts: 0 },
+    'investor_basic': { profileViews: Infinity, contacts: 20 },
     'investor_pro': { profileViews: Infinity, contacts: Infinity },
     'institutional': { profileViews: Infinity, contacts: Infinity }
 };
@@ -36,21 +38,21 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Discovery',
         price: 0,
         currency: 'INR',
-        features: ['Basic visibility', 'Limited investor discovery', '2 profile views/month', 'AI match previews (blurred)']
+        features: ['Unlimited detailed viewing', 'Low visibility in investor feed', 'Randomized investor feed', 'No valuation calculator', 'No comparison tools']
     },
     {
         id: 'starter',
         name: 'Starter',
         price: 999,
         currency: 'INR',
-        features: ['AI investor matching', '10 investor contacts/month', 'Basic pitch analytics', 'Standard support']
+        features: ['Smart sorted feed', 'AI-powered recommendations', '10 investor contacts/month', 'Basic pitch analytics', 'Standard support']
     },
     {
         id: 'growth',
         name: 'Growth',
         price: 2499,
         currency: 'INR',
-        features: ['Unlimited discovery', 'Advanced AI match scoring', 'AI Startup Summaries', 'AI Valuation Insights', 'AI pitch deck feedback', 'Investor interest signals'],
+        features: ['Prioritized visibility', 'Unlimited comparison', 'AI Valuation Insights', 'AI pitch deck feedback', 'Investor interest signals'],
         isPopular: true
     },
     {
@@ -58,7 +60,7 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Fundraise Pro',
         price: 4999,
         currency: 'INR',
-        features: ['Featured startup badge', 'AI Startup Summaries', 'AI Valuation Insights', 'AI warm intros', 'Fundraising timeline tracking', 'Dedicated success manager']
+        features: ['Top-tier visibility', 'Featured startup badge', 'AI Valuation Insights', 'AI warm intros', 'Fundraising timeline tracking', 'Dedicated success manager']
     }
 ];
 
@@ -68,21 +70,21 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Explore',
         price: 0,
         currency: 'INR',
-        features: ['View 20 startup profiles', 'No direct contact (Upgrade only)', 'Basic filters', 'AI match previews']
+        features: ['Unlimited startup viewing', 'Randomized startup feed', 'No comparison tools', 'No direct contact']
     },
     {
         id: 'investor_basic',
         name: 'Investor Basic',
         price: 4999,
         currency: 'INR',
-        features: ['AI-curated startup feed', 'AI Startup Summaries', '20 startup contacts/month', 'Industry/Geo filters', 'Bookmarking tools']
+        features: ['Smart sorted feed', 'AI-curated startup feed', '20 startup contacts/month', 'Industry/Geo filters', 'Bookmarking tools']
     },
     {
         id: 'investor_pro',
         name: 'Investor Pro',
         price: 9999,
         currency: 'INR',
-        features: ['Unlimited startup access', 'AI Startup Summaries', 'AI Valuation Insights', 'Advanced AI scoring (Team/Risk)', 'Deal-flow analytics', 'CRM-style tracking'],
+        features: ['Priority access', 'Unlimited startup access', 'AI Startup Summaries', 'Advanced AI scoring (Team/Risk)', 'Deal-flow analytics', 'Comparison tools'],
         isPopular: true
     },
     {
@@ -90,7 +92,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Institutional / VC+',
         price: 24999,
         currency: 'INR',
-        features: ['Custom AI thesis matching', 'AI Startup Summaries', 'AI Valuation Insights', 'API & data export', 'Multiple team seats', 'White-label reports']
+        features: ['Custom thesis matching', 'AI Valuation Insights', 'API & data export', 'Multiple team seats', 'White-label reports']
     }
 ];
 
@@ -120,14 +122,61 @@ class SubscriptionManager {
         return saved || this.currentRegion;
     }
 
-    setTier(tier: SubscriptionTier) {
+    async setTier(tier: SubscriptionTier) {
         this.activeTier = tier;
         localStorage.setItem(this.getStorageKey('kasb_user_tier'), tier);
+
+        if (this.userId) {
+            try {
+                const { error } = await supabase
+                    .from('user_subscriptions')
+                    .upsert({
+                        user_id: this.userId,
+                        tier,
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) console.error('Error saving subscription to Supabase:', error);
+            } catch (err) {
+                console.error('Failed to sync tier with Supabase:', err);
+            }
+        }
     }
 
     getTier(): SubscriptionTier {
+        if (!this.userId) return this.activeTier;
         const saved = localStorage.getItem(this.getStorageKey('kasb_user_tier')) as SubscriptionTier;
         return saved || this.activeTier;
+    }
+
+    async refreshTier(): Promise<SubscriptionTier> {
+        if (!this.userId) return this.activeTier;
+
+        try {
+            const { data, error } = await supabase
+                .from('user_subscriptions')
+                .select('tier')
+                .eq('user_id', this.userId)
+                .single();
+
+            if (error) {
+                if (error.code !== 'PGRST116') {
+                    console.error('Error fetching subscription from Supabase:', error);
+                }
+                return this.getTier();
+            }
+
+            if (data?.tier) {
+                const tier = data.tier as SubscriptionTier;
+                this.activeTier = tier;
+                localStorage.setItem(this.getStorageKey('kasb_user_tier'), tier);
+                return tier;
+            }
+        } catch (err) {
+            console.error('Failed to refresh tier from Supabase:', err);
+        }
+
+        return this.getTier();
     }
 
     formatPrice(basePrice: number): { value: string; symbol: string } {
@@ -206,6 +255,16 @@ class SubscriptionManager {
         }
 
         return usage.profileViews < limits.profileViews;
+    }
+
+    hasPaidPlan(): boolean {
+        if (!this.userId) return false;
+        const tier = this.getTier();
+        if (!tier) return false;
+
+        // Free tiers are 'discovery' and 'explore'
+        const freeTiers = ['discovery', 'explore'];
+        return !freeTiers.includes(tier);
     }
 
     canContact(entityId?: string): boolean {

@@ -82,18 +82,28 @@ export function AdminDashboard() {
 
     const [newStartup, setNewStartup] = useState({
         name: '', logo: '🚀', problem_solving: '', description: '', valuation: '', stage: 'Seed', traction: '',
-        founder_name: '', founder_avatar: 'https://i.pravatar.cc/150', founder_bio: '', founder_education: '', founder_work_history: '', history: '', tags: '',
+        founder_name: '', founder_avatar: '', founder_bio: '', founder_education: '', founder_work_history: '', history: '', tags: '',
         industry: ''
     })
-    const [newInvestor, setNewInvestor] = useState({ name: '', avatar: 'https://i.pravatar.cc/150', funds_available: '', investments_count: 0 })
+    const [newInvestor, setNewInvestor] = useState({ name: '', avatar: '', funds_available: '', investments_count: 0 })
 
     const fetchData = useCallback(async () => {
-        const { data: startupData } = await supabase.from('startups').select('*').order('created_at', { ascending: false })
-        const { data: investorData } = await supabase.from('investors').select('*').order('created_at', { ascending: false })
+        const { data: startupData } = await supabase.from('startups').select('*, user_subscriptions(tier)').order('created_at', { ascending: false })
+        const { data: investorData } = await supabase.from('investors').select('*, user_subscriptions(tier)').order('created_at', { ascending: false })
         const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true })
 
-        if (startupData) setStartups(startupData)
-        if (investorData) setInvestors(investorData)
+        if (startupData) {
+            setStartups(startupData.map((s: any) => ({
+                ...s,
+                subscription_tier: s.user_subscriptions?.tier || 'discovery'
+            })))
+        }
+        if (investorData) {
+            setInvestors(investorData.map((i: any) => ({
+                ...i,
+                subscription_tier: i.user_subscriptions?.tier || 'explore'
+            })))
+        }
 
         // Calculate simple stats
         const now = new Date()
@@ -127,7 +137,7 @@ export function AdminDashboard() {
             fetchData()
             setNewStartup({
                 name: '', logo: '🚀', problem_solving: '', description: '', valuation: '', stage: 'Seed', traction: '',
-                founder_name: '', founder_avatar: 'https://i.pravatar.cc/150', founder_bio: '', founder_education: '', founder_work_history: '', history: '', tags: '',
+                founder_name: '', founder_avatar: '', founder_bio: '', founder_education: '', founder_work_history: '', history: '', tags: '',
                 industry: ''
             })
         } else {
@@ -140,7 +150,7 @@ export function AdminDashboard() {
         if (!error) {
             setIsInvestorModalOpen(false)
             fetchData()
-            setNewInvestor({ name: '', avatar: 'https://i.pravatar.cc/150', funds_available: '', investments_count: 0 })
+            setNewInvestor({ name: '', avatar: '', funds_available: '', investments_count: 0 })
         } else {
             alert('Error adding investor: ' + error.message)
         }
@@ -201,8 +211,15 @@ export function AdminDashboard() {
         fetchData()
     }
 
-    const updateUserTier = async (table: 'startups' | 'investors', id: string, tier: string) => {
-        const { error } = await supabase.from(table).update({ subscription_tier: tier }).eq('id', id)
+    const updateUserTier = async (_table: 'startups' | 'investors', id: string, tier: string) => {
+        const { error } = await supabase
+            .from('user_subscriptions')
+            .upsert({
+                user_id: id,
+                tier,
+                updated_at: new Date().toISOString()
+            })
+
         if (error) alert('Error updating tier: ' + error.message)
         else fetchData()
     }

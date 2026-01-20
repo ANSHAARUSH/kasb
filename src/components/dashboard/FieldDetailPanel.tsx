@@ -63,7 +63,7 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
                         logo: item.logo,
                         founder: {
                             name: item.founder_name,
-                            avatar: item.founder_avatar || 'https://i.pravatar.cc/150',
+                            avatar: item.founder_avatar || '',
                             bio: item.founder_bio || '',
                             education: item.founder_education || '',
                             workHistory: item.founder_work_history || ''

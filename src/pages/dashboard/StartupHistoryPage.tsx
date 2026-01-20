@@ -3,10 +3,14 @@ import { InvestorCard } from "../../components/dashboard/InvestorCard"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { supabase, getClosedDeals } from "../../lib/supabase"
+import { supabase, getClosedDeals, getUserSetting, getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
+import { compareInvestors, type ComparisonResult } from "../../lib/ai"
+import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
+import { Button } from "../../components/ui/button"
+import { Sparkles } from "lucide-react"
 
 
 export function StartupHistoryPage() {
@@ -16,6 +20,11 @@ export function StartupHistoryPage() {
    const [savedInvestors, setSavedInvestors] = useState<Investor[]>([])
    const [historyInvestors, setHistoryInvestors] = useState<Investor[]>([])
    const [loading, setLoading] = useState(false)
+
+   // Comparison State
+   const [selectedIds, setSelectedIds] = useState<string[]>([])
+   const [isComparing, setIsComparing] = useState(false)
+   const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
 
    useEffect(() => {
       if (!user || activeTab !== 'future') return
@@ -35,11 +44,12 @@ export function StartupHistoryPage() {
                return {
                   id: i.id,
                   name: i.name,
-                  avatar: i.avatar || 'https://i.pravatar.cc/150',
+                  avatar: i.avatar || '',
                   bio: i.bio || 'Active Investor',
                   fundsAvailable: i.funds_available || '$0',
                   investments: i.investments_count || 0,
-                  expertise: i.expertise || []
+                  expertise: i.expertise || [],
+                  last_active_at: i.last_active_at
                } as Investor
             })
             setSavedInvestors(mapped)
@@ -75,11 +85,12 @@ export function StartupHistoryPage() {
                const mapped = data.map((i: InvestorDB) => ({
                   id: i.id,
                   name: i.name,
-                  avatar: i.avatar || 'https://i.pravatar.cc/150',
+                  avatar: i.avatar || '',
                   bio: i.bio || 'Active Investor',
                   fundsAvailable: i.funds_available || '$0',
                   investments: i.investments_count || 0,
-                  expertise: i.expertise || []
+                  expertise: i.expertise || [],
+                  last_active_at: i.last_active_at
                } as Investor))
                setHistoryInvestors(mapped)
             }
@@ -106,11 +117,71 @@ export function StartupHistoryPage() {
          if (error) throw error
 
          setSavedInvestors(prev => prev.filter(i => i.id !== investor.id))
+         setSelectedIds(prev => prev.filter(id => id !== investor.id)) // Clear selection if removed
          toast("Removed from Future Plans", "info")
       } catch (err: unknown) {
          console.error("Error removing:", err)
          const message = err instanceof Error ? err.message : "Failed to remove. Please try again.";
          toast(message, "error")
+      }
+   }
+
+   const handleSelect = (id: string) => {
+      if (selectedIds.includes(id)) {
+         setSelectedIds(selectedIds.filter(s => s !== id))
+      } else {
+         if (selectedIds.length < 2) {
+            setSelectedIds([...selectedIds, id])
+         } else {
+            setSelectedIds([selectedIds[1], id])
+         }
+      }
+   }
+
+   const handleCompare = async () => {
+      if (selectedIds.length !== 2) {
+         if (selectedIds.length === 0) toast("Please select 2 investors to compare first.", "info")
+         return
+      }
+
+      const val1 = displayedInvestors.find(i => i.id === selectedIds[0])
+      const val2 = displayedInvestors.find(i => i.id === selectedIds[1])
+
+      if (!val1 || !val2) {
+         toast("Error: Could not find investor data.", "error")
+         return
+      }
+
+      setIsComparing(true)
+
+      try {
+         let apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+
+         if (!apiKey) {
+            const globalKey = await getGlobalConfig('ai_api_key')
+            if (globalKey) apiKey = globalKey
+         }
+
+         if (!apiKey && user) {
+            const storedKey = await getUserSetting(user.id, 'ai_api_key')
+            if (storedKey) apiKey = storedKey
+         }
+
+         if (!apiKey) {
+            toast("AI features are not setup. Please contact the administrator.", "error")
+            return
+         }
+
+         const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+         const result = await compareInvestors(val1, val2, apiKey, baseUrl)
+         setComparisonResult(result)
+
+      } catch (error: unknown) {
+         console.error("Comparison Error:", error)
+         const message = error instanceof Error ? error.message : "Comparison failed";
+         toast(`Comparison failed: ${message}`, "error")
+      } finally {
+         setIsComparing(false)
       }
    }
 
@@ -125,6 +196,7 @@ export function StartupHistoryPage() {
                   key={tab}
                   onClick={() => {
                      setActiveTab(tab)
+                     setSelectedIds([]) // Clear selection on tab switch
                   }}
                   className={cn(
                      "relative flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors z-10",
@@ -143,6 +215,13 @@ export function StartupHistoryPage() {
             ))}
          </div>
 
+         {/* Hint for comparison */}
+         {activeTab === 'future' && savedInvestors.length >= 2 && selectedIds.length < 2 && (
+            <div className="text-center text-sm text-gray-500 animate-in fade-in slide-in-from-top-1">
+               Select 2 investors to compare with AI
+            </div>
+         )}
+
          <AnimatePresence mode="wait">
             <motion.div
                key={activeTab}
@@ -158,7 +237,9 @@ export function StartupHistoryPage() {
                   <InvestorCard
                      key={investor.id}
                      investor={investor}
+                     isSelected={selectedIds.includes(investor.id)}
                      isSaved={true}
+                     onClick={() => handleSelect(investor.id)}
                      onToggleSave={handleRemove}
                   />
                ))}
@@ -172,6 +253,47 @@ export function StartupHistoryPage() {
                   </div>
                )}
             </motion.div>
+         </AnimatePresence>
+
+         {/* Compare Button */}
+         <AnimatePresence>
+            {selectedIds.length === 2 && (
+               <motion.div
+                  initial={{ y: 100, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 100, opacity: 0 }}
+                  className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40"
+               >
+                  <Button
+                     size="lg"
+                     className="rounded-full shadow-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-8 py-6 text-lg font-bold"
+                     onClick={handleCompare}
+                     disabled={isComparing}
+                  >
+                     {isComparing ? (
+                        <span className="flex items-center gap-2">
+                           <Sparkles className="animate-spin h-5 w-5" /> Analyzing...
+                        </span>
+                     ) : (
+                        <span className="flex items-center gap-2">
+                           <Sparkles className="h-5 w-5" /> Compare with AI
+                        </span>
+                     )}
+                  </Button>
+               </motion.div>
+            )}
+         </AnimatePresence>
+
+         {/* Comparison View Modal */}
+         <AnimatePresence>
+            {comparisonResult && (
+               <InvestorComparisonView
+                  investor1={savedInvestors.find(i => i.id === selectedIds[0]) || historyInvestors.find(i => i.id === selectedIds[0])!}
+                  investor2={savedInvestors.find(i => i.id === selectedIds[1]) || historyInvestors.find(i => i.id === selectedIds[1])!}
+                  result={comparisonResult}
+                  onClose={() => setComparisonResult(null)}
+               />
+            )}
          </AnimatePresence>
       </div>
    )

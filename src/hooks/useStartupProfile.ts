@@ -26,6 +26,7 @@ export interface StartupProfileData {
     questionnaire?: Record<string, Record<string, string>>
     ai_summary?: string
     summary_status?: 'draft' | 'final'
+    last_active_at?: string
 }
 
 export function useStartupProfile() {

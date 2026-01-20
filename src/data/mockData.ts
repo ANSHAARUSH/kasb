@@ -27,6 +27,7 @@ export interface Startup {
     questionnaire?: Record<string, Record<string, string>>
     impactPoints?: number
     communityBoosts?: number
+    last_active_at?: string
 }
 
 export const MOCK_STARTUPS: Startup[] = [
@@ -36,7 +37,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🚀",
         "founder": {
             "name": "Michael Adams",
-            "avatar": "https://i.pravatar.cc/150?u=michael1",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Google"
@@ -63,7 +64,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚕️",
         "founder": {
             "name": "Joshua Torres",
-            "avatar": "https://i.pravatar.cc/150?u=joshua2",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "IIT University",
             "workHistory": "Ex-Meta"
@@ -90,7 +91,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🍜",
         "founder": {
             "name": "Anthony Rodriguez",
-            "avatar": "https://i.pravatar.cc/150?u=anthony3",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling HealthTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Meta"
@@ -117,7 +118,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌾",
         "founder": {
             "name": "Anthony Martinez",
-            "avatar": "https://i.pravatar.cc/150?u=anthony4",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling DeepTech solutions.",
             "education": "IIT University",
             "workHistory": "Ex-Amazon"
@@ -144,7 +145,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🔋",
         "founder": {
             "name": "Lisa Carter",
-            "avatar": "https://i.pravatar.cc/150?u=lisa5",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Amazon"
@@ -171,7 +172,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🛡️",
         "founder": {
             "name": "Margaret Wright",
-            "avatar": "https://i.pravatar.cc/150?u=margaret6",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Google"
@@ -198,7 +199,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Carol Campbell",
-            "avatar": "https://i.pravatar.cc/150?u=carol7",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "MIT University",
             "workHistory": "Ex-Google"
@@ -225,7 +226,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Susan Martinez",
-            "avatar": "https://i.pravatar.cc/150?u=susan8",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling SaaS solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Goldman Sachs"
@@ -252,7 +253,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🎨",
         "founder": {
             "name": "Daniel Young",
-            "avatar": "https://i.pravatar.cc/150?u=daniel9",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Google"
@@ -279,7 +280,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Steven Wilson",
-            "avatar": "https://i.pravatar.cc/150?u=steven10",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling AgriTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Goldman Sachs"
@@ -306,7 +307,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "📦",
         "founder": {
             "name": "Michelle Scott",
-            "avatar": "https://i.pravatar.cc/150?u=michelle11",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Amazon"
@@ -333,7 +334,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🍜",
         "founder": {
             "name": "Kimberly Thomas",
-            "avatar": "https://i.pravatar.cc/150?u=kimberly12",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Amazon"
@@ -360,7 +361,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Kenneth Green",
-            "avatar": "https://i.pravatar.cc/150?u=kenneth13",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Apple"
@@ -387,7 +388,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🔋",
         "founder": {
             "name": "Steven King",
-            "avatar": "https://i.pravatar.cc/150?u=steven14",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling HealthTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Goldman Sachs"
@@ -414,7 +415,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🍜",
         "founder": {
             "name": "Michael Carter",
-            "avatar": "https://i.pravatar.cc/150?u=michael15",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling AgriTech solutions.",
             "education": "MIT University",
             "workHistory": "Ex-Apple"
@@ -441,7 +442,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Betty Nelson",
-            "avatar": "https://i.pravatar.cc/150?u=betty16",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling Logistics solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Apple"
@@ -468,7 +469,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🪙",
         "founder": {
             "name": "Brian Clark",
-            "avatar": "https://i.pravatar.cc/150?u=brian17",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -495,7 +496,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Barbara Anderson",
-            "avatar": "https://i.pravatar.cc/150?u=barbara18",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Meta"
@@ -522,7 +523,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🪙",
         "founder": {
             "name": "Mary Scott",
-            "avatar": "https://i.pravatar.cc/150?u=mary19",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling DeepTech solutions.",
             "education": "MIT University",
             "workHistory": "Ex-Google"
@@ -549,7 +550,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🔋",
         "founder": {
             "name": "Donna Martinez",
-            "avatar": "https://i.pravatar.cc/150?u=donna20",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "MIT University",
             "workHistory": "Ex-Meta"
@@ -576,7 +577,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Melissa Moore",
-            "avatar": "https://i.pravatar.cc/150?u=melissa21",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Amazon"
@@ -603,7 +604,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🎨",
         "founder": {
             "name": "Susan Carter",
-            "avatar": "https://i.pravatar.cc/150?u=susan22",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Apple"
@@ -630,7 +631,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚕️",
         "founder": {
             "name": "Kimberly Allen",
-            "avatar": "https://i.pravatar.cc/150?u=kimberly23",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "IIT University",
             "workHistory": "Ex-Amazon"
@@ -657,7 +658,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Donald Harris",
-            "avatar": "https://i.pravatar.cc/150?u=donald24",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Meta"
@@ -684,7 +685,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "📱",
         "founder": {
             "name": "Anthony Anderson",
-            "avatar": "https://i.pravatar.cc/150?u=anthony25",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Goldman Sachs"
@@ -711,7 +712,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🪙",
         "founder": {
             "name": "David Torres",
-            "avatar": "https://i.pravatar.cc/150?u=david26",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling Logistics solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Google"
@@ -738,7 +739,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌾",
         "founder": {
             "name": "Matthew Lopez",
-            "avatar": "https://i.pravatar.cc/150?u=matthew27",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -765,7 +766,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🪙",
         "founder": {
             "name": "Jessica Sanchez",
-            "avatar": "https://i.pravatar.cc/150?u=jessica28",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling Logistics solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -792,7 +793,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Kevin Moore",
-            "avatar": "https://i.pravatar.cc/150?u=kevin29",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling HealthTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Meta"
@@ -819,7 +820,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🚀",
         "founder": {
             "name": "Sarah Rivera",
-            "avatar": "https://i.pravatar.cc/150?u=sarah30",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "MIT University",
             "workHistory": "Ex-Meta"
@@ -846,7 +847,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌾",
         "founder": {
             "name": "Sandra Lewis",
-            "avatar": "https://i.pravatar.cc/150?u=sandra31",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Amazon"
@@ -873,7 +874,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🧠",
         "founder": {
             "name": "Andrew Nguyen",
-            "avatar": "https://i.pravatar.cc/150?u=andrew32",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling DeepTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Goldman Sachs"
@@ -900,7 +901,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🎨",
         "founder": {
             "name": "Carol Clark",
-            "avatar": "https://i.pravatar.cc/150?u=carol33",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling AgriTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Meta"
@@ -927,7 +928,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🛡️",
         "founder": {
             "name": "Donald Torres",
-            "avatar": "https://i.pravatar.cc/150?u=donald34",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -954,7 +955,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "📱",
         "founder": {
             "name": "Joseph Taylor",
-            "avatar": "https://i.pravatar.cc/150?u=joseph35",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Apple"
@@ -981,7 +982,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌾",
         "founder": {
             "name": "Amanda Young",
-            "avatar": "https://i.pravatar.cc/150?u=amanda36",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling DeepTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Apple"
@@ -1008,7 +1009,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Matthew Baker",
-            "avatar": "https://i.pravatar.cc/150?u=matthew37",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Meta"
@@ -1035,7 +1036,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌐",
         "founder": {
             "name": "Mary Campbell",
-            "avatar": "https://i.pravatar.cc/150?u=mary38",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Amazon"
@@ -1062,7 +1063,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "☁️",
         "founder": {
             "name": "Michelle Johnson",
-            "avatar": "https://i.pravatar.cc/150?u=michelle39",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling EdTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Amazon"
@@ -1089,7 +1090,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🧬",
         "founder": {
             "name": "Amanda Taylor",
-            "avatar": "https://i.pravatar.cc/150?u=amanda40",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Google"
@@ -1116,7 +1117,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Kevin Miller",
-            "avatar": "https://i.pravatar.cc/150?u=kevin41",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling HealthTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Google"
@@ -1143,7 +1144,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "⚙️",
         "founder": {
             "name": "Jessica Nguyen",
-            "avatar": "https://i.pravatar.cc/150?u=jessica42",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling FinTech solutions.",
             "education": "IIT University",
             "workHistory": "Ex-Google"
@@ -1170,7 +1171,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "☁️",
         "founder": {
             "name": "Robert Martin",
-            "avatar": "https://i.pravatar.cc/150?u=robert43",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling Logistics solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Google"
@@ -1197,7 +1198,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "☁️",
         "founder": {
             "name": "Linda Flores",
-            "avatar": "https://i.pravatar.cc/150?u=linda44",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling AgriTech solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -1224,7 +1225,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "📱",
         "founder": {
             "name": "Melissa Lopez",
-            "avatar": "https://i.pravatar.cc/150?u=melissa45",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "Oxford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -1251,7 +1252,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🧬",
         "founder": {
             "name": "Michael Hall",
-            "avatar": "https://i.pravatar.cc/150?u=michael46",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Meta"
@@ -1278,7 +1279,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🛡️",
         "founder": {
             "name": "Thomas Anderson",
-            "avatar": "https://i.pravatar.cc/150?u=thomas47",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling CleanTech solutions.",
             "education": "Harvard University",
             "workHistory": "Ex-Amazon"
@@ -1305,7 +1306,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "☁️",
         "founder": {
             "name": "Sandra Hill",
-            "avatar": "https://i.pravatar.cc/150?u=sandra48",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "IIT University",
             "workHistory": "Ex-Apple"
@@ -1332,7 +1333,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🌾",
         "founder": {
             "name": "Charles Thomas",
-            "avatar": "https://i.pravatar.cc/150?u=charles49",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling PropTech solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Google"
@@ -1359,7 +1360,7 @@ export const MOCK_STARTUPS: Startup[] = [
         "logo": "🍜",
         "founder": {
             "name": "Donna Lee",
-            "avatar": "https://i.pravatar.cc/150?u=donna50",
+            "avatar": "",
             "bio": "Serial entrepreneur scaling E-commerce solutions.",
             "education": "Stanford University",
             "workHistory": "Ex-Goldman Sachs"
@@ -1441,13 +1442,14 @@ export interface Investor {
     impactPoints?: number
     verificationLevel?: 'basic' | 'verified' | 'trusted'
     profile_details?: InvestorProfileDetails
+    last_active_at?: string
 }
 
 export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i1",
         "name": "Anthony Smith",
-        "avatar": "https://i.pravatar.cc/150?u=smith1",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage CleanTech and PropTech.",
         "fundsAvailable": "$295M",
         "investments": 28,
@@ -1459,19 +1461,20 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i2",
         "name": "Lisa Adams",
-        "avatar": "https://i.pravatar.cc/150?u=adams2",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and EdTech.",
         "fundsAvailable": "$325M",
         "investments": 8,
         "expertise": [
             "FinTech",
             "EdTech"
-        ]
+        ],
+        "last_active_at": new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
     },
     {
         "id": "i3",
         "name": "Sarah Green",
-        "avatar": "https://i.pravatar.cc/150?u=green3",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and Logistics.",
         "fundsAvailable": "$417M",
         "investments": 6,
@@ -1483,7 +1486,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i4",
         "name": "Betty Allen",
-        "avatar": "https://i.pravatar.cc/150?u=allen4",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage PropTech and FinTech.",
         "fundsAvailable": "$80M",
         "investments": 22,
@@ -1495,7 +1498,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i5",
         "name": "David Lewis",
-        "avatar": "https://i.pravatar.cc/150?u=lewis5",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage EdTech and AgriTech.",
         "fundsAvailable": "$296M",
         "investments": 21,
@@ -1507,7 +1510,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i6",
         "name": "Michelle Gonzalez",
-        "avatar": "https://i.pravatar.cc/150?u=gonzalez6",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and SaaS.",
         "fundsAvailable": "$347M",
         "investments": 13,
@@ -1519,7 +1522,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i7",
         "name": "Jennifer Jackson",
-        "avatar": "https://i.pravatar.cc/150?u=jackson7",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and E-commerce.",
         "fundsAvailable": "$457M",
         "investments": 29,
@@ -1531,7 +1534,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i8",
         "name": "James Nguyen",
-        "avatar": "https://i.pravatar.cc/150?u=nguyen8",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage SaaS and CleanTech.",
         "fundsAvailable": "$64M",
         "investments": 28,
@@ -1543,7 +1546,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i9",
         "name": "Richard Hall",
-        "avatar": "https://i.pravatar.cc/150?u=hall9",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage DeepTech and DeepTech.",
         "fundsAvailable": "$191M",
         "investments": 24,
@@ -1554,7 +1557,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i10",
         "name": "Richard Allen",
-        "avatar": "https://i.pravatar.cc/150?u=allen10",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage PropTech and Logistics.",
         "fundsAvailable": "$493M",
         "investments": 22,
@@ -1566,7 +1569,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i11",
         "name": "Robert Lee",
-        "avatar": "https://i.pravatar.cc/150?u=lee11",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and DeepTech.",
         "fundsAvailable": "$86M",
         "investments": 14,
@@ -1578,7 +1581,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i12",
         "name": "Dorothy Clark",
-        "avatar": "https://i.pravatar.cc/150?u=clark12",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage DeepTech and HealthTech.",
         "fundsAvailable": "$460M",
         "investments": 16,
@@ -1590,7 +1593,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i13",
         "name": "Richard Anderson",
-        "avatar": "https://i.pravatar.cc/150?u=anderson13",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and PropTech.",
         "fundsAvailable": "$143M",
         "investments": 25,
@@ -1602,7 +1605,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i14",
         "name": "Joshua Lee",
-        "avatar": "https://i.pravatar.cc/150?u=lee14",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and E-commerce.",
         "fundsAvailable": "$261M",
         "investments": 31,
@@ -1614,7 +1617,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i15",
         "name": "Ashley Rodriguez",
-        "avatar": "https://i.pravatar.cc/150?u=rodriguez15",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and DeepTech.",
         "fundsAvailable": "$467M",
         "investments": 7,
@@ -1626,7 +1629,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i16",
         "name": "Robert Gonzalez",
-        "avatar": "https://i.pravatar.cc/150?u=gonzalez16",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and AgriTech.",
         "fundsAvailable": "$410M",
         "investments": 7,
@@ -1638,7 +1641,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i17",
         "name": "Deborah Adams",
-        "avatar": "https://i.pravatar.cc/150?u=adams17",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage AgriTech and Logistics.",
         "fundsAvailable": "$108M",
         "investments": 9,
@@ -1650,7 +1653,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i18",
         "name": "Brian Hall",
-        "avatar": "https://i.pravatar.cc/150?u=hall18",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and CleanTech.",
         "fundsAvailable": "$482M",
         "investments": 27,
@@ -1662,7 +1665,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i19",
         "name": "William Mitchell",
-        "avatar": "https://i.pravatar.cc/150?u=mitchell19",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and DeepTech.",
         "fundsAvailable": "$37M",
         "investments": 25,
@@ -1674,7 +1677,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i20",
         "name": "Amanda Rivera",
-        "avatar": "https://i.pravatar.cc/150?u=rivera20",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and DeepTech.",
         "fundsAvailable": "$124M",
         "investments": 17,
@@ -1686,7 +1689,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i21",
         "name": "Edward Rivera",
-        "avatar": "https://i.pravatar.cc/150?u=rivera21",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and E-commerce.",
         "fundsAvailable": "$20M",
         "investments": 25,
@@ -1698,7 +1701,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i22",
         "name": "Kimberly Sanchez",
-        "avatar": "https://i.pravatar.cc/150?u=sanchez22",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage SaaS and Logistics.",
         "fundsAvailable": "$158M",
         "investments": 26,
@@ -1710,7 +1713,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i23",
         "name": "Matthew Roberts",
-        "avatar": "https://i.pravatar.cc/150?u=roberts23",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and FinTech.",
         "fundsAvailable": "$322M",
         "investments": 17,
@@ -1722,7 +1725,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i24",
         "name": "Kimberly Rodriguez",
-        "avatar": "https://i.pravatar.cc/150?u=rodriguez24",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage SaaS and PropTech.",
         "fundsAvailable": "$119M",
         "investments": 30,
@@ -1734,7 +1737,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i25",
         "name": "Emily Ramirez",
-        "avatar": "https://i.pravatar.cc/150?u=ramirez25",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and Logistics.",
         "fundsAvailable": "$238M",
         "investments": 13,
@@ -1746,7 +1749,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i26",
         "name": "Kimberly Jones",
-        "avatar": "https://i.pravatar.cc/150?u=jones26",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage PropTech and DeepTech.",
         "fundsAvailable": "$435M",
         "investments": 13,
@@ -1758,7 +1761,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i27",
         "name": "Edward King",
-        "avatar": "https://i.pravatar.cc/150?u=king27",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage AgriTech and E-commerce.",
         "fundsAvailable": "$287M",
         "investments": 26,
@@ -1770,7 +1773,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i28",
         "name": "Karen Moore",
-        "avatar": "https://i.pravatar.cc/150?u=moore28",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage DeepTech and EdTech.",
         "fundsAvailable": "$180M",
         "investments": 11,
@@ -1782,7 +1785,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i29",
         "name": "Elizabeth Wright",
-        "avatar": "https://i.pravatar.cc/150?u=wright29",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage DeepTech and Logistics.",
         "fundsAvailable": "$372M",
         "investments": 32,
@@ -1794,7 +1797,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i30",
         "name": "Mark Moore",
-        "avatar": "https://i.pravatar.cc/150?u=moore30",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage E-commerce and CleanTech.",
         "fundsAvailable": "$21M",
         "investments": 13,
@@ -1806,7 +1809,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i31",
         "name": "Matthew Anderson",
-        "avatar": "https://i.pravatar.cc/150?u=anderson31",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage CleanTech and CleanTech.",
         "fundsAvailable": "$274M",
         "investments": 14,
@@ -1817,7 +1820,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i32",
         "name": "Steven Rodriguez",
-        "avatar": "https://i.pravatar.cc/150?u=rodriguez32",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage CleanTech and PropTech.",
         "fundsAvailable": "$71M",
         "investments": 16,
@@ -1829,7 +1832,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i33",
         "name": "Deborah Moore",
-        "avatar": "https://i.pravatar.cc/150?u=moore33",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage PropTech and E-commerce.",
         "fundsAvailable": "$107M",
         "investments": 30,
@@ -1841,7 +1844,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i34",
         "name": "John Martin",
-        "avatar": "https://i.pravatar.cc/150?u=martin34",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and AgriTech.",
         "fundsAvailable": "$46M",
         "investments": 7,
@@ -1853,7 +1856,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i35",
         "name": "James Carter",
-        "avatar": "https://i.pravatar.cc/150?u=carter35",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and AgriTech.",
         "fundsAvailable": "$155M",
         "investments": 27,
@@ -1865,7 +1868,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i36",
         "name": "Edward Perez",
-        "avatar": "https://i.pravatar.cc/150?u=perez36",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and PropTech.",
         "fundsAvailable": "$154M",
         "investments": 30,
@@ -1877,7 +1880,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i37",
         "name": "Sarah Walker",
-        "avatar": "https://i.pravatar.cc/150?u=walker37",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and E-commerce.",
         "fundsAvailable": "$208M",
         "investments": 12,
@@ -1889,7 +1892,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i38",
         "name": "Matthew Nguyen",
-        "avatar": "https://i.pravatar.cc/150?u=nguyen38",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage SaaS and HealthTech.",
         "fundsAvailable": "$86M",
         "investments": 23,
@@ -1901,7 +1904,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i39",
         "name": "Elizabeth Campbell",
-        "avatar": "https://i.pravatar.cc/150?u=campbell39",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage FinTech and FinTech.",
         "fundsAvailable": "$291M",
         "investments": 15,
@@ -1912,7 +1915,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i40",
         "name": "Patricia Thomas",
-        "avatar": "https://i.pravatar.cc/150?u=thomas40",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage PropTech and PropTech.",
         "fundsAvailable": "$218M",
         "investments": 10,
@@ -1923,7 +1926,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i41",
         "name": "Emily Scott",
-        "avatar": "https://i.pravatar.cc/150?u=scott41",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage CleanTech and PropTech.",
         "fundsAvailable": "$373M",
         "investments": 18,
@@ -1935,7 +1938,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i42",
         "name": "Melissa Wilson",
-        "avatar": "https://i.pravatar.cc/150?u=wilson42",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and DeepTech.",
         "fundsAvailable": "$481M",
         "investments": 34,
@@ -1947,7 +1950,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i43",
         "name": "Steven Nguyen",
-        "avatar": "https://i.pravatar.cc/150?u=nguyen43",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage CleanTech and FinTech.",
         "fundsAvailable": "$309M",
         "investments": 21,
@@ -1959,7 +1962,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i44",
         "name": "Richard Baker",
-        "avatar": "https://i.pravatar.cc/150?u=baker44",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and SaaS.",
         "fundsAvailable": "$468M",
         "investments": 6,
@@ -1971,7 +1974,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i45",
         "name": "Daniel Anderson",
-        "avatar": "https://i.pravatar.cc/150?u=anderson45",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage EdTech and Logistics.",
         "fundsAvailable": "$327M",
         "investments": 13,
@@ -1983,7 +1986,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i46",
         "name": "Kenneth Anderson",
-        "avatar": "https://i.pravatar.cc/150?u=anderson46",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage HealthTech and SaaS.",
         "fundsAvailable": "$238M",
         "investments": 21,
@@ -1995,7 +1998,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i47",
         "name": "Jessica Baker",
-        "avatar": "https://i.pravatar.cc/150?u=baker47",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage E-commerce and DeepTech.",
         "fundsAvailable": "$311M",
         "investments": 29,
@@ -2007,7 +2010,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i48",
         "name": "Joshua Allen",
-        "avatar": "https://i.pravatar.cc/150?u=allen48",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage AgriTech and EdTech.",
         "fundsAvailable": "$392M",
         "investments": 19,
@@ -2019,7 +2022,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i49",
         "name": "Matthew Perez",
-        "avatar": "https://i.pravatar.cc/150?u=perez49",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage AgriTech and CleanTech.",
         "fundsAvailable": "$114M",
         "investments": 8,
@@ -2031,7 +2034,7 @@ export const MOCK_INVESTORS: Investor[] = [
     {
         "id": "i50",
         "name": "Patricia Brown",
-        "avatar": "https://i.pravatar.cc/150?u=brown50",
+        "avatar": "",
         "bio": "Angel investor focused on early-stage Logistics and DeepTech.",
         "fundsAvailable": "$485M",
         "investments": 6,

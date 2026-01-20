@@ -21,6 +21,7 @@ export interface StartupDB {
     review_requested?: boolean
     problem_solving?: string
     industry?: string
+    last_active_at?: string
 }
 
 export interface InvestorDB {
@@ -36,6 +37,7 @@ export interface InvestorDB {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     expertise?: string[]
+    last_active_at?: string
 }
 export interface Message {
     id: string

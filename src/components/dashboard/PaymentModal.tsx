@@ -4,7 +4,7 @@ import { Check, Loader2, X, CreditCard, ShieldCheck } from "lucide-react"
 import { Button } from "../ui/button"
 import { subscriptionManager, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { useAuth } from "../../context/AuthContext"
-import { supabase, purchaseImpactPoints } from "../../lib/supabase"
+import { purchaseImpactPoints } from "../../lib/supabase"
 
 interface PaymentModalProps {
     isOpen: boolean
@@ -36,15 +36,8 @@ export function PaymentModal({ isOpen, onClose, tier }: PaymentModalProps) {
                 // Handle Impact Point purchase
                 await purchaseImpactPoints(user.id, tier.points, tier.price)
             } else {
-                // Update Supabase for Tier subscription
-                const table = role === 'startup' ? 'startups' : 'investors'
-                const { error } = await supabase
-                    .from(table)
-                    .update({ subscription_tier: tier.id })
-                    .eq('id', user.id)
-
-                if (error) throw error
-                subscriptionManager.setTier(tier.id)
+                // subscriptionManager.setTier now handles Supabase sync with user_subscriptions table
+                await subscriptionManager.setTier(tier.id)
                 subscriptionManager.resetUsage()
             }
 

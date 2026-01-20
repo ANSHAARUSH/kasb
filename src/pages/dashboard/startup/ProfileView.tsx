@@ -2,7 +2,7 @@ import { Card, CardContent } from "../../../components/ui/card"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { VerificationSection } from "./VerificationSection"
 import { useMemo, useState, useEffect } from "react"
-import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2 } from "lucide-react"
+import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText } from "lucide-react"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
@@ -16,6 +16,8 @@ import { useToast } from "../../../hooks/useToast"
 import { COUNTRIES } from "../../../lib/locationData"
 import { ValuationCalculator } from "../../../components/dashboard/ValuationCalculator"
 import { calculateImpactScore } from "../../../lib/scoring"
+import { DocumentsView } from "../../../components/dashboard/DocumentsView"
+import type { Startup } from "../../../data/mockData"
 
 interface ProfileViewProps {
     startup: StartupProfileData
@@ -28,7 +30,7 @@ interface ProfileViewProps {
 export function ProfileView({ startup, onRequestReview, onSave, saving }: ProfileViewProps) {
     const { user } = useAuth()
     const { toast } = useToast()
-    const [activeTab, setActiveTab] = useState<'questions' | 'metrics'>('questions')
+    const [activeTab, setActiveTab] = useState<'questions' | 'metrics' | 'documents'>('questions')
     const [isEditing, setIsEditing] = useState(false)
     const [localAnswers, setLocalAnswers] = useState<Record<string, Record<string, string>>>({})
     const [localStartup, setLocalStartup] = useState<Partial<StartupProfileData>>({})
@@ -161,6 +163,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
     const tabs = [
         { id: 'questions' as const, label: 'Stage Questions', icon: Info },
         { id: 'metrics' as const, label: 'Metrics', icon: BarChart3 },
+        { id: 'documents' as const, label: 'Documents', icon: FileText },
     ]
 
     return (
@@ -519,6 +522,37 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                         Detailed monthly traction, burn rate, and growth charts will be displayed here as you update your monthly metrics.
                                     </p>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'documents' && (
+                            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <DocumentsView
+                                    startup={{
+                                        ...startup,
+                                        id: startup.id,
+                                        name: startup.name,
+                                        logo: startup.logo,
+                                        metrics: {
+                                            valuation: startup.valuation,
+                                            stage: startup.stage,
+                                            traction: startup.traction
+                                        },
+                                        founder: {
+                                            name: startup.founder_name,
+                                            avatar: startup.founder_avatar,
+                                            bio: startup.founder_bio,
+                                            education: '',
+                                            workHistory: ''
+                                        },
+                                        problemSolving: startup.problem_solving,
+                                        history: startup.history || '',
+                                        tags: startup.tags || [],
+                                        emailVerified: startup.email_verified,
+                                        showInFeed: startup.show_in_feed,
+                                        verificationLevel: startup.verification_level
+                                    } as Startup}
+                                />
                             </div>
                         )}
                     </div>

@@ -21,21 +21,22 @@ export function useInvestors() {
                         const baseInvestor: Investor = {
                             id: i.id,
                             name: i.name,
-                            avatar: i.avatar || 'https://i.pravatar.cc/150',
+                            avatar: i.avatar || '',
                             title: i.title,
                             bio: i.bio || 'Active Investor',
                             fundsAvailable: i.funds_available || '$0',
                             investments: i.investments_count || 0,
                             expertise: i.expertise || [],
                             verificationLevel: i.verification_level,
-                            profile_details: i.profile_details
+                            profile_details: i.profile_details,
+                            last_active_at: i.last_active_at
                         };
                         const scoreResult = calculateImpactScore(baseInvestor);
                         return {
                             ...baseInvestor,
                             impactPoints: scoreResult.total
                         };
-                    })
+                    }).sort((a, b) => b.impactPoints - a.impactPoints)
                     setInvestors(mappedInvestors)
                 } else {
                     setInvestors([])

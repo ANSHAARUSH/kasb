@@ -140,8 +140,8 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
 
     return (
         <Card onClick={onClick} onDoubleClick={onDoubleClick} className={cn(
-            "group h-full flex flex-col relative hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1 transition-all cursor-pointer duration-500 overflow-hidden shadow-sm touch-manipulation border-black",
-            isSelected ? "border-[3px] bg-white shadow-xl" : "border-2 bg-white/50 backdrop-blur-sm"
+            "group h-full flex flex-col relative hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black transition-all cursor-pointer duration-300 overflow-hidden shadow-sm touch-manipulation",
+            isSelected ? "border-[3px] border-black bg-white shadow-xl" : "border-2 border-black/5 bg-white/50 backdrop-blur-sm"
         )}>
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -163,7 +163,23 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                 </span>
                             </div>
                         </div>
-                        <p className="text-xs font-medium text-gray-400 mt-1 line-clamp-1 italic">"{investor.bio}"</p>
+                        <p className="text-xs font-medium text-gray-400 mt-1 line-clamp-1 italic">
+                            "{investor.bio}"
+                            {investor.last_active_at && (
+                                <span className="ml-2 inline-flex items-center gap-1 not-italic font-bold text-[10px] text-emerald-500">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    Active {(() => {
+                                        const diff = Date.now() - new Date(investor.last_active_at).getTime()
+                                        const minutes = Math.floor(diff / 60000)
+                                        if (minutes < 5) return 'now'
+                                        if (minutes < 60) return `${minutes}m ago`
+                                        const hours = Math.floor(minutes / 60)
+                                        if (hours < 24) return `${hours}h ago`
+                                        return `${Math.floor(hours / 24)}d ago`
+                                    })()}
+                                </span>
+                            )}
+                        </p>
 
                         <div className="mt-4 flex flex-wrap gap-1.5">
                             {investor.expertise.slice(0, 3).map(skill => (

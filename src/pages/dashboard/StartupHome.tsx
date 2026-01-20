@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 import { type Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
 import { useChat } from "../../hooks/useChat"
@@ -15,7 +16,25 @@ import { FileText, Filter } from "lucide-react"
 import { InvestorDetail, type PanelSize, InvestorDetailModal } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 
+import { InvestorFilterPanel, type InvestorFilterState } from "../../components/dashboard/InvestorFilterPanel"
+import { parseRevenue } from "../../lib/utils"
+
 export function StartupHome() {
+    // ... hooks ...
+
+    const [filters, setFilters] = useState<InvestorFilterState>({
+        types: [],
+        industries: [],
+        minFunds: "0"
+    })
+    const [showFilters, setShowFilters] = useState(false)
+    const [activeFeed, setActiveFeed] = useState<'discover' | 'top-investors'>('discover')
+
+    // ... existing hooks ...
+    // Note: I need to preserve existing hooks. I will just inject imports and state.
+    // Instead of replacing whole file, I will carefully target sections.
+
+    // Let's rewrite the component start to include new state
     const { openChat } = useChat()
     const { investors, loading: investorsLoading } = useInvestors()
     const { savedIds: savedInvestorIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
@@ -26,7 +45,7 @@ export function StartupHome() {
     const loading = investorsLoading || savedLoading
 
     const [searchQuery, setSearchQuery] = useState("")
-    const { startup: profileStartup } = useStartupProfile()
+    const { startup: profileStartup } = useStartupProfile() // Used for impact tracker
 
     // Panel State
     const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -56,14 +75,59 @@ export function StartupHome() {
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
-    const filteredInvestors = investors.filter(investor => {
+    const baseFilteredInvestors = investors.filter(investor => {
+        // 1. Text Search
         const query = debouncedSearchQuery.toLowerCase()
-        return (
+        const matchesSearch = (
             investor.name.toLowerCase().includes(query) ||
             investor.bio.toLowerCase().includes(query) ||
             investor.expertise.some(e => e.toLowerCase().includes(query))
         )
+        if (!matchesSearch) return false
+
+        // 2. Type Filter (using bio/title proxy)
+        if (filters.types.length > 0) {
+            const typeText = (investor.title + " " + investor.bio).toLowerCase()
+            const matchesType = filters.types.some(t => {
+                if (t === "Angel Investor") return typeText.includes("angel");
+                if (t === "Venture Capital") return typeText.includes("vc") || typeText.includes("venture");
+                if (t === "Syndicate") return typeText.includes("syndicate");
+                if (t === "Family Office") return typeText.includes("family office");
+                return false;
+            })
+            if (!matchesType) return false
+        }
+
+        // 3. Industry Filter
+        if (filters.industries.length > 0) {
+            const matchesIndustry = investor.expertise.some(exp =>
+                filters.industries.some(f => exp.toLowerCase().includes(f.toLowerCase()))
+            )
+            if (!matchesIndustry) return false
+        }
+
+        // 4. Funds Filter
+        if (filters.minFunds !== "0") {
+            const funds = parseRevenue(investor.fundsAvailable)
+            if (funds < parseInt(filters.minFunds)) return false
+        }
+
+        return true
     })
+
+    const filteredInvestors = useMemo(() => {
+        let base = [...baseFilteredInvestors]
+
+        if (activeFeed === 'top-investors') {
+            base.sort((a, b) => (b.investments || 0) - (a.investments || 0))
+        }
+
+        if (!subscriptionManager.hasPaidPlan() && activeFeed === 'discover') {
+            // Randomize feed for free tier
+            return base.sort(() => Math.random() - 0.5)
+        }
+        return base
+    }, [baseFilteredInvestors, activeFeed])
 
     const handleMessageClick = (investor: Investor) => {
         openChat({
@@ -77,10 +141,6 @@ export function StartupHome() {
     // Auto-select first item on desktop
     useEffect(() => {
         if (!selectedId && filteredInvestors.length > 0 && !detailInvestor && window.innerWidth >= 1024) {
-            // Optional: auto-select first one, but maybe don't auto-open unless user interactions happen?
-            // InvestorHome does auto-select. Let's do it for consistency but maybe without setting detailInvestor to avoid opening if we want to be less intrusive?
-            // Actually InvestorHome sets selectedId but maybe not detailed view?
-            // Let's just set selectedId. Interactions will set detailInvestor.
             setSelectedId(filteredInvestors[0].id)
         }
     }, [filteredInvestors, selectedId, detailInvestor])
@@ -104,18 +164,53 @@ export function StartupHome() {
         )
     }
 
+    // ... render ... 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col lg:flex-row overflow-hidden">
-            {/* Middle Panel: Feed */}
-            <div className={`
-                flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out
-                ${panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'}
-            `}>
+            {/* ... */}
+            <div className="...">
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 scrollbar-hide">
                     <div className="max-w-4xl mx-auto space-y-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h1 className="text-2xl font-bold">Discover Investors</h1>
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h1 className="text-2xl font-bold hidden sm:block">Discover Investors</h1>
+
+                            {/* Tabs */}
+                            <div className="flex p-1 bg-white border border-gray-200 rounded-xl self-start sm:self-auto">
+                                <button
+                                    onClick={() => setActiveFeed('discover')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                        activeFeed === 'discover' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
+                                    )}
+                                >
+                                    Discover
+                                </button>
+                                <button
+                                    onClick={() => setActiveFeed('top-investors')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
+                                        activeFeed === 'top-investors' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
+                                    )}
+                                >
+                                    Top Investors
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3 ml-auto sm:ml-0">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={cn("gap-2", showFilters ? "bg-black text-white hover:bg-black/90" : "")}
+                                >
+                                    <Filter className="h-4 w-4" />
+                                    Filter
+                                    {(filters.types.length + filters.industries.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
+                                        <span className="ml-1 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                                            {filters.types.length + filters.industries.length + (filters.minFunds !== "0" ? 1 : 0)}
+                                        </span>
+                                    )}
+                                </Button>
+                                {/* Removed CheatSheet button to make space or keep it? Checking space... kept logic roughly */}
                                 <Link to="/dashboard/startup/cheatsheet" className="md:hidden">
                                     <Button variant="outline" size="sm" className="h-8 rounded-lg gap-1.5 border-gray-200 text-gray-600">
                                         <FileText className="h-4 w-4" />
@@ -127,6 +222,13 @@ export function StartupHome() {
                                 </span>
                             </div>
                         </div>
+
+                        <InvestorFilterPanel
+                            isOpen={showFilters}
+                            filters={filters}
+                            onFilterChange={setFilters}
+                            onClose={() => setShowFilters(false)}
+                        />
 
                         {filteredInvestors.length === 0 ? (
                             <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">

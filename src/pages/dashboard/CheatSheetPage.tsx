@@ -185,7 +185,7 @@ export function CheatSheetPage() {
                     >
                         <Card
                             onClick={() => setSelectedField(topic)}
-                            className="group cursor-pointer hover:shadow-2xl hover:scale-[1.02] border-0 ring-1 ring-gray-100 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white"
+                            className="group cursor-pointer hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white border-2 border-black/5 hover:border-black shadow-sm"
                         >
                             <CardHeader className="flex flex-row items-center gap-5 pb-2 p-8">
                                 <div className={`rounded-2xl p-4 transition-transform group-hover:rotate-6 ${topic.color}`}>
@@ -212,18 +212,18 @@ export function CheatSheetPage() {
                 transition={{ delay: 0.6 }}
                 className="mt-12"
             >
-                <Card className="border-0 ring-1 ring-gray-100 rounded-[3rem] overflow-hidden bg-white shadow-xl shadow-indigo-100/20">
-                    <CardHeader className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+                <Card className="border-0 ring-1 ring-gray-100 rounded-[3rem] overflow-hidden bg-white shadow-xl shadow-gray-100/20">
+                    <CardHeader className="bg-black p-8 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-4">
-                                <div className="p-4 bg-white/20 backdrop-blur-md rounded-2xl">
+                                <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl">
                                     <Zap className="h-8 w-8 text-white fill-white" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2 mb-1">
-                                        <span className="px-3 py-1 bg-yellow-400 text-black text-[10px] font-black uppercase tracking-wider rounded-full">Fastest Growing</span>
-                                        <h3 className="text-sm font-bold opacity-80 uppercase tracking-widest text-white/70 italic">Sector Spotlight</h3>
+                                        <span className="px-3 py-1 bg-white text-black text-[10px] font-black uppercase tracking-wider rounded-full">Fastest Growing</span>
+                                        <h3 className="text-sm font-bold opacity-80 uppercase tracking-widest text-gray-400 italic">Sector Spotlight</h3>
                                     </div>
                                     <h2 className="text-4xl font-black tracking-tight">AI & DeepTech</h2>
                                 </div>
@@ -231,11 +231,11 @@ export function CheatSheetPage() {
                             <div className="flex gap-4">
                                 <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">India Growth</p>
-                                    <p className="text-2xl font-black text-yellow-400">+35.2% CAGR</p>
+                                    <p className="text-2xl font-black text-white">+35.2% CAGR</p>
                                 </div>
                                 <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">Market Cap (2030)</p>
-                                    <p className="text-2xl font-black">$450B+</p>
+                                    <p className="text-2xl font-black text-white">$450B+</p>
                                 </div>
                             </div>
                         </div>
@@ -246,7 +246,7 @@ export function CheatSheetPage() {
                             <div className="space-y-8">
                                 <div className="space-y-4">
                                     <h4 className="text-xl font-black flex items-center gap-2">
-                                        <BarChart3 className="h-5 w-5 text-indigo-600" />
+                                        <BarChart3 className="h-5 w-5 text-black" />
                                         Regional Growth Trajectory
                                     </h4>
                                     <p className="text-gray-500 font-medium leading-relaxed">
@@ -256,8 +256,8 @@ export function CheatSheetPage() {
 
                                 <div className="space-y-5">
                                     {[
-                                        { region: "India", growth: "35.2%", color: "bg-indigo-600" },
-                                        { region: "SE Asia", growth: "24.5%", color: "bg-purple-500" },
+                                        { region: "India", growth: "35.2%", color: "bg-black" },
+                                        { region: "SE Asia", growth: "24.5%", color: "bg-gray-700" },
                                         { region: "USA", growth: "21.0%", color: "bg-gray-400" },
                                         { region: "Europe", growth: "15.8%", color: "bg-gray-200" }
                                     ].map((item, i) => (
@@ -280,23 +280,23 @@ export function CheatSheetPage() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-6">
-                                <div className="p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 flex flex-col justify-center">
-                                    <Globe className="h-6 w-6 text-indigo-600 mb-3" />
+                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
+                                    <Globe className="h-6 w-6 text-black mb-3" />
                                     <h5 className="font-bold text-gray-900 mb-1">Global Leader</h5>
                                     <p className="text-xs text-gray-500 leading-relaxed font-medium">India currently holds the 3rd largest AI startup ecosystem globally.</p>
                                 </div>
-                                <div className="p-6 rounded-[2rem] bg-purple-50/50 border border-purple-100 flex flex-col justify-center">
-                                    <TrendingUp className="h-6 w-6 text-purple-600 mb-3" />
+                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
+                                    <TrendingUp className="h-6 w-6 text-black mb-3" />
                                     <h5 className="font-bold text-gray-900 mb-1">VC Inflow</h5>
                                     <p className="text-xs text-gray-500 leading-relaxed font-medium">Over $8.5B invested in deeptech startups in the last 24 months.</p>
                                 </div>
-                                <div className="p-6 rounded-[2rem] bg-yellow-50/50 border border-yellow-100 flex flex-col justify-center">
-                                    <Sparkles className="h-6 w-6 text-yellow-600 mb-3" />
+                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
+                                    <Sparkles className="h-6 w-6 text-black mb-3" />
                                     <h5 className="font-bold text-gray-900 mb-1">Job Creation</h5>
                                     <p className="text-xs text-gray-500 leading-relaxed font-medium">Projected 1.2M new high-skilled jobs in AI research by 2026.</p>
                                 </div>
-                                <div className="p-6 rounded-[2rem] bg-emerald-50/50 border border-emerald-100 flex flex-col justify-center">
-                                    <Building2 className="h-6 w-6 text-emerald-600 mb-3" />
+                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
+                                    <Building2 className="h-6 w-6 text-black mb-3" />
                                     <h5 className="font-bold text-gray-900 mb-1">M&A Activity</h5>
                                     <p className="text-xs text-gray-500 leading-relaxed font-medium">Exits in this sector have increased by 45% year-over-year.</p>
                                 </div>

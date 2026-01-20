@@ -1,6 +1,9 @@
 import { useState } from "react"
-import { DollarSign, TrendingUp, Users, Target, Rocket, Calculator, Sparkles } from "lucide-react"
+import { DollarSign, TrendingUp, Users, Target, Rocket, Calculator, Sparkles, Lock } from "lucide-react"
 import { Input } from "../ui/input"
+import { Link } from "react-router-dom"
+import { Button } from "../ui/button"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 
 interface ValuationCalculatorProps {
@@ -63,8 +66,24 @@ export function ValuationCalculator({ initialRevenue = "", initialIndustry = "Sa
         ? calculateRevenueValuation()
         : calculateScorecardValuation()
 
+    const hasPaidPlan = subscriptionManager.hasPaidPlan()
+
     return (
-        <Card className="border border-gray-100 bg-white shadow-sm rounded-3xl overflow-hidden">
+        <Card className="border border-gray-100 bg-white shadow-sm rounded-3xl overflow-hidden relative">
+            {!hasPaidPlan && (
+                <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                    <div className="bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 max-w-sm transform scale-100 transition-all hover:scale-105">
+                        <div className="bg-indigo-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Lock className="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <h3 className="text-xl font-bold mb-2">Unlock Valuation</h3>
+                        <p className="text-gray-500 text-sm mb-6">Upgrade to Growth to calculate your startup's valuation using industry-standard models.</p>
+                        <Link to="/dashboard/pricing">
+                            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 font-bold shadow-lg shadow-indigo-200">Upgrade Now</Button>
+                        </Link>
+                    </div>
+                </div>
+            )}
             <CardHeader className="bg-gray-50/50 pb-8 border-b border-gray-100">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>

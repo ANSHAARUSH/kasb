@@ -30,18 +30,23 @@ export function calculateImpactScore(entity: Startup | Investor): ImpactScoreRes
             breakdown.profile = 50;
         }
 
-        // 2. Startup Completion (50 points)
-        // Filled out all QA + AI Summary Finalized
-        const hasQA = !!(entity.questionnaire && Object.keys(entity.questionnaire).length > 0);
-        const isAIFinalized = entity.summaryStatus === 'final';
-
-        if (hasQA && isAIFinalized) {
-            breakdown.completion = 50;
+        // 2. Startup Completion (Dynamic Points based on answers)
+        let answerCount = 0;
+        if (entity.questionnaire) {
+            Object.values(entity.questionnaire).forEach(section => {
+                if (typeof section === 'object') {
+                    answerCount += Object.keys(section).length;
+                }
+            });
         }
+
+        // 2 points per answer, plus 20 bonus for AI summary finalization
+        const isAIFinalized = entity.summaryStatus === 'final';
+        breakdown.completion = (answerCount * 2) + (isAIFinalized ? 20 : 0);
     } else {
         // Investor Profile Completion (50 points)
         const hasBasicInfo = !!(entity.name?.trim() && entity.title?.trim());
-        const hasVisuals = !!(entity.avatar?.trim() && !entity.avatar.includes('pravatar.cc/150'));
+        const hasVisuals = !!entity.avatar?.trim();
         const hasBio = !!(entity.bio?.trim() && entity.bio.length > 30);
         const hasExpertise = !!(entity.expertise && entity.expertise.length > 0);
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { type Startup } from "../../data/mockData"
 import { StartupCard } from "../../components/dashboard/StartupCard"
 import { SearchInput } from "../../components/dashboard/SearchInput"
@@ -21,6 +21,7 @@ import { useInvestorProfile } from "../../hooks/useInvestorProfile"
 import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import type { Investor } from "../../data/mockData"
+import { useRecommendations } from "../../hooks/useRecommendations"
 
 export function InvestorHome() {
     // const { user } = useAuth()
@@ -104,6 +105,28 @@ export function InvestorHome() {
 
     const [activeFeed, setActiveFeed] = useState<'discover' | 'high-impact'>('discover')
 
+    // Check if user has paid plan for AI recommendations
+    const hasPaidPlan = subscriptionManager.hasPaidPlan()
+
+    // AI Recommendations (silent - only logs errors) - Only for paid users
+    const { recommendations, error: recommendationsError } = useRecommendations({
+        type: 'investor',
+        currentProfile: hasPaidPlan && investor ? {
+            ...investor,
+            fundsAvailable: investor.funds_available,
+            investments: investor.investments_count,
+            expertise: investor.expertise || []
+        } as Investor : null,
+        availableEntities: hasPaidPlan ? startups : []
+    })
+
+    // Log recommendation errors silently
+    useEffect(() => {
+        if (recommendationsError) {
+            console.log('AI recommendations unavailable:', recommendationsError)
+        }
+    }, [recommendationsError])
+
     // Filter logic remains the same
     const activeFilterCount =
         filters.stages.length +
@@ -148,17 +171,21 @@ export function InvestorHome() {
         return true
     })
 
-    const canSeeAISuggestions = subscriptionManager.hasFeature('AI warm intros') // Proxy for AI match previews/suggestions
+    // Create a map of AI recommendations for quick lookup
+    const recommendationMap = new Map(
+        recommendations?.recommendations.map(rec => [
+            rec.id,
+            { score: rec.matchScore, explanation: rec.explanation, highlights: rec.keyHighlights }
+        ]) || []
+    )
 
-    const displayStartups = filteredStartups.map(startup => {
-        if (!canSeeAISuggestions || !investor?.expertise) return { ...startup, isRecommended: false };
-
-        const hasExpertiseMatch = investor.expertise.some(exp =>
-            startup.tags.some(tag => tag.toLowerCase() === exp.toLowerCase()) ||
-            (startup.industry && startup.industry.toLowerCase() === exp.toLowerCase())
-        );
-
-        return { ...startup, isRecommended: hasExpertiseMatch };
+    const sortedStartups = filteredStartups.map(startup => {
+        const aiRec = recommendationMap.get(startup.id)
+        return {
+            ...startup,
+            isRecommended: !!aiRec,
+            aiRecommendation: aiRec
+        }
     }).sort((a, b) => {
         // High Impact Sort
         if (activeFeed === 'high-impact') {
@@ -171,14 +198,24 @@ export function InvestorHome() {
             return valB - valA;
         }
 
-        // Default Sort (Discover)
-        // Prioritize recommended ones if they have the feature
-        if (canSeeAISuggestions) {
-            if (a.isRecommended && !b.isRecommended) return -1;
-            if (!a.isRecommended && b.isRecommended) return 1;
+        // Default Sort (Discover) - AI recommended first
+        if (a.isRecommended && !b.isRecommended) return -1;
+        if (!a.isRecommended && b.isRecommended) return 1;
+
+        // Then by AI match score
+        if (a.aiRecommendation && b.aiRecommendation) {
+            return b.aiRecommendation.score - a.aiRecommendation.score
         }
+
         return 0;
     });
+
+    const displayStartups = useMemo(() => {
+        if (!subscriptionManager.hasPaidPlan() && activeFeed === 'discover') {
+            return [...sortedStartups].sort(() => Math.random() - 0.5)
+        }
+        return sortedStartups
+    }, [sortedStartups, activeFeed])
 
     // Only on mount or when list changes significantly, but ideally just defaulting to the first one for the view
     useEffect(() => {
@@ -249,6 +286,7 @@ export function InvestorHome() {
                                 >
                                     High Impact
                                 </button>
+
                             </div>
 
                             <div className="flex items-center gap-3 ml-auto sm:ml-0">
@@ -298,9 +336,8 @@ export function InvestorHome() {
                                         }}
                                         onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                         onMessageClick={handleMessage}
-                                        triggerUpdate={connectionUpdate}
-                                        onConnectionChange={handleConnectionChange}
                                         isRecommended={startup.isRecommended}
+                                        aiRecommendation={startup.aiRecommendation}
                                         showImpactPoints={activeFeed === 'high-impact'}
                                     />
                                 </div>

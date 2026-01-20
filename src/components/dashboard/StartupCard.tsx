@@ -23,10 +23,15 @@ interface StartupCardProps {
     triggerUpdate?: { startupId: string; timestamp: number } | null
     onConnectionChange?: (startupId: string) => void
     isRecommended?: boolean
+    aiRecommendation?: {
+        score: number
+        explanation: string
+        highlights: string[]
+    }
     showImpactPoints?: boolean
 }
 
-export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended, showImpactPoints }: StartupCardProps) {
+export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended, aiRecommendation, showImpactPoints }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -167,9 +172,9 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             onClick={onClick}
             onDoubleClick={onDoubleClick}
             className={cn(
-                "group flex flex-col relative cursor-pointer transition-all duration-500 overflow-hidden shadow-sm h-auto sm:h-full touch-manipulation border-black",
-                "hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] hover:-translate-y-1",
-                isSelected ? 'border-[3px] bg-white shadow-xl' : 'border-2 bg-white/50 backdrop-blur-sm'
+                "group flex flex-col relative cursor-pointer transition-all duration-300 overflow-hidden shadow-sm h-auto sm:h-full touch-manipulation",
+                "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
+                isSelected ? 'border-[3px] border-black bg-white shadow-xl' : 'border-2 border-black/5 bg-white/50 backdrop-blur-sm'
             )}
         >
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -194,11 +199,47 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                             Verified
                                         </span>
                                     )}
-                                    {isRecommended && (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-tighter shadow-sm">
+                                    {isRecommended && aiRecommendation && (
+                                        <div className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-tighter shadow-sm group/tooltip relative">
                                             <Sparkles className="w-2.5 h-2.5" />
-                                            AI Suggested
-                                        </span>
+                                            Recommended
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    const tooltip = e.currentTarget.nextElementSibling
+                                                    tooltip?.classList.toggle('hidden')
+                                                }}
+                                                className="ml-0.5 hover:bg-indigo-100 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                                </svg>
+                                            </button>
+                                            <div className="hidden absolute top-full left-0 mt-2 w-64 p-3 bg-white rounded-xl shadow-lg border border-indigo-100 z-50 normal-case tracking-normal font-normal text-xs">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="font-bold text-indigo-900">AI Match: {aiRecommendation.score}%</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            e.currentTarget.parentElement?.parentElement?.classList.add('hidden')
+                                                        }}
+                                                        className="text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                <p className="text-gray-700 mb-2">{aiRecommendation.explanation}</p>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {aiRecommendation.highlights.map((highlight, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-medium">
+                                                            {highlight}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     )}
                                     {showImpactPoints && startup.impactPoints !== undefined && (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-black text-orange-600 border border-orange-100 uppercase tracking-tighter shadow-sm">
@@ -207,7 +248,23 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-widest">{startup.founder.name}</p>
+                                <p className="text-xs font-medium text-gray-400 mt-1 uppercase tracking-widest">
+                                    {startup.founder.name}
+                                    {startup.last_active_at && (
+                                        <span className="ml-2 inline-flex items-center gap-1 normal-case tracking-normal font-bold text-[10px] text-emerald-500">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            Active {(() => {
+                                                const diff = Date.now() - new Date(startup.last_active_at).getTime()
+                                                const minutes = Math.floor(diff / 60000)
+                                                if (minutes < 5) return 'now'
+                                                if (minutes < 60) return `${minutes}m ago`
+                                                const hours = Math.floor(minutes / 60)
+                                                if (hours < 24) return `${hours}h ago`
+                                                return `${Math.floor(hours / 24)}d ago`
+                                            })()}
+                                        </span>
+                                    )}
+                                </p>
                             </div>
                         </div>
                         <div className="flex flex-col items-start sm:items-end gap-3 sm:gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100/50 sm:border-transparent">

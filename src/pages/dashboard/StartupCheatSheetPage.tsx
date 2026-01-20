@@ -115,7 +115,7 @@ export function StartupCheatSheetPage() {
                     >
                         <Card
                             onClick={() => setSelectedTopic(topic)}
-                            className="group cursor-pointer hover:shadow-2xl hover:scale-[1.02] border-0 ring-1 ring-gray-100 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white"
+                            className="group cursor-pointer hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white border-2 border-black/5 hover:border-black shadow-sm"
                         >
                             <CardHeader className="flex flex-row items-center gap-5 pb-2 p-8">
                                 <div className={`rounded-2xl p-4 transition-transform group-hover:rotate-6 ${topic.color}`}>
