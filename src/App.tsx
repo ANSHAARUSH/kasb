@@ -31,6 +31,7 @@ const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing")
 const InvestorPublicProfile = lazy(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
 const EmailConfirmed = lazy(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
 const Onboarding = lazy(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
+const AuthCallback = lazy(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 
 function CatchAll() {
   const { user, loading } = useAuth();
@@ -53,8 +54,14 @@ function CatchAll() {
     );
   }
 
-  // 2. If we are still loading, don't redirect anywhere yet
-  if (loading) return null;
+  // 2. If we are still loading, show a subtle loading state
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="text-gray-400 font-medium animate-pulse">Initializing app...</div>
+      </div>
+    );
+  }
 
   // 3. If authenticated but hitting an unknown route, go to dashboard
   if (user) {
@@ -68,7 +75,8 @@ function CatchAll() {
 }
 
 function App() {
-  console.log("App component rendering");
+  console.log("[App] Component rendering. Environment:", import.meta.env.MODE);
+  console.log("[App] Current Location Hash:", window.location.hash);
   return (
     <AuthProvider>
       <ToastProvider>
@@ -83,6 +91,7 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/update-password" element={<UpdatePassword />} />
                   <Route path="/pricing" element={<PricingPage />} />
