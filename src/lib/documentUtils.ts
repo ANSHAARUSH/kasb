@@ -77,57 +77,15 @@ export interface RequiredDocument {
 }
 
 const UNIVERSAL_DOCS: RequiredDocument[] = [
-    { type: 'pitch_deck', label: 'Pitch Deck', description: 'Core presentation of your idea and market.', required: true, section: 'Core Pitch & Vision' },
-    { type: 'startup_summary', label: 'One-page Startup Summary', description: 'Concise overview of business.', required: true, section: 'Core Pitch & Vision' },
-    { type: 'vision_mission', label: 'Vision & Mission', description: 'Statement of purpose and goals.', required: true, section: 'Core Pitch & Vision' },
-    { type: 'founder_cv', label: 'Founders’ CVs', description: 'LinkedIn profiles or resumes.', required: true, section: 'Founder & Team' },
-    { type: 'roles_responsibilities', label: 'Roles Breakdown', description: 'Responsibilities of key team members.', required: true, section: 'Founder & Team' },
-    { type: 'incorporation_cert', label: 'Certificate of Incorporation', description: 'If incorporated.', required: false, section: 'Legal Identity' },
-    { type: 'pan_card', label: 'Company PAN', description: 'Permanent Account Number.', required: false, section: 'Legal Identity' }
+    { type: 'pitch_deck', label: 'Pitch Deck (PPTX)', description: 'Main presentation of your business, market, and team. PowerPoint format preferred.', required: true, section: 'Core Pitch' },
 ];
 
 export const STAGE_REQUIREMENTS: Record<string, RequiredDocument[]> = {
-    'Ideation': [
-        ...UNIVERSAL_DOCS,
-        { type: 'concept_note', label: 'Concept Note', description: '2-3 page idea explanation.', required: true, section: 'Idea Stage' },
-        { type: 'market_analysis', label: 'Market Analysis', description: 'TAM-SAM-SOM breakdown.', required: true, section: 'Idea Stage' },
-        { type: 'competitive_analysis', label: 'Competitive Landscape', description: 'Analysis of competitors.', required: true, section: 'Idea Stage' },
-        { type: 'revenue_logic', label: 'Revenue Logic', description: 'Basic revenue logic.', required: true, section: 'Idea Stage' }
-    ],
-    'Pre-seed': [
-        ...UNIVERSAL_DOCS,
-        { type: 'concept_note', label: 'Concept Note', description: '2-3 page idea explanation.', required: true, section: 'Idea Stage' },
-        { type: 'market_analysis', label: 'Market Analysis', description: 'TAM-SAM-SOM breakdown.', required: true, section: 'Idea Stage' },
-        { type: 'competitive_analysis', label: 'Competitive Landscape', description: 'Analysis of competitors.', required: true, section: 'Idea Stage' },
-        { type: 'founder_agreement', label: 'Founders Agreement', description: 'Equity split clarity.', required: false, section: 'Idea Stage' }
-    ],
-    'MVP': [
-        ...UNIVERSAL_DOCS,
-        { type: 'mvp_demo_link', label: 'MVP Demo Link', description: 'Link or video of prototype.', required: true, section: 'Product & Traction' },
-        { type: 'product_roadmap', label: 'Product Roadmap', description: '6-12 month plan.', required: true, section: 'Product & Traction' },
-        { type: 'user_testimonials', label: 'User Feedback', description: 'Early testimonials.', required: true, section: 'Product & Traction' },
-        { type: 'business_model', label: 'Business Model', description: 'Detailed model document.', required: true, section: 'Business & Strategy' },
-        { type: 'moa_aoa', label: 'MoA & AoA', description: 'Memorandum & Articles of Association.', required: true, section: 'Legal & Ownership' },
-        { type: 'cap_table', label: 'Cap Table', description: 'Equity ownership structure.', required: true, section: 'Legal & Ownership' }
-    ],
-    'Seed': [
-        ...UNIVERSAL_DOCS,
-        { type: 'p_n_l_statement', label: 'P&L Statement', description: 'Profit and Loss.', required: true, section: 'Financials' },
-        { type: 'cash_flow', label: 'Cash Flow', description: 'Cash flow statement.', required: true, section: 'Financials' },
-        { type: 'financial_projections', label: 'Financial Projections', description: '12-18 month forecast.', required: true, section: 'Financials' },
-        { type: 'customer_contracts', label: 'Customer Contracts', description: 'LOIs or contracts.', required: true, section: 'Customers & Revenue' },
-        { type: 'mrr_arr_metrics', label: 'MRR/ARR Data', description: 'Recurring revenue metrics.', required: true, section: 'Customers & Revenue' },
-        { type: 'gst_cert', label: 'GST Registration', description: 'Tax compliance.', required: true, section: 'Compliance' },
-        { type: 'shareholders_agreement', label: 'Shareholders Agreement', description: 'Governance document.', required: true, section: 'Governance' }
-    ],
-    'Series A': [
-        ...UNIVERSAL_DOCS,
-        { type: 'audit_report', label: 'Audited Financials', description: 'Audited statements.', required: true, section: 'Advanced Financials' },
-        { type: 'mis_report', label: 'MIS Reports', description: 'Department-wise KPIs.', required: true, section: 'Advanced Financials' },
-        { type: 'market_expansion_plan', label: 'Expansion Plan', description: 'Strategy for scaling.', required: true, section: 'Scale Readiness' },
-        { type: 'hiring_plan', label: 'Hiring Plan', description: 'Recruitment strategy.', required: true, section: 'Scale Readiness' },
-        { type: 'data_policy', label: 'Data Policy', description: 'Data protection & privacy.', required: true, section: 'Risk & Compliance' }
-    ]
+    'Ideation': [...UNIVERSAL_DOCS],
+    'Pre-seed': [...UNIVERSAL_DOCS],
+    'MVP': [...UNIVERSAL_DOCS],
+    'Seed': [...UNIVERSAL_DOCS],
+    'Series A': [...UNIVERSAL_DOCS]
 };
 
 export const getRequiredDocuments = (stage: string): RequiredDocument[] => {

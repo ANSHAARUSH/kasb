@@ -1,4 +1,5 @@
 import { Input } from "../../../components/ui/input"
+import { INDIAN_STATES } from "../../../lib/constants"
 
 interface StartupFieldsProps {
     companyName: string
@@ -12,6 +13,14 @@ interface StartupFieldsProps {
     setProblemSolving: (val: string) => void
     isRefining: boolean
     onRefine: () => void
+    state: string
+    setState: (val: string) => void
+    city: string
+    setCity: (val: string) => void
+    stage: string
+    setStage: (val: string) => void
+    teamSize: string
+    setTeamSize: (val: string) => void
 }
 
 export function StartupFields({
@@ -25,7 +34,15 @@ export function StartupFields({
     problemSolving,
     setProblemSolving,
     isRefining,
-    onRefine
+    onRefine,
+    state,
+    setState,
+    city,
+    setCity,
+    stage,
+    setStage,
+    teamSize,
+    setTeamSize
 }: StartupFieldsProps) {
     return (
         <div className="space-y-4">
@@ -79,6 +96,8 @@ export function StartupFields({
                     <select
                         id="stage"
                         required
+                        value={stage}
+                        onChange={(e) => setStage(e.target.value)}
                         className="w-full h-12 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
                     >
                         <option value="">Select Stage</option>
@@ -95,8 +114,40 @@ export function StartupFields({
                         required
                         type="number"
                         placeholder="e.g. 5"
+                        value={teamSize}
+                        onChange={(e) => setTeamSize(e.target.value)}
                         className="h-12 rounded-xl focus:ring-black"
                     />
+                </div>
+            </div>
+
+            <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Location Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">State</label>
+                        <select
+                            required
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            className="w-full h-12 rounded-xl border border-gray-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-black/5"
+                        >
+                            <option value="">Select State</option>
+                            {INDIAN_STATES.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">City</label>
+                        <Input
+                            required
+                            placeholder="e.g. Bangalore"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            className="h-12 rounded-xl focus:ring-black"
+                        />
+                    </div>
                 </div>
             </div>
 

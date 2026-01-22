@@ -162,7 +162,8 @@ export function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         const envKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+         // Priority: Groq -> Env -> DB Global -> DB User
+         const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
          let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
 
          if (!apiKey) {

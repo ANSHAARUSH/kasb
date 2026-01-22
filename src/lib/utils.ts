@@ -16,3 +16,13 @@ export const parseRevenue = (revStr: string): number => {
     const num = parseFloat(clean.replace(/[KMB]/g, ''))
     return isNaN(num) ? 0 : num * multiplier
 }
+
+export function getViewableUrl(url: string | null | undefined) {
+    if (!url) return '#'
+    // For PPTX/PPT, use Microsoft Office Viewer
+    if (url.toLowerCase().endsWith('.pptx') || url.toLowerCase().endsWith('.ppt')) {
+        return `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`
+    }
+    // PDF and others can be viewed directly
+    return url
+}

@@ -17,6 +17,7 @@ import { cn } from "../../lib/utils"
 
 import { InvestorFilterPanel, type InvestorFilterState } from "../../components/dashboard/InvestorFilterPanel"
 import { parseRevenue } from "../../lib/utils"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function StartupHome() {
     // ... hooks ...
@@ -54,7 +55,7 @@ export function StartupHome() {
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
 
     // Track impact points for notifications
-    useImpactPointsTracker(profileStartup ? {
+    const trackerEntity = useMemo(() => profileStartup ? ({
         ...profileStartup,
         problemSolving: profileStartup.problem_solving,
         metrics: {
@@ -72,7 +73,9 @@ export function StartupHome() {
         tags: profileStartup.tags || [],
         emailVerified: profileStartup.email_verified || false,
         showInFeed: profileStartup.show_in_feed || false
-    } as Startup : null)
+    } as Startup) : null, [profileStartup])
+
+    useImpactPointsTracker(trackerEntity)
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
@@ -128,9 +131,13 @@ export function StartupHome() {
 
     const sortedInvestors = useMemo(() => {
         let base = [...baseFilteredInvestors]
+        const tier = subscriptionManager.getTier()
 
         if (activeFeed === 'top-investors') {
             base.sort((a, b) => (b.investments || 0) - (a.investments || 0))
+        } else if (tier === 'discovery') {
+            // Randomized feed for free plan
+            base.sort(() => Math.random() - 0.5)
         }
 
         return base
@@ -176,40 +183,32 @@ export function StartupHome() {
     // ... render ... 
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col lg:flex-row overflow-hidden">
-            {/* ... */}
-            <div className="...">
+            {/* Middle Panel: Feed */}
+            <div className={cn(
+                "flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out",
+                panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'
+            )}>
+                {/* Filters Header (Minimized) */}
+                <div className={cn("flex-none transition-all duration-300", showFilters ? "p-6 pb-2" : "p-0")}>
+                    <InvestorFilterPanel
+                        isOpen={showFilters}
+                        filters={filters}
+                        onFilterChange={setFilters}
+                        onClose={() => setShowFilters(false)}
+                    />
+                </div>
+
+                {/* Scrollable Feed List */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                            <h1 className="text-2xl font-bold hidden sm:block">Discover Investors</h1>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                            <h1 className="text-2xl font-bold text-center sm:text-left">Discover Investors</h1>
 
-                            {/* Tabs */}
-                            <div className="flex p-1 bg-white border border-gray-200 rounded-xl self-start sm:self-auto">
-                                <button
-                                    onClick={() => setActiveFeed('discover')}
-                                    className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                        activeFeed === 'discover' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
-                                    )}
-                                >
-                                    Discover
-                                </button>
-                                <button
-                                    onClick={() => setActiveFeed('top-investors')}
-                                    className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-bold transition-all",
-                                        activeFeed === 'top-investors' ? "bg-black text-white shadow-md" : "text-gray-500 hover:text-gray-900"
-                                    )}
-                                >
-                                    Top Investors
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-3 ml-auto sm:ml-0">
+                            <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                                 <Button
                                     variant="outline"
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={cn("gap-2", showFilters ? "bg-black text-white hover:bg-black/90" : "")}
+                                    className={cn("gap-2 shadow-sm rounded-xl", showFilters ? "bg-black text-white hover:bg-black/90" : "")}
                                 >
                                     <Filter className="h-4 w-4" />
                                     Filter
@@ -219,25 +218,19 @@ export function StartupHome() {
                                         </span>
                                     )}
                                 </Button>
-                                {/* Removed CheatSheet button to make space or keep it? Checking space... kept logic roughly */}
                                 <Link to="/dashboard/startup/cheatsheet" className="md:hidden">
-                                    <Button variant="outline" size="sm" className="h-8 rounded-lg gap-1.5 border-gray-200 text-gray-600">
+                                    <Button variant="outline" size="sm" className="h-10 rounded-xl gap-1.5 border-gray-200 text-gray-600 shadow-sm">
                                         <FileText className="h-4 w-4" />
-                                        <span className="text-xs">Cheat Sheet</span>
+                                        <span className="text-sm">Cheat Sheet</span>
                                     </Button>
                                 </Link>
-                                <span className="text-sm text-gray-500">
+                                <span className="text-sm text-gray-500 hidden sm:inline">
                                     {filteredInvestors.length} matches
                                 </span>
                             </div>
                         </div>
 
-                        <InvestorFilterPanel
-                            isOpen={showFilters}
-                            filters={filters}
-                            onFilterChange={setFilters}
-                            onClose={() => setShowFilters(false)}
-                        />
+
 
                         {filteredInvestors.length === 0 ? (
                             <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">

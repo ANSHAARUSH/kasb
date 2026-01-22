@@ -1,7 +1,7 @@
 import { BottomNav } from "../components/layout/BottomNav"
 import { SideNav } from "../components/layout/SideNav"
 import { NotificationBell } from "../components/layout/NotificationBell"
-import { UsageBell } from "../components/layout/UsageBell"
+import { UsageIcon } from "../components/layout/UsageIcon"
 import { Mail } from "lucide-react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
@@ -94,7 +94,7 @@ export function DashboardLayout() {
                                 <Mail className="w-5 h-5" />
                             </a>
                         )}
-                        <UsageBell className="md:hidden" />
+                        <UsageIcon isMobile className="md:hidden" />
                         <NotificationBell />
                     </div>
                 </header>

@@ -6,7 +6,7 @@ import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Lo
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
-import { cn, parseRevenue } from "../../../lib/utils"
+import { cn, parseRevenue, getViewableUrl } from "../../../lib/utils"
 import { getStartupBoosts } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
 import { Button } from "../../../components/ui/button"
@@ -35,6 +35,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
     const [localAnswers, setLocalAnswers] = useState<Record<string, Record<string, string>>>({})
     const [localStartup, setLocalStartup] = useState<Partial<StartupProfileData>>({})
     const [generatingSummary, setGeneratingSummary] = useState(false)
+    const [documents, setDocuments] = useState<any[]>([])
 
     const [stats, setStats] = useState({
         boosts: 0
@@ -73,10 +74,16 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
         const fetchStats = async () => {
             if (!user) return
             try {
-                const boostCount = await getStartupBoosts(user.id)
+                const [boostCount, docsRes] = await Promise.all([
+                    getStartupBoosts(user.id),
+                    supabase.from('startup_documents').select('*').eq('startup_id', user.id).eq('status', 'verified')
+                ])
                 setStats({
                     boosts: boostCount
                 })
+                if (docsRes.data) {
+                    setDocuments(docsRes.data)
+                }
             } catch (err) {
                 console.error("Error fetching stats:", err)
             }
@@ -209,18 +216,32 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                 </div>
 
                                 <div className="flex items-center justify-center sm:justify-start gap-3 pt-2 border-t border-gray-100/50">
-                                    <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100 shrink-0">
-                                        <Avatar
-                                            src={startup.founder_avatar}
-                                            name={startup.founder_name}
-                                            className="h-full w-full object-cover"
-                                            fallbackClassName="text-xs text-gray-400"
-                                        />
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <div className="h-10 w-10 rounded-full overflow-hidden border-2 border-white shadow-sm ring-1 ring-gray-100 shrink-0">
+                                            <Avatar
+                                                src={startup.founder_avatar}
+                                                name={startup.founder_name}
+                                                className="h-full w-full object-cover"
+                                                fallbackClassName="text-xs text-gray-400"
+                                            />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Founded by</p>
+                                            <p className="text-sm font-bold text-gray-900">{startup.founder_name || 'Founder'}</p>
+                                        </div>
                                     </div>
-                                    <div className="text-left">
-                                        <p className="text-[11px] font-black uppercase tracking-widest text-gray-400">Founded by</p>
-                                        <p className="text-sm font-bold text-gray-900">{startup.founder_name || 'Founder'}</p>
-                                    </div>
+
+                                    {documents.find(d => d.document_type === 'pitch_deck') && (
+                                        <a
+                                            href={getViewableUrl(documents.find(d => d.document_type === 'pitch_deck').file_url)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="h-9 inline-flex items-center justify-center px-4 rounded-xl border border-gray-100 bg-white shadow-sm text-[10px] font-bold uppercase tracking-widest gap-2 hover:bg-black hover:text-white transition-all no-underline text-black"
+                                        >
+                                            <FileText className="h-3.5 w-3.5" />
+                                            View Pitch Deck
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         </div>

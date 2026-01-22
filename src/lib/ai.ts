@@ -5,13 +5,16 @@ import { extractDocumentContent } from "./documentExtraction";
 import type { AnalysisResult } from "./documentIntelligence";
 
 /**
- * Helper to get a Gemini model or OpenAI instance based on API key
+ * Helper to get a Groq (OpenAI-compatible) or Gemini client
  */
 function getAIClient(apiKey: string, baseUrl?: string) {
+    // If it's explicitly a Gemini key, use Gemini
     if (apiKey.startsWith('AIza')) {
         const genAI = new GoogleGenerativeAI(apiKey);
         return { type: 'gemini', client: genAI };
     }
+
+    // Default to Groq/OpenAI
     const openai = new OpenAI({
         apiKey: apiKey,
         baseURL: baseUrl || "https://api.groq.com/openai/v1",
@@ -23,24 +26,11 @@ function getAIClient(apiKey: string, baseUrl?: string) {
 export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string } = {}) {
     const { type, client } = getAIClient(apiKey, options.baseUrl);
 
-    if (type === 'gemini') {
-        const genAI = client as GoogleGenerativeAI;
-        const modelName = options.vision ? "gemini-1.5-flash" : (options.model?.includes('8b') ? "gemini-1.5-flash-8b" : "gemini-1.5-flash-latest");
-        const model = genAI.getGenerativeModel({ model: modelName });
-
-        if (options.vision && options.file) {
-            const base64 = await fileToBase64(options.file);
-            const result = await model.generateContent([
-                prompt,
-                { inlineData: { data: base64, mimeType: options.file.type } }
-            ]);
-            return result.response.text();
-        }
-
-        const result = await model.generateContent(prompt);
-        return result.response.text();
-    } else {
+    // GROQ / OPENAI PATH (Primary)
+    if (type === 'openai') {
         const openai = client as OpenAI;
+
+        // Handle Vision for Groq
         if (options.vision && options.file) {
             const base64 = await fileToBase64(options.file);
             const response = await openai.chat.completions.create({
@@ -58,12 +48,54 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
             return response.choices[0].message.content || "";
         }
 
+        // Standard Text for Groq
         const completion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt }],
             model: options.model || "llama-3.3-70b-versatile",
         });
         return completion.choices[0].message.content || "";
     }
+
+    // GEMINI PATH (Secondary Fallback)
+    else if (type === 'gemini') {
+        const genAI = client as GoogleGenerativeAI;
+        const fallbackModels = [
+            options.model,
+            options.vision ? "gemini-1.5-flash" : null,
+            "gemini-1.5-flash",
+            "gemini-1.5-pro",
+            "gemini-1.0-pro",
+            "gemini-pro"
+        ].filter(Boolean) as string[];
+
+        let lastError: any = null;
+
+        for (const modelName of fallbackModels) {
+            try {
+                const model = genAI.getGenerativeModel({ model: modelName });
+                if (options.vision && options.file) {
+                    const base64 = await fileToBase64(options.file);
+                    const result = await model.generateContent([
+                        prompt,
+                        { inlineData: { data: base64, mimeType: options.file.type } }
+                    ]);
+                    return result.response.text();
+                }
+
+                const result = await model.generateContent(prompt);
+                return result.response.text();
+            } catch (error: any) {
+                lastError = error;
+                const isNotFound = error.message?.includes('not found') || error.status === 404;
+                if (!isNotFound) break;
+                console.warn(`Gemini model ${modelName} not found, trying fallback...`);
+            }
+        }
+
+        throw lastError || new Error("All Gemini model fallbacks failed.");
+    }
+
+    throw new Error("Unsupported AI client type");
 }
 
 export interface ComparisonResult {
@@ -792,21 +824,8 @@ export async function chatWithAIStream(
         try {
             const { type, client } = getAIClient(apiKey, baseUrl);
 
-            if (type === 'gemini') {
-                const genAI = client as GoogleGenerativeAI;
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-                const prompt = `System: ${systemPrompt}\n\nHistory:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${userMessage}`;
-
-                const result = await model.generateContentStream(prompt);
-                let fullResponse = "";
-                for await (const chunk of result.stream) {
-                    const text = chunk.text();
-                    fullResponse += text;
-                    onChunk(text);
-                }
-                return fullResponse;
-            } else {
+            // GROQ / OPENAI PATH (Primary)
+            if (type === 'openai') {
                 const openai = client as OpenAI;
                 const messages: any[] = [
                     { role: "system", content: systemPrompt },
@@ -814,14 +833,14 @@ export async function chatWithAIStream(
                     { role: "user", content: userMessage }
                 ];
 
-                const stream = await openai.chat.completions.create({
-                    messages: messages,
+                const response = await openai.chat.completions.create({
                     model: "llama-3.3-70b-versatile",
+                    messages,
                     stream: true,
                 });
 
                 let fullResponse = "";
-                for await (const chunk of stream) {
+                for await (const chunk of response) {
                     const content = chunk.choices[0]?.delta?.content || "";
                     if (content) {
                         fullResponse += content;
@@ -829,6 +848,35 @@ export async function chatWithAIStream(
                     }
                 }
                 return fullResponse;
+            }
+
+            // GEMINI PATH (Secondary Fallback)
+            else if (type === 'gemini') {
+                const genAI = client as GoogleGenerativeAI;
+                const fallbackModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro", "gemini-pro"];
+                let lastError = null;
+
+                for (const modelName of fallbackModels) {
+                    try {
+                        const model = genAI.getGenerativeModel({ model: modelName });
+                        const prompt = `System: ${systemPrompt}\n\nHistory:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${userMessage}`;
+
+                        const result = await model.generateContentStream(prompt);
+                        let fullResponse = "";
+                        for await (const chunk of result.stream) {
+                            const text = chunk.text();
+                            fullResponse += text;
+                            onChunk(text);
+                        }
+                        return fullResponse;
+                    } catch (error: any) {
+                        lastError = error;
+                        const isNotFound = error.message?.includes('not found') || error.status === 404;
+                        if (!isNotFound) break;
+                        console.warn(`Gemini model ${modelName} not found in stream, trying fallback...`);
+                    }
+                }
+                throw lastError || new Error("All Gemini streaming fallbacks failed.");
             }
         } catch (error: unknown) {
             console.error("AI Chat Stream Error:", error);

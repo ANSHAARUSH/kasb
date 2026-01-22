@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Startup } from "../../data/mockData"
-import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, ShieldCheck, Lock } from "lucide-react"
+import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, ShieldCheck, Lock, FileText, ExternalLink, Download, FileUp } from "lucide-react"
 import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import {
@@ -28,7 +29,7 @@ import { Input } from "../ui/input"
 import { generateValuationInsights, generateFounderAnalysis } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section, type Question } from "../../lib/questionnaire"
-import { cn, parseRevenue } from "../../lib/utils"
+import { cn, parseRevenue, getViewableUrl } from "../../lib/utils"
 import { ValuationCalculator } from "./ValuationCalculator"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
@@ -63,6 +64,8 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [impactPoints, setImpactPoints] = useState(startup?.impactPoints || 0)
     const [founderAnalysis, setFounderAnalysis] = useState<string | null>(null)
     const [isGeneratingFounderAnalysis, setIsGeneratingFounderAnalysis] = useState(false)
+    const [documents, setDocuments] = useState<any[]>([])
+    const [isLoadingDocs, setIsLoadingDocs] = useState(false)
     const [prevStartupId, setPrevStartupId] = useState(startup?.id)
 
     if (startup?.id !== prevStartupId) {
@@ -114,16 +117,23 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                     const [
                         investorRes,
                         boostRes,
-                        purchaseRes
+                        purchaseRes,
+                        docsRes
                     ] = await Promise.all([
                         supabase.from('investors').select('*').eq('id', user!.id).single(),
                         supabase.from('investor_boosts').select('points_awarded').eq('investor_id', user!.id),
-                        supabase.from('point_purchases').select('points').eq('investor_id', user!.id)
+                        supabase.from('point_purchases').select('points').eq('investor_id', user!.id),
+                        supabase.from('startup_documents').select('*').eq('startup_id', startup!.id).eq('status', 'verified')
                     ])
 
                     if (investorRes.error) console.error('Investor fetch error:', investorRes.error)
                     if (boostRes.error) console.error('Boost fetch error:', boostRes.error)
                     if (purchaseRes.error) console.error('Purchase fetch error:', purchaseRes.error)
+                    if (docsRes.error) console.error('Docs fetch error:', docsRes.error)
+
+                    if (docsRes.data) {
+                        setDocuments(docsRes.data)
+                    }
 
                     if (investorRes.data) {
                         const spent = boostRes.data?.reduce((sum: number, b: any) => sum + (b.points_awarded || 0), 0) || 0
@@ -738,6 +748,79 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                         </p>
                     </section>
                 )}
+
+                {/* Documents Section */}
+                <section className="mt-12 pt-12 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <FileText className="h-6 w-6 text-indigo-500" />
+                            Data Room
+                        </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Pitch Deck - Prominent */}
+                        {documents.find(d => d.document_type === 'pitch_deck') ? (
+                            <a
+                                href={getViewableUrl(documents.find(d => d.document_type === 'pitch_deck').file_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group relative block p-6 rounded-[2rem] bg-indigo-50 border-2 border-indigo-100 hover:border-black transition-all cursor-pointer overflow-hidden shadow-sm no-underline"
+                            >
+                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform">
+                                    <FileText className="h-24 w-24" />
+                                </div>
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                        <FileText className="h-8 w-8 text-indigo-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-black text-lg text-indigo-900">Pitch Deck (PPTX)</h4>
+                                            <Badge className="bg-indigo-600 text-white hover:bg-indigo-700 text-[9px] uppercase tracking-tighter">Essential</Badge>
+                                        </div>
+                                        <p className="text-xs font-bold text-indigo-800/60 uppercase tracking-widest mt-1">Core Business Strategy & Presentation</p>
+                                    </div>
+                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ExternalLink className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </a>
+                        ) : (
+                            <div className="p-8 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-100 text-center">
+                                <FileText className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Pitch Deck Not Uploaded</p>
+                            </div>
+                        )}
+
+                        {/* Additional Documents List */}
+                        {documents.filter(d => d.document_type !== 'pitch_deck').length > 0 && (
+                            <div className="grid gap-3 pt-4">
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 px-2">Supporting Documents</h4>
+                                {documents.filter(d => d.document_type !== 'pitch_deck').map((doc) => (
+                                    <a
+                                        key={doc.id}
+                                        href={getViewableUrl(doc.file_url)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer group shadow-xs no-underline"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                                                <FileUp className="h-4 w-4 text-gray-400 group-hover:text-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">{doc.document_type}</p>
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{doc.file_name.split('.').pop()?.toUpperCase()} Document</p>
+                                            </div>
+                                        </div>
+                                        <Download className="h-4 w-4 text-gray-300 group-hover:text-black transition-colors" />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
 
                 {/* Investor Boost Section */}
                 {role === 'investor' && (

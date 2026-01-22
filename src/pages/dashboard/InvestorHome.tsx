@@ -46,12 +46,14 @@ export function InvestorHome() {
     }
 
     // Track impact points for notifications
-    useImpactPointsTracker(investor ? {
+    const trackerEntity = useMemo(() => investor ? ({
         ...investor,
         fundsAvailable: investor.funds_available,
         investments: investor.investments_count,
         expertise: investor.expertise || []
-    } as Investor : null)
+    } as Investor) : null, [investor])
+
+    useImpactPointsTracker(trackerEntity)
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
     const [searchParams, setSearchParams] = useSearchParams()
@@ -195,6 +197,8 @@ export function InvestorHome() {
     ), [recommendations])
 
     const sortedStartups = useMemo(() => {
+        const tier = subscriptionManager.getTier()
+
         return filteredStartups.map(startup => {
             const aiRec = recommendationMap.get(startup.id)
             return {
@@ -203,6 +207,11 @@ export function InvestorHome() {
                 aiRecommendation: aiRec
             }
         }).sort((a, b) => {
+            // Randomized feed for free plan
+            if (tier === 'explore' && activeFeed === 'discover') {
+                return Math.random() - 0.5;
+            }
+
             // High Impact Sort
             if (activeFeed === 'high-impact') {
                 const pointDiff = (b.impactPoints || 0) - (a.impactPoints || 0);

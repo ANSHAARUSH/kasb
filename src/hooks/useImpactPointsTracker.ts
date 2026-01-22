@@ -1,43 +1,50 @@
-import { useEffect, useRef } from "react"
+import { useEffect } from "react"
 import { useToast } from "./useToast"
 import { calculateImpactScore } from "../lib/scoring"
 import type { Startup, Investor } from "../data/mockData"
 
 export function useImpactPointsTracker(entity: Startup | Investor | null) {
     const { toast } = useToast()
-    const prevMilestones = useRef<{ signup: boolean; profile: boolean; completion: boolean }>({
-        signup: false,
-        profile: false,
-        completion: false
-    })
+    const entityId = entity?.id
 
     useEffect(() => {
-        if (!entity) return
+        if (!entity || !entityId) return
 
         const scoreResult = calculateImpactScore(entity)
         const currentMilestones = {
-            signup: scoreResult.breakdown.signup > 0,
             profile: scoreResult.breakdown.profile > 0,
             completion: scoreResult.breakdown.completion > 0
         }
 
-        // Initialize prevent noise on first load
-        if (!prevMilestones.current.signup && currentMilestones.signup) {
-            // Usually signup is always true, so we don't notify unless it's a "brand new" session state
-            // But for existing users, we don't want to spam them on every refresh.
-            // We'll use a session-based or local-storage based check if we want persistence.
-            prevMilestones.current.signup = true
+        const notifiedKey = `notified_milestones_${entityId}`
+
+        // Get persisted state from localStorage
+        const stored = localStorage.getItem(notifiedKey)
+        const persisted = stored ? JSON.parse(stored) : null
+
+        // If no record exists for this user, initialize it with current status
+        // so they don't get spammed for milestones they've already achieved in the past.
+        if (!persisted) {
+            localStorage.setItem(notifiedKey, JSON.stringify(currentMilestones))
+            return
         }
 
-        if (!prevMilestones.current.profile && currentMilestones.profile) {
+        let updated = false
+        if (currentMilestones.profile && !persisted.profile) {
             toast("Congrats! You earned 50 Impact Points for completing your profile.", "success")
-            prevMilestones.current.profile = true
+            persisted.profile = true
+            updated = true
         }
 
-        if (!prevMilestones.current.completion && currentMilestones.completion) {
+        if (currentMilestones.completion && !persisted.completion) {
             toast("Brilliant! You earned 50 Impact Points for finalizing your AI Summary & QA.", "success")
-            prevMilestones.current.completion = true
+            persisted.completion = true
+            updated = true
         }
 
-    }, [entity, toast])
+        if (updated) {
+            localStorage.setItem(notifiedKey, JSON.stringify(persisted))
+        }
+
+    }, [entityId, toast]) // Only re-run when ID changes or component renders with new entity data
 }

@@ -23,9 +23,9 @@ export const REGION_CONFIG: Record<UserRegion, { multiplier: number; exchangeRat
 
 export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; contacts: number; compares: number }> = {
     'discovery': { profileViews: Infinity, contacts: 0, compares: 0 },
-    'starter': { profileViews: Infinity, contacts: 10, compares: 5 },
-    'growth': { profileViews: Infinity, contacts: Infinity, compares: Infinity },
-    'fundraise_pro': { profileViews: Infinity, contacts: Infinity, compares: Infinity },
+    'starter': { profileViews: Infinity, contacts: 50, compares: 50 },
+    'growth': { profileViews: Infinity, contacts: 150, compares: 200 },
+    'fundraise_pro': { profileViews: Infinity, contacts: 150, compares: 200 },
     'explore': { profileViews: Infinity, contacts: 0, compares: 0 },
     'investor_basic': { profileViews: Infinity, contacts: 50, compares: 50 },
     'investor_pro': { profileViews: Infinity, contacts: 150, compares: 200 },
@@ -38,21 +38,42 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Discovery',
         price: 0,
         currency: 'INR',
-        features: ['Unlimited detailed viewing', 'Low visibility in investor feed', 'Randomized investor feed', 'No valuation calculator', 'No comparison tools']
+        features: ['Unlimited investor viewing', 'Randomized investor feed', 'No comparison tools', 'No direct contact']
     },
     {
         id: 'starter',
         name: 'Starter',
         price: 999,
         currency: 'INR',
-        features: ['Smart sorted feed', 'AI-powered recommendations', '10 investor contacts/month', 'Basic pitch analytics', 'Standard support']
+        features: [
+            'Unlimited investor viewing',
+            '50 investor contacts/month',
+            '50 comparisons/month',
+            'Enhanced feed visibility',
+            'AI-curated recommendations',
+            'Recommended label with insights',
+            'Full Industry/Geo filters (State/City)',
+            'Standard Customer Support'
+        ]
     },
     {
         id: 'growth',
         name: 'Growth',
         price: 2499,
         currency: 'INR',
-        features: ['Prioritized visibility', 'Unlimited comparison', 'AI Valuation Insights', 'AI pitch deck feedback', 'Investor interest signals'],
+        features: [
+            'Unlimited investor viewing',
+            '150 investor contacts/month',
+            '200 comparisons/month',
+            'Top-tier feed visibility',
+            'AI-curated recommendations',
+            'AI Insights Summary',
+            'Deep Founder Profile Analysis',
+            'Full Geography filters (State/City)',
+            'Export Deal-flow to CSV',
+            'Priority Email & Chat Support',
+            'Early access to new startups'
+        ],
         isPopular: true
     },
     {
@@ -60,7 +81,21 @@ export const STARTUP_TIERS: TierConfig[] = [
         name: 'Fundraise Pro',
         price: 4999,
         currency: 'INR',
-        features: ['Top-tier visibility', 'Featured startup badge', 'AI Valuation Insights', 'AI warm intros', 'Fundraising timeline tracking', 'Dedicated success manager']
+        features: [
+            'Unlimited investor viewing',
+            '150 investor contacts/month',
+            '200 comparisons/month',
+            'Top-tier feed visibility',
+            'AI-curated recommendations',
+            'AI Insights Summary',
+            'Deep investor Profile Analysis',
+            'Full Geography filters (State/City)',
+            'Export Deal-flow to CSV',
+            'Priority Email & Chat Support',
+            'Early access to Beta features',
+            'Personalized investment matching',
+            'And more features coming soon...'
+        ]
     }
 ];
 
