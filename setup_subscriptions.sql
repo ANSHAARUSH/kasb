@@ -36,6 +36,12 @@ CREATE POLICY "Users can update their own subscription"
     FOR UPDATE
     USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own subscription" ON public.user_subscriptions;
+CREATE POLICY "Users can insert their own subscription"
+    ON public.user_subscriptions
+    FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
 DROP POLICY IF EXISTS "Admins can view all subscriptions" ON public.user_subscriptions;
 CREATE POLICY "Admins can view all subscriptions"
     ON public.user_subscriptions
@@ -90,6 +96,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS on_subscription_updated ON public.user_subscriptions;
 CREATE TRIGGER on_subscription_updated
     BEFORE UPDATE ON public.user_subscriptions
     FOR EACH ROW EXECUTE FUNCTION public.handle_subscription_update();

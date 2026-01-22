@@ -1,0 +1,402 @@
+import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { runInference } from "./ai";
+import type { Startup, Investor } from "../data/mockData";
+
+export interface MatchRecommendation {
+    id: string;
+    matchScore: number; // 0-100
+    matchLevel: 'high' | 'medium' | 'low';
+    explanation: string;
+    keyHighlights: string[];
+    entity: Startup | Investor;
+}
+
+export interface RecommendationResult {
+    recommendations: MatchRecommendation[];
+    generatedAt: string;
+}
+
+/**
+ * Simple cache for recommendations
+ */
+const recommendationCache = new Map<string, { data: RecommendationResult; timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+
+/**
+ * Maps technical AI errors to user-friendly professional messages
+ */
+export function getFriendlyErrorMessage(error: any): string {
+    const message = error?.message || String(error);
+
+    if (message.includes('rate limit') || message.includes('429')) {
+        return "Our AI analyst is currently handling a high volume of requests. Please wait a moment while we process your personalized insights.";
+    }
+
+    if (message.includes('API key') || message.includes('auth') || message.includes('401')) {
+        return "Personalized matching is momentarily unavailable. Our team has been notified, and you can still explore the full startup directory below.";
+    }
+
+    if (message.includes('timeout') || message.includes('Network')) {
+        return "We're having trouble reaching our AI engine. Please check your connection or try again in a few seconds.";
+    }
+
+    if (message.includes('context_length') || message.includes('too long')) {
+        return "This profile contains extensive data that our AI is currently processig. Try simplifying your thesis for faster results.";
+    }
+
+    return "We're refining your personalized matches. If this persists, please try exploring the discovery feed below.";
+}
+
+/**
+ * Clean JSON string from AI response (removes markdown code blocks if present)
+ */
+function cleanJsonString(str: string): string {
+    // Remove markdown code blocks if present
+    const jsonMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+        return jsonMatch[1].trim();
+    }
+    return str.trim();
+}
+
+/**
+ * Ensures match score is a 0-100 integer
+ */
+function sanitizeScore(score: any): number {
+    let s = parseFloat(score);
+    if (isNaN(s)) return 0;
+
+    // If AI returns 0.87 instead of 87
+    if (s > 0 && s <= 1) {
+        s = s * 100;
+    }
+
+    return Math.round(Math.min(100, Math.max(0, s)));
+}
+
+function getCacheKey(userId: string, type: 'investor' | 'startup'): string {
+    return `${type}_${userId}`;
+}
+
+function getCachedRecommendations(userId: string, type: 'investor' | 'startup'): RecommendationResult | null {
+    const key = getCacheKey(userId, type);
+    const cached = recommendationCache.get(key);
+
+    if (!cached) return null;
+
+    const age = Date.now() - cached.timestamp;
+    if (age > CACHE_TTL) {
+        recommendationCache.delete(key);
+        return null;
+    }
+
+    return cached.data;
+}
+
+function setCachedRecommendations(userId: string, type: 'investor' | 'startup', data: RecommendationResult): void {
+    const key = getCacheKey(userId, type);
+    recommendationCache.set(key, { data, timestamp: Date.now() });
+}
+
+/**
+ * Generate personalized investor recommendations for a startup
+ */
+export async function generateInvestorRecommendations(
+    startup: Startup,
+    investors: Investor[],
+    apiKey: string
+): Promise<RecommendationResult> {
+    // Check cache first
+    const cached = getCachedRecommendations(startup.id, 'startup');
+    if (cached) {
+        console.log('Returning cached investor recommendations');
+        return cached;
+    }
+
+    const isGemini = apiKey.startsWith('AIza');
+
+    const startupContext = `
+Startup Profile:
+- Name: ${startup.name}
+- Industry: ${startup.industry || 'Not specified'}
+- Stage: ${startup.metrics.stage}
+- Traction: ${startup.metrics.traction}
+- Valuation: ${startup.metrics.valuation}
+- Problem: ${startup.problemSolving}
+- Description: ${startup.description || 'Not provided'}
+`;
+
+    const investorsContext = investors.map((inv, idx) => `
+Investor ${idx + 1}:
+- ID: ${inv.id}
+- Name: ${inv.name}
+- Funds Available: ${inv.fundsAvailable}
+- Expertise: ${inv.expertise.join(', ')}
+- Portfolio Size: ${inv.investments} investments
+- Bio: ${inv.bio}
+`).join('\n');
+
+    const prompt = `You are a Senior Venture Capital Analyst. Analyze the strategic alignment between this startup and available investors. 
+
+${startupContext}
+
+Available Investors:
+${investorsContext}
+
+TASK: Identify the most mathematically and strategically compatible investors.
+TONE: Professional, analytical, and executive. Avoid generic AI fluff.
+
+FOR THE EXPLANATION (2 sentences max):
+- FOCUS on technical synergy, market positioning, and capital alignment.
+- DO NOT use phrases like "This investor is a good match because..." or "They both value...". 
+- START directly with the value proposition (e.g., "Strategic synergy exists in the PropTech domain, where [Name]'s capital can accelerate [Startup]'s GTM strategy.").
+
+FOR THE KEY HIGHLIGHTS (2-3 items):
+- MUST be benefit-oriented and formal (e.g., "High-Velocity GTM Support" instead of "Fast growth").
+- USE executive terminology.
+
+Return ONLY valid JSON:
+{
+  "matches": [
+    {
+      "investorId": "string",
+      "matchScore": number, // MUST be a precise integer (e.g., 87, 92). AVOID multiples of 10 or 5 to ensure data-driven realism.
+      "matchLevel": "high" | "medium" | "low",
+      "explanation": "string",
+      "keyHighlights": ["string", "string"]
+    }
+  ]
+}
+
+Rank by match score (highest first). Include all investors.`;
+
+    try {
+        let content = '';
+        if (isGemini) {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(prompt);
+            content = result.response.text();
+        } else {
+            const client = new OpenAI({
+                apiKey,
+                baseURL: apiKey.startsWith('gsk_') ? 'https://api.groq.com/openai/v1' : undefined,
+                dangerouslyAllowBrowser: true
+            });
+            const response = await client.chat.completions.create({
+                model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.7,
+                max_tokens: 2000
+            });
+            content = response.choices[0]?.message?.content || '{}';
+        }
+
+        const cleanedContent = cleanJsonString(content);
+        console.log('AI Investor Recommendation Response:', cleanedContent);
+        const parsed = JSON.parse(cleanedContent);
+
+        const recommendations: MatchRecommendation[] = parsed.matches.map((match: any) => {
+            const matchId = String(match.investorId).toLowerCase();
+            const investor = investors.find(inv => String(inv.id).toLowerCase() === matchId);
+            if (!investor) {
+                console.warn(`AI suggested investor ID ${matchId} not found in available entities`);
+                return null;
+            }
+
+            return {
+                id: investor.id,
+                matchScore: sanitizeScore(match.matchScore),
+                matchLevel: match.matchLevel,
+                explanation: match.explanation,
+                keyHighlights: match.keyHighlights,
+                entity: investor
+            };
+        }).filter(Boolean) as MatchRecommendation[];
+
+        const result: RecommendationResult = {
+            recommendations,
+            generatedAt: new Date().toISOString()
+        };
+
+        // Cache the result
+        setCachedRecommendations(startup.id, 'startup', result);
+
+        return result;
+    } catch (error: any) {
+        console.error('AI recommendation error:', error);
+
+        // Handle rate limit errors specifically
+        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+            throw new Error('AI rate limit reached. Please try again in a few minutes or configure an OpenAI API key as a fallback.');
+        }
+
+        // Handle API key errors
+        if (error.message?.includes('API key') || error.message?.includes('401')) {
+            throw new Error('AI API key is invalid or missing. Please check your configuration.');
+        }
+
+        throw new Error(`Failed to generate recommendations: ${error.message}`);
+    }
+}
+
+/**
+ * Generate personalized startup recommendations for an investor
+ */
+export async function generateStartupRecommendations(
+    investor: Investor,
+    startups: Startup[],
+    apiKey: string,
+    recentViews: Startup[] = []
+): Promise<RecommendationResult> {
+    // Check cache first - we disable cache if there are recent views to ensure dynamic updates
+    if (recentViews.length === 0) {
+        const cached = getCachedRecommendations(investor.id, 'investor');
+        if (cached) {
+            console.log('Returning cached startup recommendations');
+            return cached;
+        }
+    }
+
+    const isGemini = apiKey.startsWith('AIza');
+
+    const investorContext = `
+Investor Profile:
+- Name: ${investor.name}
+- Funds Available: ${investor.fundsAvailable}
+- Expertise: ${investor.expertise.join(', ')}
+- Portfolio Size: ${investor.investments} investments
+- Bio: ${investor.bio}
+`;
+
+    const recentViewsContext = recentViews.length > 0 ? `
+Recently Viewed Startups (Behavioral History):
+${recentViews.map((s, idx) => `- ${idx + 1}. ${s.name} (${s.industry}): ${s.problemSolving}`).join('\n')}
+` : '';
+
+    const startupsContext = startups.map((startup, idx) => `
+Startup ${idx + 1}:
+- ID: ${startup.id}
+- Name: ${startup.name}
+- Industry: ${startup.industry || 'Not specified'}
+- Stage: ${startup.metrics.stage}
+- Traction: ${startup.metrics.traction}
+- Valuation: ${startup.metrics.valuation}
+- Problem: ${startup.problemSolving}
+`).join('\n');
+
+    const prompt = `You are a Senior Venture Capital Analyst. Evaluate the strategic fit between the current investor profile and available startups.
+
+${investorContext}
+
+${recentViewsContext}
+${recentViews.length > 0 ? "STRATEGIC NOTE: Prioritize startups that align with the investor's recent behavioral history, as these represent active investment interests." : ""}
+
+Available Startups:
+${startupsContext}
+
+TASK: Determine high-alpha investment opportunities based on sector expertise and stage synergy.
+TONE: Sophisticated, data-driven, and formal. Avoid "chatty" or robotic AI language.
+
+FOR THE EXPLANATION (2 sentences max):
+- FOCUS on market fit, sector-specific synergy, and growth potential.
+- DO NOT use robotic templates like "This startup is a good fit for you because...".
+- START directly with the investment thesis (e.g., "Exceptional alignment in the Fintech sector, offering substantial synergy with your current portfolio of ${investor.investments} active investments.").
+
+FOR THE KEY HIGHLIGHTS (2-3 items):
+- MUST be strategic and formal (e.g., "Validated Market Traction" instead of "They are doing well").
+- USE executive summaries.
+
+Return ONLY valid JSON:
+{
+  "matches": [
+    {
+      "startupId": "string",
+      "matchScore": number, // MUST be a precise integer (e.g., 88, 93). AVOID multiples of 10 or 5 to ensure data-driven realism.
+      "matchLevel": "high" | "medium" | "low",
+      "explanation": "string",
+      "keyHighlights": ["string", "string"]
+    }
+  ]
+}
+
+Rank by match score (highest first). Include all startups.`;
+
+    try {
+        let content = '';
+        if (isGemini) {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(prompt);
+            content = result.response.text();
+        } else {
+            const client = new OpenAI({
+                apiKey,
+                baseURL: apiKey.startsWith('gsk_') ? 'https://api.groq.com/openai/v1' : undefined,
+                dangerouslyAllowBrowser: true
+            });
+            const response = await client.chat.completions.create({
+                model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.7,
+                max_tokens: 2000
+            });
+            content = response.choices[0]?.message?.content || '{}';
+        }
+
+        const cleanedContent = cleanJsonString(content);
+        console.log('AI Startup Recommendation Response:', cleanedContent);
+        const parsed = JSON.parse(cleanedContent);
+
+        const recommendations: MatchRecommendation[] = parsed.matches.map((match: any) => {
+            const matchId = String(match.startupId).toLowerCase();
+            const startup = startups.find(s => String(s.id).toLowerCase() === matchId);
+            if (!startup) {
+                console.warn(`AI suggested startup ID ${matchId} not found in available entities`);
+                return null;
+            }
+
+            return {
+                id: startup.id,
+                matchScore: sanitizeScore(match.matchScore),
+                matchLevel: match.matchLevel,
+                explanation: match.explanation,
+                keyHighlights: match.keyHighlights,
+                entity: startup
+            };
+        }).filter(Boolean) as MatchRecommendation[];
+
+        const result: RecommendationResult = {
+            recommendations,
+            generatedAt: new Date().toISOString()
+        };
+
+        // Cache the result
+        setCachedRecommendations(investor.id, 'investor', result);
+
+        return result;
+    } catch (error: any) {
+        console.error('AI recommendation error:', error);
+
+        // Handle rate limit errors specifically
+        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
+            throw new Error('AI rate limit reached. Please try again in a few minutes or configure an OpenAI API key as a fallback.');
+        }
+
+        // Handle API key errors
+        if (error.message?.includes('API key') || error.message?.includes('401')) {
+            throw new Error('AI API key is invalid or missing. Please check your configuration.');
+        }
+
+        throw new Error(`Failed to generate recommendations: ${error.message}`);
+    }
+}
+
+/**
+ * Clear recommendation cache for a specific user
+ */
+export function clearRecommendationCache(userId: string, type: 'investor' | 'startup'): void {
+    const key = getCacheKey(userId, type);
+    recommendationCache.delete(key);
+}

@@ -21,15 +21,15 @@ export const REGION_CONFIG: Record<UserRegion, { multiplier: number; exchangeRat
     'Global': { multiplier: 1.5, exchangeRate: 83, symbol: '$' }
 };
 
-export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; contacts: number }> = {
-    'discovery': { profileViews: Infinity, contacts: 0 },
-    'starter': { profileViews: Infinity, contacts: 10 },
-    'growth': { profileViews: Infinity, contacts: Infinity },
-    'fundraise_pro': { profileViews: Infinity, contacts: Infinity },
-    'explore': { profileViews: Infinity, contacts: 0 },
-    'investor_basic': { profileViews: Infinity, contacts: 20 },
-    'investor_pro': { profileViews: Infinity, contacts: Infinity },
-    'institutional': { profileViews: Infinity, contacts: Infinity }
+export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; contacts: number; compares: number }> = {
+    'discovery': { profileViews: Infinity, contacts: 0, compares: 0 },
+    'starter': { profileViews: Infinity, contacts: 10, compares: 5 },
+    'growth': { profileViews: Infinity, contacts: Infinity, compares: Infinity },
+    'fundraise_pro': { profileViews: Infinity, contacts: Infinity, compares: Infinity },
+    'explore': { profileViews: Infinity, contacts: 0, compares: 0 },
+    'investor_basic': { profileViews: Infinity, contacts: 50, compares: 50 },
+    'investor_pro': { profileViews: Infinity, contacts: 150, compares: 200 },
+    'institutional': { profileViews: Infinity, contacts: 150, compares: 200 }
 };
 
 export const STARTUP_TIERS: TierConfig[] = [
@@ -75,24 +75,60 @@ export const INVESTOR_TIERS: TierConfig[] = [
     {
         id: 'investor_basic',
         name: 'Investor Basic',
-        price: 4999,
+        price: 3999,
         currency: 'INR',
-        features: ['Smart sorted feed', 'AI-curated startup feed', '20 startup contacts/month', 'Industry/Geo filters', 'Bookmarking tools']
+        features: [
+            'Unlimited startup viewing',
+            '50 startup contacts/month',
+            '50 comparisons/month',
+            'Enhanced feed visibility',
+            'AI-curated recommendations',
+            'Recommended label with insights',
+            'Full Industry/Geo filters (State/City)',
+            'Standard Customer Support'
+        ]
     },
     {
         id: 'investor_pro',
         name: 'Investor Pro',
-        price: 9999,
+        price: 8999,
         currency: 'INR',
-        features: ['Priority access', 'Unlimited startup access', 'AI Startup Summaries', 'Advanced AI scoring (Team/Risk)', 'Deal-flow analytics', 'Comparison tools'],
+        features: [
+            'Unlimited startup viewing',
+            '150 startup contacts/month',
+            '200 comparisons/month',
+            'Top-tier feed visibility',
+            'AI-curated recommendations',
+            'AI Insights Summary',
+            'Deep Founder Profile Analysis',
+            'Full Geography filters (State/City)',
+            'Export Deal-flow to CSV',
+            'Priority Email & Chat Support',
+            'Early access to new startups'
+        ],
         isPopular: true
     },
     {
         id: 'institutional',
         name: 'Institutional / VC+',
-        price: 24999,
+        price: 13999,
         currency: 'INR',
-        features: ['Custom thesis matching', 'AI Valuation Insights', 'API & data export', 'Multiple team seats', 'White-label reports']
+        features: [
+            'Unlimited startup viewing',
+            '150 startup contacts/month',
+            '200 comparisons/month',
+            'Top-tier feed visibility',
+            'AI-curated recommendations',
+            'AI Insights Summary',
+            'Deep Founder Profile Analysis',
+            'Full Geography filters (State/City)',
+            'Export Deal-flow to CSV',
+            'Priority Email & Chat Support',
+            'Early access to new startups',
+            'Early access to Beta features',
+            'Personalized investment matching',
+            'And more features coming soon...'
+        ]
     }
 ];
 
@@ -122,23 +158,30 @@ class SubscriptionManager {
         return saved || this.currentRegion;
     }
 
-    async setTier(tier: SubscriptionTier) {
+    /**
+     * Updates the local active tier without triggering a Supabase sync.
+     * Useful for initial load or when tiers are fetched from AuthContext.
+     */
+    updateLocalTier(tier: SubscriptionTier) {
         this.activeTier = tier;
         localStorage.setItem(this.getStorageKey('kasb_user_tier'), tier);
+    }
+
+    async setTier(tier: SubscriptionTier) {
+        this.updateLocalTier(tier);
 
         if (this.userId) {
-            try {
-                const { error } = await supabase
-                    .from('user_subscriptions')
-                    .upsert({
-                        user_id: this.userId,
-                        tier,
-                        updated_at: new Date().toISOString()
-                    });
+            const { error } = await supabase
+                .from('user_subscriptions')
+                .upsert({
+                    user_id: this.userId,
+                    tier,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
 
-                if (error) console.error('Error saving subscription to Supabase:', error);
-            } catch (err) {
-                console.error('Failed to sync tier with Supabase:', err);
+            if (error) {
+                console.error('Error saving subscription to Supabase:', error);
+                throw new Error(`Sync failed: ${error.message}`);
             }
         }
     }
@@ -196,9 +239,9 @@ class SubscriptionManager {
     }
 
     getUsage() {
-        if (!this.userId) return { profileViews: 0, contacts: 0, viewedIds: [], contactedIds: [] };
+        if (!this.userId) return { profileViews: 0, contacts: 0, compares: 0, viewedIds: [], contactedIds: [], comparedPairs: [] };
         const saved = localStorage.getItem(this.getStorageKey('kasb_usage'));
-        const defaultUsage = { profileViews: 0, contacts: 0, viewedIds: [], contactedIds: [] };
+        const defaultUsage = { profileViews: 0, contacts: 0, compares: 0, viewedIds: [], contactedIds: [], comparedPairs: [] };
         if (!saved) return defaultUsage;
         try {
             const usage = JSON.parse(saved);
@@ -213,8 +256,10 @@ class SubscriptionManager {
         localStorage.setItem(this.getStorageKey('kasb_usage'), JSON.stringify({
             profileViews: 0,
             contacts: 0,
+            compares: 0,
             viewedIds: [],
-            contactedIds: []
+            contactedIds: [],
+            comparedPairs: []
         }));
     }
 
@@ -244,17 +289,25 @@ class SubscriptionManager {
         }
     }
 
-    canViewProfile(entityId?: string): boolean {
-        const tier = this.getTier();
-        const limits = TIER_LIMITS[tier];
+    trackCompare(id1: string, id2: string) {
+        if (!id1 || !id2 || !this.userId) return;
         const usage = this.getUsage();
+        const comparedPairs = usage.comparedPairs || [];
 
-        // If we've already viewed this specific entity, we can always view it again
-        if (entityId && (usage.viewedIds || []).includes(entityId)) {
-            return true;
+        // Sort IDs to ensure order doesn't matter (A-B is same as B-A)
+        const pair = [id1, id2].sort().join(':');
+
+        if (!comparedPairs.includes(pair)) {
+            comparedPairs.push(pair);
+            usage.compares = comparedPairs.length;
+            usage.comparedPairs = comparedPairs;
+            localStorage.setItem(this.getStorageKey('kasb_usage'), JSON.stringify(usage));
         }
+    }
 
-        return usage.profileViews < limits.profileViews;
+    canViewProfile(): boolean {
+        // Unlimited viewing for everyone
+        return true;
     }
 
     hasPaidPlan(): boolean {
@@ -278,6 +331,33 @@ class SubscriptionManager {
         }
 
         return usage.contacts < limits.contacts;
+    }
+
+    canCompare(id1?: string, id2?: string): boolean {
+        const tier = this.getTier();
+        const limits = TIER_LIMITS[tier];
+        const usage = this.getUsage();
+
+        if (id1 && id2) {
+            const pair = [id1, id2].sort().join(':');
+            if ((usage.comparedPairs || []).includes(pair)) {
+                return true;
+            }
+        }
+
+        return usage.compares < limits.compares;
+    }
+
+    canViewFounderDetails(): boolean {
+        const tier = this.getTier();
+        const proTiers = ['investor_pro', 'institutional', 'fundraise_pro']; // Pro levels
+        return proTiers.includes(tier) || tier === 'admin' as any;
+    }
+
+    canViewAISummary(): boolean {
+        const tier = this.getTier();
+        const proTiers = ['investor_pro', 'institutional', 'fundraise_pro'];
+        return proTiers.includes(tier) || tier === 'admin' as any;
     }
 }
 

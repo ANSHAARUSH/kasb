@@ -183,6 +183,12 @@ export function HistoryPage() {
             return
         }
 
+        // Check limits
+        if (!subscriptionManager.canCompare(selectedIds[0], selectedIds[1])) {
+            toast("You have reached your AI comparison limit for this month. Please upgrade your plan for more comparisons.", "error")
+            return
+        }
+
         const s1 = displayedStartups.find(s => s.id === selectedIds[0])
         const s2 = displayedStartups.find(s => s.id === selectedIds[1])
 
@@ -194,8 +200,9 @@ export function HistoryPage() {
         setIsComparing(true)
 
         try {
-            // Check order: Env Var -> Global Config -> User Settings -> Mock/Fallback
-            let apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+            // Priority: Env -> DB Global -> DB User
+            const envKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+            let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
 
             if (!apiKey) {
                 const globalKey = await getGlobalConfig('ai_api_key')
@@ -214,6 +221,10 @@ export function HistoryPage() {
 
             const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
             const result = await compareStartups(s1, s2, apiKey, baseUrl)
+
+            // Track successful comparison
+            subscriptionManager.trackCompare(s1.id, s2.id)
+
             setComparisonResult(result)
 
         } catch (error: unknown) {

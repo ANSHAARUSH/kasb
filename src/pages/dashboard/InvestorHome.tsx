@@ -8,7 +8,7 @@ import { StartupDetail, type PanelSize } from "../../components/dashboard/Startu
 // import { useAuth } from "../../context/AuthContext"
 // import { useToast } from "../../hooks/useToast"
 
-import { Filter, SlidersHorizontal, X, FileText } from "lucide-react"
+import { Filter, SlidersHorizontal, X, FileText, Sparkles } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { FilterPanel, type FilterState } from "../../components/dashboard/FilterPanel"
 import { useChat } from "../../hooks/useChat"
@@ -71,7 +71,9 @@ export function InvestorHome() {
     const [filters, setFilters] = useState<FilterState>({
         stages: [],
         industries: [],
-        minRevenue: "0"
+        minRevenue: "0",
+        states: [],
+        cities: []
     })
 
     useEffect(() => {
@@ -106,18 +108,19 @@ export function InvestorHome() {
     const [activeFeed, setActiveFeed] = useState<'discover' | 'high-impact'>('discover')
 
     // Check if user has paid plan for AI recommendations
-    const hasPaidPlan = subscriptionManager.hasPaidPlan()
 
-    // AI Recommendations (silent - only logs errors) - Only for paid users
-    const { recommendations, error: recommendationsError } = useRecommendations({
+    // AI Recommendations (silent - only logs errors) - Enabled for ALL users
+    const recommendationProfile = useMemo(() => investor ? ({
+        ...investor,
+        fundsAvailable: investor.funds_available,
+        investments: investor.investments_count,
+        expertise: investor.expertise || []
+    } as Investor) : null, [investor]);
+
+    const { recommendations, loading: recommendationsLoading, error: recommendationsError } = useRecommendations({
         type: 'investor',
-        currentProfile: hasPaidPlan && investor ? {
-            ...investor,
-            fundsAvailable: investor.funds_available,
-            investments: investor.investments_count,
-            expertise: investor.expertise || []
-        } as Investor : null,
-        availableEntities: hasPaidPlan ? startups : []
+        currentProfile: recommendationProfile,
+        availableEntities: startups
     })
 
     // Log recommendation errors silently
@@ -131,9 +134,11 @@ export function InvestorHome() {
     const activeFilterCount =
         filters.stages.length +
         filters.industries.length +
+        filters.states.length +
+        filters.cities.length +
         (filters.minRevenue !== "0" ? 1 : 0)
 
-    const filteredStartups = startups.filter(startup => {
+    const filteredStartups = useMemo(() => startups.filter(startup => {
         const query = debouncedSearchQuery.toLowerCase()
         const matchesSearch = (
             startup.name.toLowerCase().includes(query) ||
@@ -168,54 +173,77 @@ export function InvestorHome() {
             if (startupRevenue < minRevenue) return false
         }
 
+        // State Filter
+        if (filters.states.length > 0) {
+            if (!startup.state || !filters.states.includes(startup.state)) return false
+        }
+
+        // City Filter
+        if (filters.cities.length > 0) {
+            if (!startup.city || !filters.cities.includes(startup.city)) return false
+        }
+
         return true
-    })
+    }), [startups, debouncedSearchQuery, filters])
 
     // Create a map of AI recommendations for quick lookup
-    const recommendationMap = new Map(
+    const recommendationMap = useMemo(() => new Map(
         recommendations?.recommendations.map(rec => [
             rec.id,
             { score: rec.matchScore, explanation: rec.explanation, highlights: rec.keyHighlights }
         ]) || []
-    )
+    ), [recommendations])
 
-    const sortedStartups = filteredStartups.map(startup => {
-        const aiRec = recommendationMap.get(startup.id)
-        return {
-            ...startup,
-            isRecommended: !!aiRec,
-            aiRecommendation: aiRec
-        }
-    }).sort((a, b) => {
-        // High Impact Sort
-        if (activeFeed === 'high-impact') {
-            const pointDiff = (b.impactPoints || 0) - (a.impactPoints || 0);
-            if (pointDiff !== 0) return pointDiff;
+    const sortedStartups = useMemo(() => {
+        return filteredStartups.map(startup => {
+            const aiRec = recommendationMap.get(startup.id)
+            return {
+                ...startup,
+                isRecommended: !!aiRec,
+                aiRecommendation: aiRec
+            }
+        }).sort((a, b) => {
+            // High Impact Sort
+            if (activeFeed === 'high-impact') {
+                const pointDiff = (b.impactPoints || 0) - (a.impactPoints || 0);
+                if (pointDiff !== 0) return pointDiff;
 
-            // Tie-breaker: Valuation
-            const valA = parseRevenue(a.metrics.valuation);
-            const valB = parseRevenue(b.metrics.valuation);
-            return valB - valA;
-        }
+                // Tie-breaker: Valuation
+                const valA = parseRevenue(a.metrics.valuation);
+                const valB = parseRevenue(b.metrics.valuation);
+                return valB - valA;
+            }
 
-        // Default Sort (Discover) - AI recommended first
-        if (a.isRecommended && !b.isRecommended) return -1;
-        if (!a.isRecommended && b.isRecommended) return 1;
+            // Default Sort (Discover) - AI recommended first
+            if (a.isRecommended && !b.isRecommended) return -1;
+            if (!a.isRecommended && b.isRecommended) return 1;
 
-        // Then by AI match score
-        if (a.aiRecommendation && b.aiRecommendation) {
-            return b.aiRecommendation.score - a.aiRecommendation.score
-        }
+            // Then by AI match score
+            if (a.aiRecommendation && b.aiRecommendation) {
+                return b.aiRecommendation.score - a.aiRecommendation.score
+            }
 
-        return 0;
-    });
+            return 0;
+        });
+    }, [filteredStartups, recommendationMap, activeFeed]);
 
-    const displayStartups = useMemo(() => {
-        if (!subscriptionManager.hasPaidPlan() && activeFeed === 'discover') {
-            return [...sortedStartups].sort(() => Math.random() - 0.5)
-        }
-        return sortedStartups
-    }, [sortedStartups, activeFeed])
+    const displayStartups = sortedStartups
+
+    // Preference check logic
+    const hasPreferences = useMemo(() => {
+        if (!investor) return true // Don't show CTA while loading
+        const hasExpertise = (investor.expertise || []).length > 0
+        const hasIndustryFocus = (investor.profile_details?.investment_preferences?.industry_focus || []).length > 0
+        return hasExpertise || hasIndustryFocus
+    }, [investor])
+
+    const topRecommendations = useMemo(() => {
+        return sortedStartups.filter(s => s.isRecommended).slice(0, 3)
+    }, [sortedStartups])
+
+    const otherStartups = useMemo(() => {
+        return sortedStartups.filter(s => !topRecommendations.some(r => r.id === s.id))
+    }, [sortedStartups, topRecommendations])
 
     // Only on mount or when list changes significantly, but ideally just defaulting to the first one for the view
     useEffect(() => {
@@ -230,7 +258,7 @@ export function InvestorHome() {
     if (loading) {
         return (
             <div className="flex h-[calc(100vh-100px)] overflow-hidden">
-                <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
                     <div className="h-12 w-full skeleton mb-6" />
                     {[1, 2, 3].map(i => (
                         <div key={i} className="h-[500px] w-full skeleton rounded-3xl" />
@@ -261,7 +289,7 @@ export function InvestorHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-2xl mx-auto space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <h1 className="text-xl font-bold hidden sm:block">Discover Startups</h1>
@@ -307,41 +335,126 @@ export function InvestorHome() {
                                 <p>Try adjusting your filters.</p>
                             </div>
                         ) : (
-                            displayStartups.map(startup => (
-                                <div key={startup.id} className="transform transition-all duration-200 hover:scale-[1.01]">
-                                    <StartupCard
-                                        startup={startup}
-                                        isSelected={selectedId === startup.id}
-                                        isSaved={savedStartupIds.includes(startup.id)}
-                                        onClick={() => {
-                                            setSelectedId(startup.id)
-                                        }}
-                                        onDoubleClick={() => {
-                                            if (!subscriptionManager.canViewProfile(startup.id)) {
-                                                // Handle limit reached (show toast/redirect)
-                                                // We can also just set a "showUpgrade" state if we want a modal
-                                                const url = '/dashboard/pricing';
-                                                window.location.href = url;
-                                                return;
-                                            }
+                            <div className="space-y-8">
+                                {/* For You Section (Only in Discover Feed) */}
+                                {activeFeed === 'discover' && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-indigo-50 rounded-lg">
+                                                    <Sparkles className="w-4 h-4 text-indigo-600" />
+                                                </div>
+                                                <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">For You</h2>
+                                            </div>
+                                            {!hasPreferences && (
+                                                <Link to="/dashboard/investor/settings" className="text-xs font-bold text-indigo-600 hover:underline">
+                                                    Refine AI Preferences
+                                                </Link>
+                                            )}
+                                        </div>
 
-                                            subscriptionManager.trackView(startup.id)
-                                            setDetailStartup(startup)
-                                            setSelectedId(startup.id)
+                                        {recommendationsLoading ? (
+                                            <div className="space-y-4 animate-pulse">
+                                                {[1, 2].map(i => (
+                                                    <div key={i} className="h-40 w-full bg-indigo-50/50 rounded-[2rem] border border-indigo-100/50" />
+                                                ))}
+                                            </div>
+                                        ) : recommendationsError ? (
+                                            <div className="p-8 rounded-[2rem] border border-indigo-100 bg-white shadow-sm text-center relative overflow-hidden group">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500/20 via-indigo-500 to-indigo-500/20" />
+                                                <div className="mx-auto w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-500">
+                                                    <Sparkles className="w-6 h-6 text-indigo-400" />
+                                                </div>
+                                                <h3 className="text-sm font-bold text-indigo-950 mb-2">Analyzing Opportunities...</h3>
+                                                <p className="text-xs text-indigo-600/80 leading-relaxed max-w-[240px] mx-auto">{recommendationsError}</p>
+                                                <button
+                                                    onClick={() => window.location.reload()}
+                                                    className="mt-4 text-[10px] font-bold text-indigo-500 uppercase tracking-widest hover:text-indigo-600 transition-colors"
+                                                >
+                                                    Retry Analysis
+                                                </button>
+                                            </div>
+                                        ) : topRecommendations.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {topRecommendations.map(startup => (
+                                                    <div key={`rec-${startup.id}`} className="transform transition-all duration-200 hover:scale-[1.01]">
+                                                        <StartupCard
+                                                            startup={startup}
+                                                            isSelected={selectedId === startup.id}
+                                                            isSaved={savedStartupIds.includes(startup.id)}
+                                                            onClick={() => setSelectedId(startup.id)}
+                                                            onDoubleClick={() => {
+                                                                subscriptionManager.trackView(startup.id)
+                                                                setDetailStartup(startup)
+                                                                setSelectedId(startup.id)
+                                                                if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
+                                                            }}
+                                                            onToggleSave={() => handleToggleSave(startup.id, "Startup")}
+                                                            onMessageClick={handleMessage}
+                                                            isRecommended={true}
+                                                            aiRecommendation={startup.aiRecommendation}
+                                                            showPercentage={true}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : !hasPreferences ? (
+                                            <Link
+                                                to="/dashboard/investor/settings"
+                                                className="block p-6 rounded-[2rem] border-2 border-dashed border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50 transition-all text-center group"
+                                            >
+                                                <div className="mx-auto w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                    <SlidersHorizontal className="w-6 h-6 text-indigo-600" />
+                                                </div>
+                                                <h3 className="text-sm font-bold text-indigo-900 mb-1">Personalize Your Feed</h3>
+                                                <p className="text-xs text-indigo-600/70">Tell us your investment thesis & interests to see AI-recommended startups here.</p>
+                                            </Link>
+                                        ) : (
+                                            <div className="p-6 rounded-[2rem] border border-gray-100 bg-white text-center">
+                                                <p className="text-xs text-gray-400 italic">No direct matches for your current thesis yet. Try exploring the feed!</p>
+                                            </div>
+                                        )}
 
-                                            // Desktop: Ensure panel is visible
-                                            if (window.innerWidth >= 1024) {
-                                                if (panelSize === 'minimized') setPanelSize('default')
-                                            }
-                                        }}
-                                        onToggleSave={() => handleToggleSave(startup.id, "Startup")}
-                                        onMessageClick={handleMessage}
-                                        isRecommended={startup.isRecommended}
-                                        aiRecommendation={startup.aiRecommendation}
-                                        showImpactPoints={activeFeed === 'high-impact'}
-                                    />
+                                        <div className="flex items-center gap-4 py-2">
+                                            <div className="h-px bg-gray-100 flex-1" />
+                                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Discover More</span>
+                                            <div className="h-px bg-gray-100 flex-1" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Main Feed List */}
+                                <div className="space-y-6">
+                                    {(activeFeed === 'discover' ? otherStartups : displayStartups).map(startup => (
+                                        <div key={startup.id} className="transform transition-all duration-200 hover:scale-[1.01]">
+                                            <StartupCard
+                                                startup={startup}
+                                                isSelected={selectedId === startup.id}
+                                                isSaved={savedStartupIds.includes(startup.id)}
+                                                onClick={() => {
+                                                    setSelectedId(startup.id)
+                                                }}
+                                                onDoubleClick={() => {
+                                                    subscriptionManager.trackView(startup.id)
+                                                    setDetailStartup(startup)
+                                                    setSelectedId(startup.id)
+
+                                                    if (window.innerWidth >= 1024) {
+                                                        if (panelSize === 'minimized') setPanelSize('default')
+                                                    }
+                                                }}
+                                                onToggleSave={() => handleToggleSave(startup.id, "Startup")}
+                                                onMessageClick={handleMessage}
+                                                isRecommended={false}
+                                                aiRecommendation={startup.aiRecommendation}
+                                                showImpactPoints={activeFeed === 'high-impact'}
+                                                isFirstInRow={true}
+                                                isLastInRow={true}
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))
+                            </div>
                         )}
 
                         {/* Bottom spacer */}

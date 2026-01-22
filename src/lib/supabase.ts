@@ -9,6 +9,21 @@ if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KE
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
+export async function signInWithGoogle(redirectTo?: string) {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: redirectTo || window.location.origin,
+            queryParams: {
+                access_type: 'offline',
+                prompt: 'consent',
+            }
+        }
+    })
+    if (error) throw error
+}
+
+
 export async function getUserSetting(userId: string, key: string): Promise<string | null> {
     const { data, error } = await supabase
         .from('user_settings')
@@ -190,6 +205,22 @@ export async function trackProfileView(viewerId: string, startupId: string, loca
         })
 
     if (error) console.error('Error tracking view:', error)
+}
+
+export async function getRecentViews(viewerId: string, limit: number = 5): Promise<string[]> {
+    const { data, error } = await supabase
+        .from('profile_views')
+        .select('viewed_startup_id')
+        .eq('viewer_id', viewerId)
+        .order('viewed_at', { ascending: false })
+        .limit(limit)
+
+    if (error) {
+        console.error('Error fetching recent views:', error)
+        return []
+    }
+
+    return (data || []).map(v => v.viewed_startup_id)
 }
 
 export async function getProfileViewsCount(startupId: string): Promise<number> {

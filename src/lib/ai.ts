@@ -1,7 +1,70 @@
 import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Startup } from "../data/mockData";
 import { extractDocumentContent } from "./documentExtraction";
 import type { AnalysisResult } from "./documentIntelligence";
+
+/**
+ * Helper to get a Gemini model or OpenAI instance based on API key
+ */
+function getAIClient(apiKey: string, baseUrl?: string) {
+    if (apiKey.startsWith('AIza')) {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        return { type: 'gemini', client: genAI };
+    }
+    const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: baseUrl || "https://api.groq.com/openai/v1",
+        dangerouslyAllowBrowser: true
+    });
+    return { type: 'openai', client: openai };
+}
+
+export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string } = {}) {
+    const { type, client } = getAIClient(apiKey, options.baseUrl);
+
+    if (type === 'gemini') {
+        const genAI = client as GoogleGenerativeAI;
+        const modelName = options.vision ? "gemini-1.5-flash" : (options.model?.includes('8b') ? "gemini-1.5-flash-8b" : "gemini-1.5-flash-latest");
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        if (options.vision && options.file) {
+            const base64 = await fileToBase64(options.file);
+            const result = await model.generateContent([
+                prompt,
+                { inlineData: { data: base64, mimeType: options.file.type } }
+            ]);
+            return result.response.text();
+        }
+
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+    } else {
+        const openai = client as OpenAI;
+        if (options.vision && options.file) {
+            const base64 = await fileToBase64(options.file);
+            const response = await openai.chat.completions.create({
+                model: options.model || "llama-3.2-11b-vision-preview",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            { type: "image_url", image_url: { url: `data:${options.file.type};base64,${base64}` } }
+                        ]
+                    }
+                ]
+            });
+            return response.choices[0].message.content || "";
+        }
+
+        const completion = await openai.chat.completions.create({
+            messages: [{ role: "user", content: prompt }],
+            model: options.model || "llama-3.3-70b-versatile",
+        });
+        return completion.choices[0].message.content || "";
+    }
+}
 
 export interface ComparisonResult {
     verdict: string;
@@ -140,14 +203,8 @@ async function getCachedOrFetch<T>(
 
 export async function compareStartups(startup1: Startup, startup2: Startup, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
-        throw new Error("AI services are not configured. Please ensure VITE_GROQ_API_KEY is set in environment variables or the administration settings.");
+        throw new Error("AI services are not configured. Please ensure API key is set.");
     }
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1", // Default to Groq
-        dangerouslyAllowBrowser: true // Client-side usage for demo
-    });
 
     const prompt = `
     Compare the following two startups as an investment opportunity.
@@ -178,29 +235,17 @@ export async function compareStartups(startup1: Startup, startup2: Startup, apiK
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile", // Fast & Powerful Groq model
-        });
-
-        const text = completion.choices[0].message.content || "{}";
+        const text = await runInference(apiKey, prompt, { baseUrl });
         return extractJSON<ComparisonResult>(text);
     } catch (error: unknown) {
         console.error("AI Comparison Error:", error);
-        const message = error instanceof Error ? error.message : "Failed to generate comparison";
-        throw new Error(`AI API Error: ${message}`);
+        throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
     }
 }
 export async function compareInvestors(investor1: any, investor2: any, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
         throw new Error("API Key is missing for investor comparison.");
     }
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
 
     const prompt = `
     Compare the following two investors as a potential partner for a startup.
@@ -231,17 +276,11 @@ export async function compareInvestors(investor1: any, investor2: any, apiKey: s
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        const text = completion.choices[0].message.content || "{}";
+        const text = await runInference(apiKey, prompt, { baseUrl });
         return extractJSON<ComparisonResult>(text);
     } catch (error: unknown) {
         console.error("AI Comparison Error:", error);
-        const message = error instanceof Error ? error.message : "Failed to generate comparison";
-        throw new Error(`AI API Error: ${message}`);
+        throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
     }
 }
 
@@ -257,12 +296,6 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     return getCachedOrFetch(
         cacheKey,
         async () => {
-            const openai = new OpenAI({
-                apiKey: apiKey,
-                baseURL: baseUrl || "https://api.groq.com/openai/v1",
-                dangerouslyAllowBrowser: true
-            });
-
             const prompt = `
     Provide realistic and data-driven investment insights for the industry: "${industry}" in the Indian market context.
     
@@ -289,17 +322,11 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
             // Wrap API call in retry logic
             return retryWithBackoff(async () => {
                 try {
-                    const completion = await openai.chat.completions.create({
-                        messages: [{ role: "user", content: prompt }],
-                        model: "llama-3.3-70b-versatile",
-                    });
-
-                    const text = completion.choices[0].message.content || "{}";
+                    const text = await runInference(apiKey, prompt, { baseUrl });
                     return extractJSON<IndustryInsight>(text);
                 } catch (error: unknown) {
                     console.error("AI Industry Insight Error:", error);
-                    const message = error instanceof Error ? error.message : "Failed to generate insights";
-                    throw new Error(`AI API Error: ${message}`);
+                    throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate insights"}`);
                 }
             });
         },
@@ -367,19 +394,8 @@ async function fileToBase64(file: File): Promise<string> {
 export async function verifyDocumentWithOCR(file: File, docType: string, apiKey: string, baseUrl?: string): Promise<OCRResult> {
     if (!apiKey) throw new Error("API Key is missing");
 
-    // Auto-detect Groq vs OpenAI if no baseUrl provided
-    const effectiveBaseUrl = baseUrl || (apiKey.startsWith('gsk_') ? "https://api.groq.com/openai/v1" : undefined);
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: effectiveBaseUrl,
-        dangerouslyAllowBrowser: true
-    });
-
     try {
         // PDF conversion is now handled in the UI layer before calling this
-
-        const base64Image = await fileToBase64(file);
 
         const prompt = `
         Analyze the provided image of a document of type: "${docType}".
@@ -392,25 +408,7 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
         Result:
     `;
 
-        const response = await openai.chat.completions.create({
-            model: "llama-3.2-11b-vision-preview",
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { type: "text", text: prompt },
-                        {
-                            type: "image_url",
-                            image_url: {
-                                url: `data:${file.type}; base64, ${base64Image} `,
-                            },
-                        },
-                    ],
-                },
-            ],
-        });
-
-        const text = response.choices[0].message.content || "{}";
+        const text = await runInference(apiKey, prompt, { vision: true, file, baseUrl });
 
         return {
             extractedFields: extractJSON<Record<string, string>>(text),
@@ -426,15 +424,8 @@ export async function verifyDocumentWithOCR(file: File, docType: string, apiKey:
             throw error;
         }
 
-        // Fallback for non-vision errors only
-        const completion = await openai.chat.completions.create({
-            messages: [{
-                role: "user",
-                content: `Simulate OCR extraction for ${docType}.Return JSON with realistic fields.`
-            }],
-            model: "llama-3.3-70b-versatile",
-        });
-        const text = completion.choices[0].message.content || "{}";
+        // Fallback for non-vision errors
+        const text = await runInference(apiKey, `Simulate OCR extraction for ${docType}. Return JSON with realistic fields.`, { baseUrl });
         return {
             extractedFields: extractJSON<Record<string, string>>(text),
             confidence: 0.5
@@ -478,43 +469,33 @@ export async function refineProblemStatement(rawProblem: string, apiKey: string,
         throw new Error("AI Refinement not available. API Key is missing.");
     }
 
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const prompt = `You are an expert startup advisor. Analyze and refine this problem statement using a proven framework.
-
-PROBLEM STATEMENT: "${rawProblem}"
-
-REFINEMENT FRAMEWORK:
-1. **Clarity**: Is the problem clearly defined and easy to understand?
-2. **Specificity**: Is it specific enough to be actionable?
-3. **Impact**: Does it convey the scale and importance?
-4. **Target Audience**: Is the affected user group clearly identified?
-5. **Uniqueness**: Does it highlight what makes this solution different?
-
-OUTPUT FORMAT (return ONLY this, no other text):
-{
-  "refined": "[One powerful sentence using: 'We help [WHO] achieve [OUTCOME] by [UNIQUE METHOD]']",
-  "improvements": ["List 2-3 specific improvements made"],
-  "scores": {
-    "clarity": [1-10],
-    "specificity": [1-10],
-    "impact": [1-10]
-  }
-}
-
-Ensure the refined statement is concise (under 25 words), compelling, and investor-ready.`;
+ 
+ PROBLEM STATEMENT: "${rawProblem}"
+ 
+ REFINEMENT FRAMEWORK:
+ 1. **Clarity**: Is the problem clearly defined and easy to understand?
+ 2. **Specificity**: Is it specific enough to be actionable?
+ 3. **Impact**: Does it convey the scale and importance?
+ 4. **Target Audience**: Is the affected user group clearly identified?
+ 5. **Uniqueness**: Does it highlight what makes this solution different?
+ 
+ OUTPUT FORMAT (return ONLY this, no other text):
+ {
+   "refined": "[One powerful sentence using: 'We help [WHO] achieve [OUTCOME] by [UNIQUE METHOD]']",
+   "improvements": ["List 2-3 specific improvements made"],
+   "scores": {
+     "clarity": [1-10],
+     "specificity": [1-10],
+     "impact": [1-10]
+   }
+ }
+ 
+ Ensure the refined statement is concise (under 25 words), compelling, and investor-ready.`;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        return completion.choices[0].message.content?.trim() || rawProblem;
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return text.trim() || rawProblem;
     } catch (error: unknown) {
         console.error("AI Refinement Error:", error);
         throw new Error("Failed to refine with AI");
@@ -527,14 +508,6 @@ export async function generateInvestorSummary(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing for investor summary.");
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const prompt = `
     TASK: Convert the following structured startup questionnaire answers into a professional, high-impact investor summary.
     
@@ -572,18 +545,8 @@ export async function generateInvestorSummary(
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{
-                role: "system",
-                content: "You are an expert investment analyst who writes objective, factual startup summaries. You never use marketing hype or unsubstantiated claims."
-            }, {
-                role: "user",
-                content: prompt
-            }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        return completion.choices[0].message.content?.trim() || "Failed to generate summary.";
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return text.trim() || "Failed to generate summary.";
     } catch (error: unknown) {
         console.error("AI Summary Error:", error);
         throw new Error("Failed to generate investor summary with AI");
@@ -595,14 +558,6 @@ export async function generateValuationInsights(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing for valuation insights.");
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const prompt = `
     Analyze the following startup data and provide investment valuation insights.
 
@@ -622,15 +577,44 @@ export async function generateValuationInsights(
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        return completion.choices[0].message.content?.trim() || "Failed to generate valuation insights.";
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return text.trim() || "Failed to generate valuation insights.";
     } catch (error: unknown) {
         console.error("AI Valuation Error:", error);
         throw new Error("AI Valuation Analysis failed");
+    }
+}
+
+export async function generateFounderAnalysis(
+    startup: any,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    const prompt = `
+    Analyze the founder's profile for the following startup and provide strategic investor insights.
+
+    Founder: ${startup.founder.name}
+    Bio: ${startup.founder.bio}
+    Education: ${startup.founder.education}
+    Work History: ${startup.founder.workHistory}
+    Startup: ${startup.name}
+    Industry: ${startup.industry || "Not provided"}
+
+    Provide a professional analysis covering:
+    1. Founder-Market Fit (How their background fits this industry)
+    2. Scalability Potential (Based on past experience)
+    3. Technical/Commercial Strategic Value
+    4. Notable Strengths & Potential Blind Spots
+
+    TONE: Professional, insightful, and oriented towards investor risk/opportunity assessment.
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return text.trim() || "Failed to generate founder analysis.";
+    } catch (error: unknown) {
+        console.error("AI Founder Analysis Error:", error);
+        throw new Error("AI Founder Analysis failed");
     }
 }
 
@@ -639,14 +623,6 @@ export async function reviewPitchDeck(
     apiKey: string,
     baseUrl?: string
 ): Promise<string> {
-    if (!apiKey) throw new Error("API Key is missing for pitch deck review.");
-
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const prompt = `
     Critically review the following pitch deck content(extracted text) from an investor's perspective.
 
@@ -663,12 +639,8 @@ export async function reviewPitchDeck(
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        return completion.choices[0].message.content?.trim() || "Failed to review pitch deck.";
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return text.trim() || "Failed to review pitch deck.";
     } catch (error: unknown) {
         console.error("AI Review Error:", error);
         throw new Error("AI Pitch Deck Review failed");
@@ -684,15 +656,7 @@ export async function analyzeStartupDocument(
 ): Promise<AnalysisResult> {
     const { type, content } = await extractDocumentContent(file);
 
-    const effectiveBaseUrl = baseUrl || (apiKey.startsWith('gsk_') ? "https://api.groq.com/openai/v1" : undefined);
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: effectiveBaseUrl,
-        dangerouslyAllowBrowser: true
-    });
-
     const isVision = type === 'image';
-    const model = isVision ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
 
     const prompt = `
     Analyze this startup document using investor due-diligence standards. 
@@ -722,27 +686,7 @@ export async function analyzeStartupDocument(
     `;
 
     try {
-        const messages: any[] = [
-            {
-                role: "user",
-                content: isVision ? [
-                    { type: "text", text: prompt },
-                    {
-                        type: "image_url",
-                        image_url: {
-                            url: `data:${(content as File).type}; base64, ${await fileToBase64(content as File)} `,
-                        },
-                    },
-                ] : prompt
-            }
-        ];
-
-        const response = await openai.chat.completions.create({
-            model: model,
-            messages: messages,
-        });
-
-        const text = response.choices[0].message.content || "{}";
+        const text = await runInference(apiKey, prompt, { vision: isVision, file: isVision ? (content as File) : undefined, baseUrl });
         return extractJSON<any>(text);
     } catch (error: unknown) {
         console.error("AI Document Analysis Error:", error);
@@ -812,35 +756,19 @@ export async function chatWithAI(
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for AI Chat.");
 
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const systemPrompt = KASB_SYSTEM_PROMPT;
 
     // Wrap in retry logic for better reliability
     return retryWithBackoff(async () => {
         try {
-            const messages: any[] = [
-                { role: "system", content: systemPrompt },
-                ...history.map(h => ({ role: h.role, content: h.content })),
-                { role: "user", content: userMessage }
-            ];
-
-            const completion = await openai.chat.completions.create({
-                messages: messages,
-                model: "llama-3.3-70b-versatile",
-            });
-
-            return completion.choices[0].message.content?.trim() || "I'm having trouble thinking right now. Please try again.";
+            const prompt = `System: ${systemPrompt}\n\nHistory:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${userMessage}`;
+            const text = await runInference(apiKey, prompt, { baseUrl });
+            return text.trim() || "I'm having trouble thinking right now. Please try again.";
         } catch (error: unknown) {
             console.error("AI Chat Error:", error);
-            throw new Error("Chat request failed"); // Let retry logic handle it
+            throw new Error("Chat request failed");
         }
     }).catch(() => {
-        // After all retries failed, return user-friendly message
         return "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
     });
 }
@@ -858,38 +786,50 @@ export async function chatWithAIStream(
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for AI Chat.");
 
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const systemPrompt = KASB_SYSTEM_PROMPT;
 
     return retryWithBackoff(async () => {
         try {
-            const messages: any[] = [
-                { role: "system", content: systemPrompt },
-                ...history.map(h => ({ role: h.role, content: h.content })),
-                { role: "user", content: userMessage }
-            ];
+            const { type, client } = getAIClient(apiKey, baseUrl);
 
-            const stream = await openai.chat.completions.create({
-                messages: messages,
-                model: "llama-3.3-70b-versatile",
-                stream: true, // Enable streaming
-            });
+            if (type === 'gemini') {
+                const genAI = client as GoogleGenerativeAI;
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-            let fullResponse = "";
-            for await (const chunk of stream) {
-                const content = chunk.choices[0]?.delta?.content || "";
-                if (content) {
-                    fullResponse += content;
-                    onChunk(content); // Call the callback with each chunk
+                const prompt = `System: ${systemPrompt}\n\nHistory:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${userMessage}`;
+
+                const result = await model.generateContentStream(prompt);
+                let fullResponse = "";
+                for await (const chunk of result.stream) {
+                    const text = chunk.text();
+                    fullResponse += text;
+                    onChunk(text);
                 }
-            }
+                return fullResponse;
+            } else {
+                const openai = client as OpenAI;
+                const messages: any[] = [
+                    { role: "system", content: systemPrompt },
+                    ...history.map(h => ({ role: h.role, content: h.content })),
+                    { role: "user", content: userMessage }
+                ];
 
-            return fullResponse || "I'm having trouble thinking right now. Please try again.";
+                const stream = await openai.chat.completions.create({
+                    messages: messages,
+                    model: "llama-3.3-70b-versatile",
+                    stream: true,
+                });
+
+                let fullResponse = "";
+                for await (const chunk of stream) {
+                    const content = chunk.choices[0]?.delta?.content || "";
+                    if (content) {
+                        fullResponse += content;
+                        onChunk(content);
+                    }
+                }
+                return fullResponse;
+            }
         } catch (error: unknown) {
             console.error("AI Chat Stream Error:", error);
             throw new Error("Chat stream failed");
@@ -906,12 +846,6 @@ export async function refineMessage(
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for message refinement.");
 
-    const openai = new OpenAI({
-        apiKey: apiKey,
-        baseURL: baseUrl || "https://api.groq.com/openai/v1",
-        dangerouslyAllowBrowser: true
-    });
-
     const prompt = `
     Refine the following message to be more professional, clear, and concise, while maintaining the original intent and tone suitable for a startup-investor context.
 
@@ -921,12 +855,8 @@ export async function refineMessage(
     `;
 
     try {
-        const completion = await openai.chat.completions.create({
-            messages: [{ role: "user", content: prompt }],
-            model: "llama-3.3-70b-versatile",
-        });
-
-        return completion.choices[0].message.content?.trim() || message;
+        const text = await runInference(apiKey, prompt, { model: '8b', baseUrl });
+        return text.trim() || message;
     } catch (error: unknown) {
         console.error("AI Refinement Error:", error);
         throw new Error("Failed to refine message");

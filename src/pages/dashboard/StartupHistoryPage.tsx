@@ -11,6 +11,7 @@ import { compareInvestors, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 
 export function StartupHistoryPage() {
@@ -144,6 +145,12 @@ export function StartupHistoryPage() {
          return
       }
 
+      // Check limits
+      if (!subscriptionManager.canCompare(selectedIds[0], selectedIds[1])) {
+         toast("You have reached your AI comparison limit for this month. Please upgrade your plan for more comparisons.", "error")
+         return
+      }
+
       const val1 = displayedInvestors.find(i => i.id === selectedIds[0])
       const val2 = displayedInvestors.find(i => i.id === selectedIds[1])
 
@@ -155,7 +162,8 @@ export function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         let apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+         const envKey = import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+         let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
 
          if (!apiKey) {
             const globalKey = await getGlobalConfig('ai_api_key')
@@ -174,6 +182,10 @@ export function StartupHistoryPage() {
 
          const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
          const result = await compareInvestors(val1, val2, apiKey, baseUrl)
+
+         // Track successful comparison
+         subscriptionManager.trackCompare(val1.id, val2.id)
+
          setComparisonResult(result)
 
       } catch (error: unknown) {

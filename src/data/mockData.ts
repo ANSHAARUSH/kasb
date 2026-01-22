@@ -28,6 +28,9 @@ export interface Startup {
     impactPoints?: number
     communityBoosts?: number
     last_active_at?: string
+    country?: string
+    state?: string
+    city?: string
 }
 
 export const MOCK_STARTUPS: Startup[] = [
@@ -1443,6 +1446,14 @@ export interface Investor {
     verificationLevel?: 'basic' | 'verified' | 'trusted'
     profile_details?: InvestorProfileDetails
     last_active_at?: string
+    isRecommended?: boolean
+    aiRecommendation?: {
+        score: number
+        explanation: string
+        highlights: string[]
+    }
+    state?: string
+    city?: string
 }
 
 export const MOCK_INVESTORS: Investor[] = [

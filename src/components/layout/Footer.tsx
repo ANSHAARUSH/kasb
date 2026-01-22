@@ -29,6 +29,22 @@ export function Footer() {
                             <li><Link to="/" className="hover:text-black">Legal</Link></li>
                         </ul>
                     </div>
+
+                    <div>
+                        <h4 className="mb-4 font-semibold">Support</h4>
+                        <ul className="space-y-2 text-sm text-gray-500">
+                            <li>
+                                <a
+                                    href="https://mail.google.com/mail/?view=cm&fs=1&to=kasbai2025@gmail.com"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-black flex items-center gap-2"
+                                >
+                                    Contact Support
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
                 <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-100 pt-8 text-sm text-gray-500 md:flex-row">
                     <p>&copy; {new Date().getFullYear()} Kasb.AI. All rights reserved.</p>

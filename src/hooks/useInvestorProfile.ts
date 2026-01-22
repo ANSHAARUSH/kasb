@@ -81,7 +81,7 @@ export function useInvestorProfile() {
         try {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
-                navigate('/login')
+                console.log("useInvestorProfile: No user session found")
                 return
             }
 
@@ -127,9 +127,19 @@ export function useInvestorProfile() {
         console.log('Updating profile with:', formData)
         try {
             // Remove metadata, non-updatable fields, and computed fields
-            const { id, created_at, updated_at, email_verified, spentPoints, purchasedPoints, expertise, ...updateData } = formData as any
+            const {
+                id,
+                created_at,
+                updated_at,
+                email_verified,
+                email, // Strip email as it's not in the 'investors' table
+                spentPoints,
+                purchasedPoints,
+                expertise,
+                ...updateData
+            } = formData as any
 
-            console.log('Payload sent to Supabase:', updateData)
+            console.log('Payload sent to Supabase (after stripping):', updateData)
 
             const { error } = await supabase
                 .from('investors')

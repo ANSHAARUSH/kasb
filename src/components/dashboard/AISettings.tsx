@@ -84,31 +84,63 @@ export function AISettings() {
                     </p>
                 </div>
 
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-gray-700 ml-1">Groq/OpenAI API Key</label>
-                        <a
-                            href="https://console.groq.com/keys"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] uppercase tracking-widest font-black text-indigo-600 hover:text-indigo-700"
-                        >
-                            Get Groq Key
-                        </a>
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-gray-700 ml-1">Universal AI Key (Gemini Recommended)</label>
+                            <a
+                                href="https://aistudio.google.com/app/apikey"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] uppercase tracking-widest font-black text-indigo-600 hover:text-indigo-700"
+                            >
+                                Get Gemini Key
+                            </a>
+                        </div>
+                        <div className="relative">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Input
+                                type="password"
+                                placeholder="AIza..."
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="pl-10 h-12 rounded-xl bg-gray-50/50 border-gray-100 focus:bg-white transition-colors"
+                            />
+                        </div>
+                        <p className="text-[11px] text-gray-400 ml-1">
+                            Recommended: Use <strong>Gemini 1.5 Flash</strong> for the best balance of speed and zero-cost/low-cost analysis.
+                        </p>
                     </div>
-                    <div className="relative">
-                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                        <Input
-                            type="password"
-                            placeholder="gsk_..."
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="pl-10 h-12 rounded-xl bg-gray-50/50 border-gray-100 focus:bg-white transition-colors"
-                        />
+
+                    <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-gray-100"></div>
+                        <span className="flex-shrink mx-4 text-[10px] font-bold text-gray-300 uppercase tracking-widest">or use legacy</span>
+                        <div className="flex-grow border-t border-gray-100"></div>
                     </div>
-                    <p className="text-[11px] text-gray-400 ml-1">
-                        Your key is stored securely and never shared. We recommend using a limited-access key.
-                    </p>
+
+                    <div className="space-y-2 opacity-60 hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-between">
+                            <label className="text-sm font-bold text-gray-500 ml-1">Groq key (Fallback)</label>
+                            <a
+                                href="https://console.groq.com/keys"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] uppercase tracking-widest font-black text-gray-400 hover:text-indigo-600"
+                            >
+                                Get Groq Key
+                            </a>
+                        </div>
+                        <div className="relative">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                            <Input
+                                type="password"
+                                placeholder="gsk_..."
+                                value={apiKey.startsWith('gsk_') ? apiKey : ''}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                className="pl-10 h-12 rounded-xl bg-gray-50/30 border-gray-100 focus:bg-white transition-colors"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <Button

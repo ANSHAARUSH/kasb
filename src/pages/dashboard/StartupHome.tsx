@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react"
-import { subscriptionManager } from "../../lib/subscriptionManager"
 import { type Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
 import { useChat } from "../../hooks/useChat"
@@ -25,7 +24,9 @@ export function StartupHome() {
     const [filters, setFilters] = useState<InvestorFilterState>({
         types: [],
         industries: [],
-        minFunds: "0"
+        minFunds: "0",
+        states: [],
+        cities: []
     })
     const [showFilters, setShowFilters] = useState(false)
     const [activeFeed, setActiveFeed] = useState<'discover' | 'top-investors'>('discover')
@@ -75,7 +76,7 @@ export function StartupHome() {
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
-    const baseFilteredInvestors = investors.filter(investor => {
+    const baseFilteredInvestors = useMemo(() => investors.filter(investor => {
         // 1. Text Search
         const query = debouncedSearchQuery.toLowerCase()
         const matchesSearch = (
@@ -112,22 +113,30 @@ export function StartupHome() {
             if (funds < parseInt(filters.minFunds)) return false
         }
 
-        return true
-    })
+        // 5. State Filter
+        if (filters.states.length > 0) {
+            if (!investor.state || !filters.states.includes(investor.state)) return false
+        }
 
-    const filteredInvestors = useMemo(() => {
+        // 6. City Filter
+        if (filters.cities.length > 0) {
+            if (!investor.city || !filters.cities.includes(investor.city)) return false
+        }
+
+        return true
+    }), [investors, debouncedSearchQuery, filters])
+
+    const sortedInvestors = useMemo(() => {
         let base = [...baseFilteredInvestors]
 
         if (activeFeed === 'top-investors') {
             base.sort((a, b) => (b.investments || 0) - (a.investments || 0))
         }
 
-        if (!subscriptionManager.hasPaidPlan() && activeFeed === 'discover') {
-            // Randomize feed for free tier
-            return base.sort(() => Math.random() - 0.5)
-        }
         return base
     }, [baseFilteredInvestors, activeFeed])
+
+    const filteredInvestors = sortedInvestors
 
     const handleMessageClick = (investor: Investor) => {
         openChat({
@@ -149,7 +158,7 @@ export function StartupHome() {
     if (loading) {
         return (
             <div className="flex h-[calc(100vh-100px)] overflow-hidden">
-                <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+                <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
                     <div className="h-10 w-48 skeleton mb-6" />
                     <div className="grid gap-4 md:grid-cols-2">
                         {[1, 2, 3, 4, 5, 6].map(i => (
@@ -169,7 +178,7 @@ export function StartupHome() {
         <div className="h-[calc(100vh-100px)] flex flex-col lg:flex-row overflow-hidden">
             {/* ... */}
             <div className="...">
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 scrollbar-hide">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                             <h1 className="text-2xl font-bold hidden sm:block">Discover Investors</h1>
@@ -204,9 +213,9 @@ export function StartupHome() {
                                 >
                                     <Filter className="h-4 w-4" />
                                     Filter
-                                    {(filters.types.length + filters.industries.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
+                                    {(filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
                                         <span className="ml-1 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
-                                            {filters.types.length + filters.industries.length + (filters.minFunds !== "0" ? 1 : 0)}
+                                            {filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)}
                                         </span>
                                     )}
                                 </Button>
@@ -250,6 +259,10 @@ export function StartupHome() {
                                             onMessageClick={handleMessageClick}
                                             onToggleSave={() => handleToggleSave(investor.id, "Investor")}
                                             onClick={() => setSelectedId(investor.id)}
+                                            isRecommended={false}
+                                            aiRecommendation={investor.aiRecommendation}
+                                            isFirstInRow={true}
+                                            isLastInRow={true}
                                             onDoubleClick={() => {
                                                 if (window.innerWidth >= 1024) {
                                                     setDetailInvestor(investor)

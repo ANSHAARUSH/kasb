@@ -1,7 +1,7 @@
 import type { Startup } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles, TrendingUp } from "lucide-react"
+import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles, TrendingUp, Info } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { useState, useEffect } from "react"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
@@ -29,9 +29,12 @@ interface StartupCardProps {
         highlights: string[]
     }
     showImpactPoints?: boolean
+    isFirstInRow?: boolean
+    isLastInRow?: boolean
+    showPercentage?: boolean
 }
 
-export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended, aiRecommendation, showImpactPoints }: StartupCardProps) {
+export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, isRecommended, aiRecommendation, showImpactPoints, isFirstInRow, isLastInRow, showPercentage }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -40,6 +43,21 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
     const [isProcessing, setIsProcessing] = useState(false)
     const [isClosingDeal, setIsClosingDeal] = useState(false)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
+    const [showAiTooltip, setShowAiTooltip] = useState(false)
+
+    useEffect(() => {
+        if (!showAiTooltip) return
+
+        const handleClickAway = (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (!target.closest('.ai-tooltip-container')) {
+                setShowAiTooltip(false)
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickAway)
+        return () => document.removeEventListener('mousedown', handleClickAway)
+    }, [showAiTooltip])
 
     useEffect(() => {
         if (!user || !startup.id) return
@@ -49,11 +67,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             setConnStatus(status)
         }
         checkStatus()
-    }, [user, startup.id, triggerUpdate]) // Added triggerUpdate dependency to refetch if needed, or specific effect?
-    // Better to have specific effect or just depend on triggerUpdate?
-    // If I add triggerUpdate to deps of checkStatus effect, it runs when triggerUpdate changes.
-    // That works.
-
+    }, [user, startup.id, triggerUpdate])
 
     const handleConnect = async (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -120,6 +134,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             setIsProcessing(false)
         }
     }
+
     const handleToggleSave = (e: React.MouseEvent) => {
         e.stopPropagation()
         onToggleSave?.(startup)
@@ -172,17 +187,17 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             onClick={onClick}
             onDoubleClick={onDoubleClick}
             className={cn(
-                "group flex flex-col relative cursor-pointer transition-all duration-300 overflow-hidden shadow-sm h-auto sm:h-full touch-manipulation",
+                "group flex flex-col relative cursor-pointer transition-all duration-300 shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
                 isSelected ? 'border-[3px] border-black bg-white shadow-xl' : 'border-2 border-black/5 bg-white/50 backdrop-blur-sm'
             )}
         >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-t-xl" />
 
             <CardContent className="p-6 flex-1 flex flex-col">
                 <div className="flex flex-col gap-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 sm:gap-0">
-                        <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0 flex-1">
                             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 group-hover:scale-110 transition-transform duration-500 overflow-hidden">
                                 <Avatar
                                     src={startup.logo}
@@ -190,54 +205,84 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                     fallbackClassName="text-3xl text-gray-500"
                                 />
                             </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase">{startup.name}</h3>
+                            <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase truncate" title={startup.name}>{startup.name}</h3>
                                     {startup.verificationLevel === 'trusted' && (
-                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 border border-amber-100 uppercase tracking-tighter shadow-sm">
+                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 border border-amber-100 uppercase tracking-tighter shadow-sm flex-shrink-0">
                                             <ShieldCheck className="w-2.5 h-2.5" />
                                             Verified
                                         </span>
                                     )}
                                     {isRecommended && aiRecommendation && (
-                                        <div className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-tighter shadow-sm group/tooltip relative">
+                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-600 px-3 py-1 text-[10px] font-black text-white border border-indigo-500 uppercase tracking-tighter shadow-lg shadow-indigo-200 group/tooltip relative flex-shrink-0">
                                             <Sparkles className="w-2.5 h-2.5" />
-                                            Recommended
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    const tooltip = e.currentTarget.nextElementSibling
-                                                    tooltip?.classList.toggle('hidden')
-                                                }}
-                                                className="ml-0.5 hover:bg-indigo-100 rounded-full p-0.5 transition-colors"
-                                            >
-                                                <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                            <div className="hidden absolute top-full left-0 mt-2 w-64 p-3 bg-white rounded-xl shadow-lg border border-indigo-100 z-50 normal-case tracking-normal font-normal text-xs">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <span className="font-bold text-indigo-900">AI Match: {aiRecommendation.score}%</span>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            e.currentTarget.parentElement?.parentElement?.classList.add('hidden')
-                                                        }}
-                                                        className="text-gray-400 hover:text-gray-600"
-                                                    >
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                                <p className="text-gray-700 mb-2">{aiRecommendation.explanation}</p>
-                                                <div className="flex flex-wrap gap-1">
-                                                    {aiRecommendation.highlights.map((highlight, idx) => (
-                                                        <span key={idx} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-medium">
-                                                            {highlight}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                                            {showPercentage ? `${aiRecommendation.score}% Match` : "Match"}
+                                            <div className="relative inline-block ml-1 ai-tooltip-container">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        const rect = e.currentTarget.getBoundingClientRect()
+                                                        const spaceOnRight = window.innerWidth - rect.right
+                                                        const spaceOnLeft = rect.left
+
+                                                        // Determine best alignment
+                                                        let align: 'left' | 'center' | 'right' = 'center'
+                                                        if (spaceOnRight < 150) align = 'right'
+                                                        else if (spaceOnLeft < 150) align = 'left'
+
+                                                        // Store alignment in a temporary data attribute or state if needed, 
+                                                        // but for simplicity we'll use a robust center-bias with safe max-width.
+                                                        setShowAiTooltip(!showAiTooltip)
+                                                    }}
+                                                    className="flex items-center justify-center hover:bg-indigo-100 rounded-full p-0.5 transition-colors"
+                                                >
+                                                    <Info className="w-3 h-3" />
+                                                </button>
+                                                {showAiTooltip && (
+                                                    <div className={cn(
+                                                        "absolute bottom-full mb-3 w-72 p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-indigo-100 z-[100] normal-case tracking-normal font-normal text-xs animate-in fade-in slide-in-from-bottom-2 md:w-80",
+                                                        // Smart alignment logic
+                                                        isFirstInRow ? "left-0 translate-x-0" :
+                                                            isLastInRow ? "right-0 translate-x-0 left-auto" :
+                                                                "left-1/2 -translate-x-1/2",
+                                                        "max-w-[85vw] sm:max-w-none"
+                                                    )}>
+                                                        <div className="flex items-center justify-between mb-2 pb-2 border-b border-indigo-50">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center">
+                                                                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                                                                </div>
+                                                                <span className="font-bold text-indigo-900">AI Match: {aiRecommendation.score}%</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    setShowAiTooltip(false)
+                                                                }}
+                                                                className="text-gray-400 hover:text-gray-600 p-1"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-gray-600 leading-relaxed mb-3">
+                                                            {aiRecommendation.explanation}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1.5 mb-1">
+                                                            {aiRecommendation.highlights.map((highlight, idx) => (
+                                                                <span key={idx} className="px-2 py-0.5 bg-indigo-50/50 text-indigo-600 rounded-lg text-[9px] font-bold border border-indigo-100/50">
+                                                                    • {highlight}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        <div className={cn(
+                                                            "absolute top-full border-8 border-transparent border-t-white",
+                                                            isFirstInRow ? "left-4 translate-x-0" :
+                                                                isLastInRow ? "right-4 translate-x-0 left-auto" :
+                                                                    "left-1/2 -translate-x-1/2"
+                                                        )} />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -267,8 +312,11 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                 </p>
                             </div>
                         </div>
-                        <div className="flex flex-col items-start sm:items-end gap-3 sm:gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-gray-100/50 sm:border-transparent">
+                        <div className="flex flex-col items-start sm:items-end gap-3 sm:gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-4 border-t sm:border-t-0 border-gray-100/50 sm:border-transparent shrink-0">
                             <div className="flex flex-wrap sm:justify-end gap-1.5 w-full sm:w-auto">
+                                <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 border border-indigo-100 uppercase">
+                                    {startup.industry}
+                                </span>
                                 <span className="rounded-lg bg-black/5 px-2.5 py-1 text-[10px] font-bold text-black border border-black/5">
                                     {startup.metrics.valuation}
                                 </span>

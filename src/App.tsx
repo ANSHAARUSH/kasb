@@ -3,7 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AdminRoute } from "./components/admin/AdminRoute"
 import { PublicLayout } from "./layouts/PublicLayout"
 import { DashboardLayout } from "./layouts/DashboardLayout"
-import { AuthProvider } from "./context/AuthContext"
+import { AuthProvider, useAuth } from "./context/AuthContext"
 import { ToastProvider } from "./components/ui/use-toast"
 import { ChatProvider } from "./context/ChatContext"
 import { ChatDialog } from "./components/chat/ChatDialog"
@@ -30,6 +30,42 @@ const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ defaul
 const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
 const InvestorPublicProfile = lazy(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
 const EmailConfirmed = lazy(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
+const Onboarding = lazy(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
+
+function CatchAll() {
+  const { user, loading } = useAuth();
+  const rawHash = window.location.hash;
+
+  // 1. Identify Supabase auth fragments - DO THIS FIRST before any Navigate
+  const isAuthFragment = rawHash.includes('access_token=') ||
+    rawHash.includes('error=') ||
+    rawHash.includes('type=recovery') ||
+    rawHash.includes('type=signup');
+
+  if (isAuthFragment) {
+    console.log("[CatchAll] Auth fragment detected. Suppressing router redirect.");
+    return (
+      <div className="flex h-screen items-center justify-center bg-black">
+        <div className="animate-pulse text-white/50 font-bold uppercase tracking-widest text-sm">
+          Securing Session...
+        </div>
+      </div>
+    );
+  }
+
+  // 2. If we are still loading, don't redirect anywhere yet
+  if (loading) return null;
+
+  // 3. If authenticated but hitting an unknown route, go to dashboard
+  if (user) {
+    console.log("[CatchAll] Authenticated user on unknown route. Pushing to dashboard.");
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // 4. Default to landing for unauthenticated users
+  console.log("[CatchAll] Unauthenticated user on unknown route. Pushing to landing.");
+  return <Navigate to="/" replace />;
+}
 
 function App() {
   console.log("App component rendering");
@@ -50,6 +86,7 @@ function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/update-password" element={<UpdatePassword />} />
                   <Route path="/pricing" element={<PricingPage />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
                   {/* Placeholders for public links */}
                   <Route path="/about" element={<Navigate to="/#about-us" replace />} />
                   <Route path="/features" element={<Navigate to="/#features" replace />} />
@@ -93,8 +130,8 @@ function App() {
                   <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
                 </Route>
 
-                {/* Redirect unknown to landing */}
-                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Redirect unknown to landing, but save auth fragments */}
+                <Route path="*" element={<CatchAll />} />
 
               </Routes>
             </Suspense>

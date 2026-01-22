@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react"
-import { Zap, Eye, Users } from "lucide-react"
+import { Zap, Eye, Users, Sparkles } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
 import { cn } from "../../lib/utils"
@@ -9,7 +9,7 @@ export function UsageBell({ className }: { className?: string }) {
     const [isOpen, setIsOpen] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
     const tier = subscriptionManager.getTier()
-    const limits = TIER_LIMITS[tier] || { profileViews: 0, contacts: 0 }
+    const limits = TIER_LIMITS[tier] || { profileViews: 0, contacts: 0, compares: 0 }
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -43,6 +43,13 @@ export function UsageBell({ className }: { className?: string }) {
             current: usage.contacts,
             total: limits.contacts,
             color: "bg-gray-400"
+        },
+        {
+            label: "AI Comparisons",
+            icon: Sparkles,
+            current: usage.compares,
+            total: limits.compares,
+            color: "bg-indigo-500"
         }
     ]
 

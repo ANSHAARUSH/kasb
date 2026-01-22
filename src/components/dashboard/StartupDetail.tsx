@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Startup } from "../../data/mockData"
-import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, Lock, ShieldCheck } from "lucide-react"
+import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, ShieldCheck, Lock } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
@@ -25,7 +25,7 @@ import { subscriptionManager } from "../../lib/subscriptionManager"
 import { calculateImpactScore } from "../../lib/scoring"
 import { type Investor } from "../../data/mockData"
 import { Input } from "../ui/input"
-import { generateValuationInsights } from "../../lib/ai"
+import { generateValuationInsights, generateFounderAnalysis } from "../../lib/ai"
 import { Avatar } from "../ui/Avatar"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section, type Question } from "../../lib/questionnaire"
 import { cn, parseRevenue } from "../../lib/utils"
@@ -61,13 +61,17 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [boostAmount, setBoostAmount] = useState(50)
     const [investorBudget, setInvestorBudget] = useState(0)
     const [impactPoints, setImpactPoints] = useState(startup?.impactPoints || 0)
+    const [founderAnalysis, setFounderAnalysis] = useState<string | null>(null)
+    const [isGeneratingFounderAnalysis, setIsGeneratingFounderAnalysis] = useState(false)
     const [prevStartupId, setPrevStartupId] = useState(startup?.id)
 
     if (startup?.id !== prevStartupId) {
         setPrevStartupId(startup?.id)
         setShowDisconnectConfirm(false)
         setValuationInsights(null)
+        setFounderAnalysis(null)
         setIsGeneratingValuation(false)
+        setIsGeneratingFounderAnalysis(false)
         setIsProcessing(false)
         setShowLiteralAnswers(false)
         setConnStatus(null)
@@ -143,7 +147,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         checkStatus()
     }, [user, startup?.id, triggerUpdate, role])
 
-    const canView = subscriptionManager.canViewProfile(startup?.id) || connStatus?.status === 'accepted'
+    const canView = true // Unlimited viewing for everyone
 
     useEffect(() => {
         if (startup?.id && canView && user) {
@@ -256,6 +260,29 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsGeneratingValuation(false)
+        }
+    }
+
+    const handleGenerateFounderAnalysis = async () => {
+        setIsGeneratingFounderAnalysis(true)
+        try {
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI features not configured.", "error")
+                return
+            }
+
+            const insights = await generateFounderAnalysis(startup, apiKey)
+            setFounderAnalysis(insights)
+            toast("Founder analysis generated", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsGeneratingFounderAnalysis(false)
         }
     }
 
@@ -414,36 +441,39 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                 {activeTab === 'questions' && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Summary Section (Prioritized) */}
                         {startup.aiSummary ? (
-                            <section className="bg-amber-50/50 rounded-3xl p-6 border border-amber-100 relative overflow-hidden">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <Sparkles className="h-4 w-4 text-amber-600" />
-                                    <h3 className="text-xs font-bold text-amber-900 uppercase tracking-widest">
-                                        {startup.summaryStatus === 'final' ? 'Professional Summary' : 'AI Draft Summary'}
-                                    </h3>
-                                </div>
-
-                                <div className={cn(
-                                    "text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium",
-                                    !subscriptionManager.hasFeature('AI Startup Summaries') && "blur-sm select-none"
-                                )}>
-                                    {startup.aiSummary}
-                                </div>
-
-                                {!subscriptionManager.hasFeature('AI Startup Summaries') && (
-                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/40 backdrop-blur-[2px] p-6 text-center">
-                                        <Lock className="h-6 w-6 text-amber-600 mb-2" />
-                                        <p className="text-[10px] font-bold text-amber-900 uppercase tracking-widest">Premium Plan Required</p>
-                                        <Button variant="outline" size="sm" className="mt-3 rounded-xl border-amber-200 text-amber-700 bg-white/80 h-8 text-[10px]" onClick={() => navigate('/dashboard/pricing')}>
-                                            View Plans
-                                        </Button>
+                            subscriptionManager.canViewAISummary() ? (
+                                <section className="bg-amber-50/50 rounded-3xl p-6 border border-amber-100 relative overflow-hidden">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Sparkles className="h-4 w-4 text-amber-600" />
+                                        <h3 className="text-xs font-bold text-amber-900 uppercase tracking-widest">
+                                            {startup.summaryStatus === 'final' ? 'Professional Summary' : 'AI Draft Summary'}
+                                        </h3>
                                     </div>
-                                )}
-                            </section>
+
+                                    <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                                        {startup.aiSummary}
+                                    </div>
+                                </section>
+                            ) : (
+                                <section className="bg-gray-50 rounded-3xl p-6 border border-gray-100 border-dashed text-center">
+                                    <Lock className="h-5 w-5 text-gray-400 mx-auto mb-2" />
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">AI Professional Summary</h3>
+                                    <p className="text-xs text-gray-500 mb-4">Upgrade to Investor Pro to unlock AI-verified summaries.</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => navigate('/dashboard/pricing')}
+                                        className="rounded-full h-8 text-[10px] uppercase font-bold"
+                                    >
+                                        Upgrade Now
+                                    </Button>
+                                </section>
+                            )
                         ) : (
                             <section className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
                                 <Sparkles className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
@@ -468,19 +498,64 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                         fallbackClassName="text-xl text-gray-400"
                                     />
                                 </div>
-                                <div>
-                                    <h4 className="font-bold text-sm">{startup.founder.name}</h4>
-                                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{startup.founder.bio}</p>
-                                    <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-gray-500 font-medium">
-                                        <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
-                                            <GraduationCap className="h-3 w-3" /> {startup.founder.education}
-                                        </div>
-                                        <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
-                                            <Briefcase className="h-3 w-3" /> {startup.founder.workHistory}
-                                        </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                        <h4 className="font-bold text-sm truncate">{startup.founder.name}</h4>
+                                        {subscriptionManager.canViewFounderDetails() && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleGenerateFounderAnalysis}
+                                                disabled={isGeneratingFounderAnalysis}
+                                                className="h-7 px-2 text-[9px] font-bold uppercase tracking-tight text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-full border border-indigo-100/50"
+                                            >
+                                                {isGeneratingFounderAnalysis ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <Sparkles className="h-3 w-3 animate-pulse" /> Analyzing...
+                                                    </span>
+                                                ) : "Deep Analysis"}
+                                            </Button>
+                                        )}
                                     </div>
+                                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{startup.founder.bio}</p>
+
+                                    {subscriptionManager.canViewFounderDetails() ? (
+                                        <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-gray-500 font-medium">
+                                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                                <GraduationCap className="h-3 w-3" /> {startup.founder.education}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                                <Briefcase className="h-3 w-3" /> {startup.founder.workHistory}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 w-fit cursor-pointer hover:bg-indigo-100 transition-colors" onClick={() => navigate('/dashboard/pricing')}>
+                                            <Lock className="h-3 w-3" />
+                                            Upgrade for Deep Founder Analysis
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* Founder Analysis Result */}
+                            {founderAnalysis && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-4 p-6 rounded-[2rem] bg-indigo-900 text-white shadow-xl border border-indigo-800"
+                                >
+                                    <div className="flex items-center gap-2 mb-4 text-indigo-300">
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Founder Strategic Analysis</span>
+                                    </div>
+                                    <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                                        {founderAnalysis}
+                                    </div>
+                                    <p className="mt-4 text-[9px] text-gray-500 italic border-t border-indigo-800 pt-3">
+                                        * Confidential AI assessment for Pro users.
+                                    </p>
+                                </motion.div>
+                            )}
                         </section>
 
                         {/* Literal Answers Toggle */}
@@ -618,9 +693,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                             {isGeneratingValuation ? "Analyzing Market Data..." : "Generate AI Valuation Insights"}
                                         </span>
                                     </div>
-                                    {!subscriptionManager.hasFeature('AI Valuation Insights') && (
-                                        <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-full font-bold">UPGRADE REQUIRED</span>
-                                    )}
                                 </Button>
                             ) : (
                                 <div className="p-8 rounded-[2rem] bg-gray-900 text-white animate-in zoom-in-95 duration-500 shadow-xl border border-gray-800">
@@ -713,38 +785,12 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                                 >
                                     {isBoosting ? "Boosting..." : hasBoosted ? "Boost Again" : "Award Impact Points"}
                                 </Button>
-
-                                {subscriptionManager.getTier() === 'explore' && (
-                                    <span className="text-[9px] bg-black text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
-                                        Partner or Pro Plan Required
-                                    </span>
-                                )}
                             </div>
                         </div>
                     </section>
                 )}
             </div>
 
-            {/* Upgrade Overlay for restricted profiles */}
-            {!canView && (
-                <div className="absolute inset-0 z-50 bg-white/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-                    <div className="h-20 w-20 rounded-3xl bg-gray-100 flex items-center justify-center mb-6">
-                        <Lock className="h-10 w-10 text-gray-400" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2">Profile Locked</h3>
-                    <p className="text-gray-500 max-w-xs mb-8">
-                        You've reached your monthly profile view limit. Upgrade your plan to discover more opportunities.
-                    </p>
-                    <div className="flex flex-col gap-3 w-full max-w-xs">
-                        <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => navigate('/dashboard/pricing')}>
-                            View Plans
-                        </Button>
-                        <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">
-                            Maybe later
-                        </Button>
-                    </div>
-                </div>
-            )}
 
             {/* Sticky Action Footer */}
             <div className="flex-none p-6 border-t border-gray-100 bg-white">

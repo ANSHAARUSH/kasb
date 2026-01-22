@@ -1,9 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Investor } from "../../data/mockData"
-import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, Lock } from "lucide-react"
+import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2 } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import { getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
@@ -24,7 +23,6 @@ interface InvestorDetailProps {
 
 export function InvestorDetail({ investor, onClose, onDisconnect, onResize, currentSize = 'default' }: InvestorDetailProps) {
     const { user } = useAuth()
-    const navigate = useNavigate()
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
@@ -47,7 +45,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         checkStatus()
     }, [user, investor?.id])
 
-    const canView = subscriptionManager.canViewProfile(investor?.id) || connStatus?.status === 'accepted'
+    const canView = true // Unlimited viewing for everyone
 
     useEffect(() => {
         if (investor?.id && canView) {
@@ -188,7 +186,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
             </div>
 
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-24">
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 pb-24 custom-scrollbar">
                 {/* Bio Section */}
                 <section>
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -339,26 +337,6 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                 </div>
             </div>
 
-            {/* Upgrade Overlay for restricted profiles */}
-            {!canView && (
-                <div className="absolute inset-0 z-[60] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-300">
-                    <div className="h-20 w-20 rounded-3xl bg-gray-100 flex items-center justify-center mb-6">
-                        <Lock className="h-10 w-10 text-gray-400" />
-                    </div>
-                    <h3 className="text-2xl font-bold mb-2">Investor Profile Locked</h3>
-                    <p className="text-gray-500 max-w-xs mb-8">
-                        Unlock premium investor profiles and direct contact features with a professional plan.
-                    </p>
-                    <div className="flex flex-col gap-3 w-full max-w-xs">
-                        <Button size="lg" className="rounded-2xl h-12 text-base font-bold shadow-lg shadow-black/5" onClick={() => navigate('/dashboard/pricing')}>
-                            View Plans
-                        </Button>
-                        <Button variant="ghost" onClick={onClose} className="text-gray-400 hover:text-black hover:bg-transparent font-medium">
-                            Maybe later
-                        </Button>
-                    </div>
-                </div>
-            )}
 
             {/* Sticky Action Footer */}
             <div className="flex-none p-6 border-t border-gray-100 bg-white safe-area-bottom">

@@ -9,21 +9,32 @@ export function AuthEventHandler() {
         const {
             data: { subscription },
         } = supabase.auth.onAuthStateChange(async (event, _session) => {
-            console.log("Auth Event:", event)
+            console.log("Global Auth Event:", event)
 
-            // Check for hash parameters first (Supabase flow)
             const hash = window.location.hash
             const isRecovery = hash.includes('type=recovery') || event === 'PASSWORD_RECOVERY'
-            const isSignup = hash.includes('type=signup')
+            const isSignup = hash.includes('type=signup') && _session?.user?.app_metadata?.provider === 'email'
 
             if (isRecovery) {
-                console.log("Password recovery detected")
+                console.log("Redirecting to: /update-password")
                 navigate('/update-password', { replace: true })
             } else if (isSignup) {
-                console.log("Signup confirmation detected")
-                // Sign out to force login flow as requested
+                console.log("Redirecting to: /email-confirmed (post-signup)")
                 await supabase.auth.signOut()
                 navigate('/email-confirmed', { replace: true })
+            } else if (event === 'SIGNED_IN') {
+                const currentHash = window.location.hash
+                const isDashboard = currentHash.includes('#/dashboard') || currentHash.includes('#/admin')
+
+                if (!isDashboard || currentHash.includes('access_token') || currentHash.includes('type=')) {
+                    console.log(`[AuthEventHandler] SIGNED_IN detected. Redirecting to /dashboard. Current Hash: ${currentHash}`)
+                    navigate('/dashboard', { replace: true })
+                } else {
+                    console.log(`[AuthEventHandler] User already on dashboard path: ${currentHash}`)
+                }
+            } else if (event === 'SIGNED_OUT') {
+                console.log("[AuthEventHandler] User signed out. Redirecting to /login")
+                navigate('/login', { replace: true })
             }
         })
 

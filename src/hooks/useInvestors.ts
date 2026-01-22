@@ -29,7 +29,9 @@ export function useInvestors() {
                             expertise: i.expertise || [],
                             verificationLevel: i.verification_level,
                             profile_details: i.profile_details,
-                            last_active_at: i.last_active_at
+                            last_active_at: i.last_active_at,
+                            state: i.state,
+                            city: i.city
                         };
                         const scoreResult = calculateImpactScore(baseInvestor);
                         return {

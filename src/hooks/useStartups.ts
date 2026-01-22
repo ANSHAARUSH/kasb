@@ -57,7 +57,10 @@ export function useStartups() {
                         summaryStatus: s.summary_status,
                         questionnaire: s.questionnaire,
                         communityBoosts: boostMap[s.id] || 0,
-                        last_active_at: s.last_active_at
+                        last_active_at: s.last_active_at,
+                        country: s.country,
+                        state: s.state,
+                        city: s.city
                     }))
 
                     // Calculate scores and filter

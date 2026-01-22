@@ -1,9 +1,21 @@
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { CheckCircle2, TrendingUp, Users, MessageSquare } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
+import { useEffect } from "react"
 
 export function Landing() {
+    const { user, loading } = useAuth()
+    const navigate = useNavigate()
+
+    useEffect(() => {
+        if (!loading && user) {
+            console.log("[Landing] User authenticated, pushing to dashboard")
+            navigate('/dashboard', { replace: true })
+        }
+    }, [user, loading, navigate])
+
     return (
         <div className="flex flex-col gap-16 pb-20 overflow-hidden">
             {/* Hero Section */}

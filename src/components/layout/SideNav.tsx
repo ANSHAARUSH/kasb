@@ -1,9 +1,10 @@
-import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3 } from "lucide-react"
+import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3, Mail } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
 import { UsageTracker } from "../dashboard/UsageTracker"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function SideNav() {
     const location = useLocation()
@@ -37,7 +38,7 @@ export function SideNav() {
                 </Link>
             </div>
 
-            <nav className="flex-1 space-y-2 p-4 pt-8">
+            <nav className="flex-1 space-y-2 p-4 pt-8 overflow-y-auto custom-scrollbar">
                 {navItems.map((item) => {
                     const isActive = path === item.href
                     return (
@@ -66,7 +67,19 @@ export function SideNav() {
 
             <UsageTracker />
 
-            <div className="p-4 border-t border-gray-50">
+            <div className="p-4 border-t border-gray-50 flex flex-col gap-1">
+                {subscriptionManager.hasPaidPlan() && (
+                    <a
+                        href="https://mail.google.com/mail/?view=cm&fs=1&to=kasbai2025@gmail.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black group"
+                    >
+                        <Mail className="h-5 w-5 text-gray-400 group-hover:text-black" />
+                        <span className="text-sm font-semibold">Contact Support</span>
+                    </a>
+                )}
+
                 <button
                     onClick={() => signOut()}
                     className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 group"

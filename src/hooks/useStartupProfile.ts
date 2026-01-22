@@ -39,7 +39,7 @@ export function useStartupProfile() {
         try {
             const { data: { user } } = await supabase.auth.getUser()
             if (!user) {
-                navigate('/login')
+                console.log("useStartupProfile: No user session found")
                 return
             }
 
@@ -67,7 +67,16 @@ export function useStartupProfile() {
         setSaving(true)
         try {
             // Remove metadata and non-updatable fields
-            const { id, created_at, updated_at, email_verified, ...updateData } = formData as any
+            const {
+                id,
+                created_at,
+                updated_at,
+                email_verified,
+                email, // Strip email as it's not in the 'startups' table
+                ...updateData
+            } = formData as any
+
+            console.log('Payload sent to Supabase (after stripping):', updateData)
 
             const { error } = await supabase
                 .from('startups')

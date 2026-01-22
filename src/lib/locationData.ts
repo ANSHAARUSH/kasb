@@ -59,3 +59,11 @@ export const COUNTRIES: Country[] = [
         states: ['Singapore']
     }
 ];
+
+export const STATES = COUNTRIES[0].states;
+
+export const CITIES = [
+    "Mumbai", "Bengaluru", "New Delhi", "Chennai", "Ahmedabad", "Hyderabad", "Pune", "Kolkata",
+    "Surat", "Jaipur", "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam",
+    "Pimpri-Chinchwad", "Patna", "Vadodara", "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad"
+];

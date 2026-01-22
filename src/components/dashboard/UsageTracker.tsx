@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
-import { Eye, Users, Zap } from "lucide-react"
+import { Eye, Users, Zap, Sparkles } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export function UsageTracker() {
     const [usage, setUsage] = useState(subscriptionManager.getUsage())
     const tier = subscriptionManager.getTier()
-    const limits = TIER_LIMITS[tier] || { profileViews: 0, contacts: 0 }
+    const limits = TIER_LIMITS[tier] || { profileViews: 0, contacts: 0, compares: 0 }
 
     useEffect(() => {
         // Simple polling to keep usage in sync if changed elsewhere
@@ -31,6 +31,13 @@ export function UsageTracker() {
             current: usage.contacts,
             total: limits.contacts,
             color: "bg-gray-400"
+        },
+        {
+            label: "AI Comparisons",
+            icon: Sparkles,
+            current: usage.compares,
+            total: limits.compares,
+            color: "bg-indigo-500"
         }
     ]
 

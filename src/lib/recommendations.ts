@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { runInference } from "./ai";
 import type { Startup, Investor } from "../data/mockData";
 
 export interface MatchRecommendation {
@@ -20,6 +20,58 @@ export interface RecommendationResult {
  */
 const recommendationCache = new Map<string, { data: RecommendationResult; timestamp: number }>();
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes
+
+/**
+ * Maps technical AI errors to user-friendly professional messages
+ */
+export function getFriendlyErrorMessage(error: any): string {
+    const message = error?.message || String(error);
+
+    if (message.includes('rate limit') || message.includes('429')) {
+        return "Our AI analyst is currently handling a high volume of requests. Please wait a moment while we process your personalized insights.";
+    }
+
+    if (message.includes('API key') || message.includes('auth') || message.includes('401')) {
+        return "Personalized matching is momentarily unavailable. Our team has been notified, and you can still explore the full startup directory below.";
+    }
+
+    if (message.includes('timeout') || message.includes('Network')) {
+        return "We're having trouble reaching our AI engine. Please check your connection or try again in a few seconds.";
+    }
+
+    if (message.includes('context_length') || message.includes('too long')) {
+        return "This profile contains extensive data that our AI is currently processig. Try simplifying your thesis for faster results.";
+    }
+
+    return "We're refining your personalized matches. If this persists, please try exploring the discovery feed below.";
+}
+
+/**
+ * Clean JSON string from AI response (removes markdown code blocks if present)
+ */
+function cleanJsonString(str: string): string {
+    // Remove markdown code blocks if present
+    const jsonMatch = str.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch && jsonMatch[1]) {
+        return jsonMatch[1].trim();
+    }
+    return str.trim();
+}
+
+/**
+ * Ensures match score is a 0-100 integer
+ */
+function sanitizeScore(score: any): number {
+    let s = parseFloat(score);
+    if (isNaN(s)) return 0;
+
+    // If AI returns 0.87 instead of 87
+    if (s > 0 && s <= 1) {
+        s = s * 100;
+    }
+
+    return Math.round(Math.min(100, Math.max(0, s)));
+}
 
 function getCacheKey(userId: string, type: 'investor' | 'startup'): string {
     return `${type}_${userId}`;
@@ -46,7 +98,7 @@ function setCachedRecommendations(userId: string, type: 'investor' | 'startup', 
 }
 
 /**
- * Generate personalized investor recommendations for a startup
+ * Generate AI-powered investor recommendations for a startup
  */
 export async function generateInvestorRecommendations(
     startup: Startup,
@@ -54,61 +106,44 @@ export async function generateInvestorRecommendations(
     apiKey: string
 ): Promise<RecommendationResult> {
     // Check cache first
-    const cached = getCachedRecommendations(startup.id, 'startup');
+    const cached = getCachedRecommendations(startup.id, 'investor');
     if (cached) {
         console.log('Returning cached investor recommendations');
         return cached;
     }
 
-    const client = new OpenAI({
-        apiKey,
-        baseURL: apiKey.startsWith('gsk_') ? 'https://api.groq.com/openai/v1' : undefined,
-        dangerouslyAllowBrowser: true
-    });
+    if (!apiKey) {
+        throw new Error('AI API key is invalid or missing. Please check your configuration.');
+    }
 
-    const startupContext = `
-Startup Profile:
+    const prompt = `You are an expert venture capital analyst. Analyze this startup and recommend the best-matching investors.
+
+**Startup Profile:**
 - Name: ${startup.name}
-- Industry: ${startup.industry || 'Not specified'}
+- Industry: ${startup.industry}
 - Stage: ${startup.metrics.stage}
-- Traction: ${startup.metrics.traction}
-- Valuation: ${startup.metrics.valuation}
-- Problem: ${startup.problemSolving}
-- Description: ${startup.description || 'Not provided'}
-`;
+- Description: ${startup.description || 'N/A'}
+- Problem Solving: ${startup.problemSolving || 'N/A'}
+- Valuation: ${startup.metrics.valuation || 'N/A'}
+- Traction: ${startup.metrics.traction || 'N/A'}
 
-    const investorsContext = investors.map((inv, idx) => `
-Investor ${idx + 1}:
-- ID: ${inv.id}
-- Name: ${inv.name}
-- Funds Available: ${inv.fundsAvailable}
-- Expertise: ${inv.expertise.join(', ')}
-- Portfolio Size: ${inv.investments} investments
-- Bio: ${inv.bio}
-`).join('\n');
+**Available Investors:**
+${investors.map((inv, i) => `
+${i + 1}. ${inv.name} (ID: ${inv.id})
+   - Expertise: ${inv.expertise?.join(', ') || 'N/A'}
+   - Bio: ${inv.bio || 'N/A'}
+   - Funds Available: ${inv.fundsAvailable || 'N/A'}
+`).join('\n')}
 
-    const prompt = `You are an expert startup-investor matching AI. Analyze the startup profile and rank the investors based on fit.
-
-${startupContext}
-
-Available Investors:
-${investorsContext}
-
-For each investor, provide:
-1. Match score (0-100)
-2. Match level (high/medium/low)
-3. Brief explanation (2-3 sentences max)
-4. 2-3 key highlights (short phrases)
-
-Return ONLY valid JSON in this exact format:
+Return a JSON object with this exact structure:
 {
   "matches": [
     {
-      "investorId": "string",
-      "matchScore": number,
-      "matchLevel": "high" | "medium" | "low",
-      "explanation": "string",
-      "keyHighlights": ["string", "string"]
+      "investorId": "investor-uuid",
+      "matchScore": 85,
+      "matchLevel": "high",
+      "explanation": "Brief 1-2 sentence explanation of why this is a good match",
+      "keyHighlights": ["Highlight 1", "Highlight 2", "Highlight 3"]
     }
   ]
 }
@@ -116,26 +151,32 @@ Return ONLY valid JSON in this exact format:
 Rank by match score (highest first). Include all investors.`;
 
     try {
-        const response = await client.chat.completions.create({
-            model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            max_tokens: 2000
-        });
+        const content = await runInference(apiKey, prompt);
 
-        const content = response.choices[0]?.message?.content || '{}';
-        const parsed = JSON.parse(content);
+        const cleanedContent = cleanJsonString(content);
+        console.log('AI Investor Recommendation Response:', cleanedContent);
+        const parsed = JSON.parse(cleanedContent);
 
         const recommendations: MatchRecommendation[] = parsed.matches.map((match: any) => {
-            const investor = investors.find(inv => inv.id === match.investorId);
-            if (!investor) return null;
+            const matchId = String(match.investorId).toLowerCase();
+            const investor = investors.find(i => i.id.toLowerCase() === matchId);
+
+            if (!investor) {
+                console.warn(`Investor ${match.investorId} not found in list`);
+                return null;
+            }
+
+            const score = sanitizeScore(match.matchScore);
+            let level: 'high' | 'medium' | 'low' = 'low';
+            if (score >= 70) level = 'high';
+            else if (score >= 40) level = 'medium';
 
             return {
                 id: investor.id,
-                matchScore: match.matchScore,
-                matchLevel: match.matchLevel,
-                explanation: match.explanation,
-                keyHighlights: match.keyHighlights,
+                matchScore: score,
+                matchLevel: level,
+                explanation: match.explanation || 'Good potential match',
+                keyHighlights: match.keyHighlights || [],
                 entity: investor
             };
         }).filter(Boolean) as MatchRecommendation[];
@@ -146,89 +187,69 @@ Rank by match score (highest first). Include all investors.`;
         };
 
         // Cache the result
-        setCachedRecommendations(startup.id, 'startup', result);
+        setCachedRecommendations(startup.id, 'investor', result);
 
         return result;
-    } catch (error: any) {
+    } catch (error) {
         console.error('AI recommendation error:', error);
-
-        // Handle rate limit errors specifically
-        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
-            throw new Error('AI rate limit reached. Please try again in a few minutes or configure an OpenAI API key as a fallback.');
-        }
-
-        // Handle API key errors
-        if (error.message?.includes('API key') || error.message?.includes('401')) {
-            throw new Error('AI API key is invalid or missing. Please check your configuration.');
-        }
-
-        throw new Error(`Failed to generate recommendations: ${error.message}`);
+        throw new Error(`Failed to generate recommendations: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 
 /**
- * Generate personalized startup recommendations for an investor
+ * Generate AI-powered startup recommendations for an investor
  */
 export async function generateStartupRecommendations(
     investor: Investor,
     startups: Startup[],
-    apiKey: string
+    apiKey: string,
+    recentViews: Startup[] = []
 ): Promise<RecommendationResult> {
     // Check cache first
-    const cached = getCachedRecommendations(investor.id, 'investor');
+    const cached = getCachedRecommendations(investor.id, 'startup');
     if (cached) {
         console.log('Returning cached startup recommendations');
         return cached;
     }
 
-    const client = new OpenAI({
-        apiKey,
-        baseURL: apiKey.startsWith('gsk_') ? 'https://api.groq.com/openai/v1' : undefined,
-        dangerouslyAllowBrowser: true
-    });
+    if (!apiKey) {
+        throw new Error('AI API key is invalid or missing. Please check your configuration.');
+    }
 
-    const investorContext = `
-Investor Profile:
+    const prompt = `You are an expert venture capital analyst. Analyze this investor's profile and recommend the best-matching startups.
+
+**Investor Profile:**
 - Name: ${investor.name}
-- Funds Available: ${investor.fundsAvailable}
-- Expertise: ${investor.expertise.join(', ')}
-- Portfolio Size: ${investor.investments} investments
-- Bio: ${investor.bio}
-`;
+- Expertise: ${investor.expertise?.join(', ') || 'N/A'}
+- Bio: ${investor.bio || 'N/A'}
+- Funds Available: ${investor.fundsAvailable || 'N/A'}
+- Portfolio Size: ${investor.investments || 0} investments
 
-    const startupsContext = startups.map((startup, idx) => `
-Startup ${idx + 1}:
-- ID: ${startup.id}
-- Name: ${startup.name}
-- Industry: ${startup.industry || 'Not specified'}
-- Stage: ${startup.metrics.stage}
-- Traction: ${startup.metrics.traction}
-- Valuation: ${startup.metrics.valuation}
-- Problem: ${startup.problemSolving}
-`).join('\n');
+**Recently Viewed by this Investor (Context):**
+${recentViews.length > 0
+            ? recentViews.map(s => `- ${s.name} (${s.industry})`).join('\n')
+            : 'None'}
 
-    const prompt = `You are an expert startup-investor matching AI. Analyze the investor profile and rank the startups based on fit.
+**Available Startups:**
+${startups.map((startup, i) => `
+${i + 1}. ${startup.name} (ID: ${startup.id})
+   - Industry: ${startup.industry}
+   - Stage: ${startup.metrics.stage}
+   - Description: ${startup.description || 'N/A'}
+   - Problem: ${startup.problemSolving || 'N/A'}
+   - Valuation: ${startup.metrics.valuation || 'N/A'}
+   - Traction: ${startup.metrics.traction || 'N/A'}
+`).join('\n')}
 
-${investorContext}
-
-Available Startups:
-${startupsContext}
-
-For each startup, provide:
-1. Match score (0-100)
-2. Match level (high/medium/low)
-3. Brief explanation (2-3 sentences max)
-4. 2-3 key highlights (short phrases)
-
-Return ONLY valid JSON in this exact format:
+Return a JSON object with this exact structure:
 {
   "matches": [
     {
-      "startupId": "string",
-      "matchScore": number,
-      "matchLevel": "high" | "medium" | "low",
-      "explanation": "string",
-      "keyHighlights": ["string", "string"]
+      "startupId": "startup-uuid",
+      "matchScore": 85,
+      "matchLevel": "high",
+      "explanation": "Brief 1-2 sentence explanation of why this is a good match",
+      "keyHighlights": ["Highlight 1", "Highlight 2", "Highlight 3"]
     }
   ]
 }
@@ -236,26 +257,32 @@ Return ONLY valid JSON in this exact format:
 Rank by match score (highest first). Include all startups.`;
 
     try {
-        const response = await client.chat.completions.create({
-            model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-            max_tokens: 2000
-        });
+        const content = await runInference(apiKey, prompt);
 
-        const content = response.choices[0]?.message?.content || '{}';
-        const parsed = JSON.parse(content);
+        const cleanedContent = cleanJsonString(content);
+        console.log('AI Startup Recommendation Response:', cleanedContent);
+        const parsed = JSON.parse(cleanedContent);
 
         const recommendations: MatchRecommendation[] = parsed.matches.map((match: any) => {
-            const startup = startups.find(s => s.id === match.startupId);
-            if (!startup) return null;
+            const matchId = String(match.startupId).toLowerCase();
+            const startup = startups.find(s => s.id.toLowerCase() === matchId);
+
+            if (!startup) {
+                console.warn(`Startup ${match.startupId} not found in list`);
+                return null;
+            }
+
+            const score = sanitizeScore(match.matchScore);
+            let level: 'high' | 'medium' | 'low' = 'low';
+            if (score >= 70) level = 'high';
+            else if (score >= 40) level = 'medium';
 
             return {
                 id: startup.id,
-                matchScore: match.matchScore,
-                matchLevel: match.matchLevel,
-                explanation: match.explanation,
-                keyHighlights: match.keyHighlights,
+                matchScore: score,
+                matchLevel: level,
+                explanation: match.explanation || 'Good potential match',
+                keyHighlights: match.keyHighlights || [],
                 entity: startup
             };
         }).filter(Boolean) as MatchRecommendation[];
@@ -266,23 +293,12 @@ Rank by match score (highest first). Include all startups.`;
         };
 
         // Cache the result
-        setCachedRecommendations(investor.id, 'investor', result);
+        setCachedRecommendations(investor.id, 'startup', result);
 
         return result;
-    } catch (error: any) {
+    } catch (error) {
         console.error('AI recommendation error:', error);
-
-        // Handle rate limit errors specifically
-        if (error.message?.includes('Rate limit') || error.message?.includes('429')) {
-            throw new Error('AI rate limit reached. Please try again in a few minutes or configure an OpenAI API key as a fallback.');
-        }
-
-        // Handle API key errors
-        if (error.message?.includes('API key') || error.message?.includes('401')) {
-            throw new Error('AI API key is invalid or missing. Please check your configuration.');
-        }
-
-        throw new Error(`Failed to generate recommendations: ${error.message}`);
+        throw new Error(`Failed to generate recommendations: ${error instanceof Error ? error.message : String(error)}`);
     }
 }
 
