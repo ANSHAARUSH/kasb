@@ -12,21 +12,21 @@ export function MessagingInsights() {
     }, [])
 
     const fetchMessages = async () => {
-        // This is a simplified "admin view" - in production you might need an edge function 
-        // or special permissions to read ALL messages if RLS is strict.
-        // Assuming admin has bypass or we adjust RLS.
-        const { data } = await supabase
-            .from('messages')
-            .select(`
-                *,
-                sender:sender_id(email),
-                receiver:receiver_id(email)
-            `)
-            .order('created_at', { ascending: false })
-            .limit(50)
+        try {
+            setLoading(true)
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50)
 
-        if (data) setMessages(data)
-        setLoading(false)
+            if (error) throw error
+            if (data) setMessages(data)
+        } catch (err) {
+            console.error('Error fetching messaging insights:', err)
+        } finally {
+            setLoading(false)
+        }
     }
 
     if (loading) return <div>Loading messages...</div>
@@ -62,9 +62,9 @@ export function MessagingInsights() {
                                             {msg.content}
                                         </div>
                                         <div className="mt-1 text-xs text-gray-400 flex items-center gap-2">
-                                            <span className="truncate max-w-[150px]">From: {msg.sender?.email || msg.sender_id}</span>
+                                            <span className="truncate max-w-[150px]">From ID: {msg.sender_id}</span>
                                             <span>→</span>
-                                            <span className="truncate max-w-[150px]">To: {msg.receiver?.email || msg.receiver_id}</span>
+                                            <span className="truncate max-w-[150px]">To ID: {msg.receiver_id}</span>
                                         </div>
                                     </div>
                                 </div>

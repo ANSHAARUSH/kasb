@@ -527,7 +527,13 @@ export async function refineProblemStatement(rawProblem: string, apiKey: string,
 
     try {
         const text = await runInference(apiKey, prompt, { baseUrl });
-        return text.trim() || rawProblem;
+        try {
+            const data = extractJSON<{ refined: string }>(text);
+            return data.refined || text.trim();
+        } catch (e) {
+            // If it's not JSON, return the raw text trimmed
+            return text.trim();
+        }
     } catch (error: unknown) {
         console.error("AI Refinement Error:", error);
         throw new Error("Failed to refine with AI");
@@ -903,7 +909,7 @@ export async function refineMessage(
     `;
 
     try {
-        const text = await runInference(apiKey, prompt, { model: '8b', baseUrl });
+        const text = await runInference(apiKey, prompt, { model: 'llama-3.1-8b-instant', baseUrl });
         return text.trim() || message;
     } catch (error: unknown) {
         console.error("AI Refinement Error:", error);

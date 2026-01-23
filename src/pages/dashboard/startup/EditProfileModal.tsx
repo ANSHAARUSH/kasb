@@ -7,6 +7,7 @@ import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { ShieldCheck, Sparkles, Loader2 } from "lucide-react"
 import { saveUserSetting } from "../../../lib/supabase"
 import { refineProblemStatement } from "../../../lib/ai"
+import { useToast } from "../../../hooks/useToast"
 
 interface EditProfileModalProps {
     isOpen: boolean
@@ -17,6 +18,7 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: EditProfileModalProps) {
+    const { toast } = useToast()
     const [editForm, setEditForm] = useState<Partial<StartupProfileData>>({})
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({})
     const [refining, setRefining] = useState(false)
@@ -32,15 +34,24 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
 
     const handleRefineWithAI = async () => {
         if (!editForm.problem_solving) return;
+
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
+        if (!apiKey) {
+            toast("API Key missing. Please check Admin Settings.", "error");
+            return;
+        }
+
         setRefining(true);
         try {
             const refined = await refineProblemStatement(
                 editForm.problem_solving,
-                import.meta.env.VITE_GROQ_API_KEY
+                apiKey
             );
             setEditForm(prev => ({ ...prev, problem_solving: refined }));
+            toast("Problem statement refined!", "success");
         } catch (err) {
             console.error(err);
+            toast("Failed to refine problem statement", "error");
         } finally {
             setRefining(false);
         }

@@ -27,7 +27,13 @@ export function AdminReports() {
             .select('*')
             .order('created_at', { ascending: false })
 
-        if (error || !reportsData) {
+        if (error) {
+            console.error("Error fetching reports:", error)
+            setLoading(false)
+            return
+        }
+
+        if (!reportsData || reportsData.length === 0) {
             setLoading(false)
             return
         }

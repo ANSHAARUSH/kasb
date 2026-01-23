@@ -13,6 +13,7 @@ import { AdminReports } from "./admin/AdminReports"
 import { Button } from "../components/ui/button"
 import { Plus } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
+import { useToast } from "../hooks/useToast"
 
 // Define types that match our Supabase schema
 // (Keep types for now as they are used in management components)
@@ -59,6 +60,7 @@ interface Investor {
 
 export function AdminDashboard() {
     const { signOut } = useAuth()
+    const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<AdminTab>('overview')
 
     // Data States
@@ -88,40 +90,62 @@ export function AdminDashboard() {
     const [newInvestor, setNewInvestor] = useState({ name: '', avatar: '', funds_available: '', investments_count: 0 })
 
     const fetchData = useCallback(async () => {
-        const { data: startupData } = await supabase.from('startups').select('*, user_subscriptions(tier)').order('created_at', { ascending: false })
-        const { data: investorData } = await supabase.from('investors').select('*, user_subscriptions(tier)').order('created_at', { ascending: false })
-        const { count: messageCount } = await supabase.from('messages').select('*', { count: 'exact', head: true })
+        try {
+            setLoading(true)
 
-        if (startupData) {
-            setStartups(startupData.map((s: any) => ({
-                ...s,
-                subscription_tier: s.user_subscriptions?.tier || 'discovery'
-            })))
+            // 1. Fetch Core Data (Separate calls for robustness)
+            const [startupsRes, investorsRes, messagesRes, subsRes] = await Promise.all([
+                supabase.from('startups').select('*').order('created_at', { ascending: false }),
+                supabase.from('investors').select('*').order('created_at', { ascending: false }),
+                supabase.from('messages').select('id', { count: 'exact', head: true }),
+                supabase.from('user_subscriptions').select('user_id, tier')
+            ])
+
+            if (startupsRes.error) throw new Error(`Startups: ${startupsRes.error.message}`)
+            if (investorsRes.error) throw new Error(`Investors: ${investorsRes.error.message}`)
+            if (messagesRes.error) throw new Error(`Messages: ${messagesRes.error.message}`)
+
+            // 2. Build Subscription Map
+            const subMap = new Map<string, string>()
+            subsRes.data?.forEach(s => subMap.set(s.user_id, s.tier))
+
+            // 3. Process Startups
+            if (startupsRes.data) {
+                setStartups(startupsRes.data.map((s: any) => ({
+                    ...s,
+                    subscription_tier: subMap.get(s.id) || 'discovery'
+                })))
+            }
+
+            // 4. Process Investors
+            if (investorsRes.data) {
+                setInvestors(investorsRes.data.map((i: any) => ({
+                    ...i,
+                    subscription_tier: subMap.get(i.id) || 'explore'
+                })))
+            }
+
+            // 5. Calculate Stats
+            const now = new Date()
+            const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+            const newStartups = startupsRes.data?.filter(s => new Date((s as any).created_at) > oneWeekAgo).length || 0
+            const newInvestors = investorsRes.data?.filter(i => new Date((i as any).created_at) > oneWeekAgo).length || 0
+
+            setStats({
+                totalStartups: startupsRes.data?.length || 0,
+                totalInvestors: investorsRes.data?.length || 0,
+                newSignupsThisWeek: newStartups + newInvestors,
+                activeUsers: Math.floor((startupsRes.data?.length || 0) * 0.4),
+                totalMessages: messagesRes.count || 0
+            })
+        } catch (err: any) {
+            console.error("Fetch Data Error:", err)
+            toast(`Dashboard Error: ${err.message}`, "error")
+        } finally {
+            setLoading(false)
         }
-        if (investorData) {
-            setInvestors(investorData.map((i: any) => ({
-                ...i,
-                subscription_tier: i.user_subscriptions?.tier || 'explore'
-            })))
-        }
-
-        // Calculate simple stats
-        const now = new Date()
-        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-
-        const newStartups = startupData?.filter(s => new Date((s as any).created_at) > oneWeekAgo).length || 0
-        const newInvestors = investorData?.filter(i => new Date((i as any).created_at) > oneWeekAgo).length || 0
-
-        setStats({
-            totalStartups: startupData?.length || 0,
-            totalInvestors: investorData?.length || 0,
-            newSignupsThisWeek: newStartups + newInvestors,
-            activeUsers: Math.floor((startupData?.length || 0) * 0.4), // Mock active users for now
-            totalMessages: messageCount || 0
-        })
-
-        setLoading(false)
-    }, [])
+    }, [toast])
 
     useEffect(() => {
         fetchData()
@@ -194,17 +218,22 @@ export function AdminDashboard() {
     const promptDelete = async (table: 'startups' | 'investors', id: string) => {
         if (!confirm(`Are you sure you want to delete this ${table === 'startups' ? 'startup' : 'investor'}? This will permanently delete their account.`)) return
 
-        // 1. Try to delete from Auth (which should cascade delete the public profile if set up correctly)
-        const { error: rpcError } = await supabase.rpc('delete_user_by_id', { user_id: id })
+        try {
+            // 1. Try to delete from Auth via the specialized RPC
+            const { error: rpcError } = await supabase.rpc('delete_user_by_id', { user_id: id })
 
-        if (rpcError) {
-            console.error('Error deleting auth user (RPC might be missing):', rpcError)
-            // 2. Fallback: Delete from public table directly if RPC fails
-            const { error: tableError } = await supabase.from(table).delete().eq('id', id)
-            if (tableError) {
-                alert('Error deleting: ' + tableError.message)
-                return
+            if (rpcError) {
+                console.error('Error deleting auth user (RPC failing):', rpcError)
+                // 2. Fallback: Delete from public table directly if RPC fails
+                const { error: tableError } = await supabase.from(table).delete().eq('id', id)
+                if (tableError) throw tableError
+                toast("Removed from public table, but Auth account might remain.", "info")
+            } else {
+                toast("User deleted successfully", "success")
             }
+        } catch (err: any) {
+            console.error("Delete error:", err)
+            toast("Failed to delete user: " + err.message, "error")
         }
 
         // Refresh data
