@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react"
+import { lazyWithRetry } from "./lib/lazyWithRetry"
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AdminRoute } from "./components/admin/AdminRoute"
 import { PublicLayout } from "./layouts/PublicLayout"
@@ -9,29 +9,29 @@ import { ChatProvider } from "./context/ChatContext"
 import { ChatDialog } from "./components/chat/ChatDialog"
 import { AuthEventHandler } from "./components/auth/AuthEventHandler"
 
-// Lazy load pages for code splitting
-const Landing = lazy(() => import("./pages/Landing").then(m => ({ default: m.Landing })))
-const Login = lazy(() => import("./pages/auth/Login").then(m => ({ default: m.Login })))
-const SignUp = lazy(() => import("./pages/auth/SignUp").then(m => ({ default: m.SignUp })))
-const ForgotPassword = lazy(() => import("./pages/auth/ForgotPassword").then(m => ({ default: m.ForgotPassword })))
-const UpdatePassword = lazy(() => import("./pages/auth/UpdatePassword").then(m => ({ default: m.UpdatePassword })))
-const InvestorHome = lazy(() => import("./pages/dashboard/InvestorHome").then(m => ({ default: m.InvestorHome })))
-const StartupHome = lazy(() => import("./pages/dashboard/StartupHome").then(m => ({ default: m.StartupHome })))
-const HistoryPage = lazy(() => import("./pages/dashboard/HistoryPage").then(m => ({ default: m.HistoryPage })))
-const StartupHistoryPage = lazy(() => import("./pages/dashboard/StartupHistoryPage").then(m => ({ default: m.StartupHistoryPage })))
-const MessagesPage = lazy(() => import("./pages/dashboard/MessagesPage").then(m => ({ default: m.MessagesPage })))
-const CheatSheetPage = lazy(() => import("./pages/dashboard/CheatSheetPage").then(m => ({ default: m.CheatSheetPage })))
-const StartupCheatSheetPage = lazy(() => import("./pages/dashboard/StartupCheatSheetPage").then(m => ({ default: m.StartupCheatSheetPage })))
-const InvestorProfile = lazy(() => import("./pages/dashboard/InvestorProfile").then(m => ({ default: m.InvestorProfile })))
-const StartupProfile = lazy(() => import("./pages/dashboard/StartupProfile").then(m => ({ default: m.StartupProfile })))
-const StartupAnalyticsPage = lazy(() => import("./pages/dashboard/startup/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })))
-const AdminDashboard = lazy(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
-const PricingPage = lazy(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
-const DashboardPricing = lazy(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
-const InvestorPublicProfile = lazy(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
-const EmailConfirmed = lazy(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
-const Onboarding = lazy(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
-const AuthCallback = lazy(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
+// Lazy load pages for code splitting with reload-on-failure logic
+const Landing = lazyWithRetry(() => import("./pages/Landing").then(m => ({ default: m.Landing })))
+const Login = lazyWithRetry(() => import("./pages/auth/Login").then(m => ({ default: m.Login })))
+const SignUp = lazyWithRetry(() => import("./pages/auth/SignUp").then(m => ({ default: m.SignUp })))
+const ForgotPassword = lazyWithRetry(() => import("./pages/auth/ForgotPassword").then(m => ({ default: m.ForgotPassword })))
+const UpdatePassword = lazyWithRetry(() => import("./pages/auth/UpdatePassword").then(m => ({ default: m.UpdatePassword })))
+const InvestorHome = lazyWithRetry(() => import("./pages/dashboard/InvestorHome").then(m => ({ default: m.InvestorHome })))
+const StartupHome = lazyWithRetry(() => import("./pages/dashboard/StartupHome").then(m => ({ default: m.StartupHome })))
+const HistoryPage = lazyWithRetry(() => import("./pages/dashboard/HistoryPage").then(m => ({ default: m.HistoryPage })))
+const StartupHistoryPage = lazyWithRetry(() => import("./pages/dashboard/StartupHistoryPage").then(m => ({ default: m.StartupHistoryPage })))
+const MessagesPage = lazyWithRetry(() => import("./pages/dashboard/MessagesPage").then(m => ({ default: m.MessagesPage })))
+const CheatSheetPage = lazyWithRetry(() => import("./pages/dashboard/CheatSheetPage").then(m => ({ default: m.CheatSheetPage })))
+const StartupCheatSheetPage = lazyWithRetry(() => import("./pages/dashboard/StartupCheatSheetPage").then(m => ({ default: m.StartupCheatSheetPage })))
+const InvestorProfile = lazyWithRetry(() => import("./pages/dashboard/InvestorProfile").then(m => ({ default: m.InvestorProfile })))
+const StartupProfile = lazyWithRetry(() => import("./pages/dashboard/StartupProfile").then(m => ({ default: m.StartupProfile })))
+const StartupAnalyticsPage = lazyWithRetry(() => import("./pages/dashboard/startup/AnalyticsPage").then(m => ({ default: m.AnalyticsPage })))
+const AdminDashboard = lazyWithRetry(() => import("./pages/AdminDashboard").then(m => ({ default: m.AdminDashboard })))
+const PricingPage = lazyWithRetry(() => import("./pages/PricingPage").then(m => ({ default: m.PricingPage })))
+const DashboardPricing = lazyWithRetry(() => import("./pages/dashboard/DashboardPricing").then(m => ({ default: m.DashboardPricing })))
+const InvestorPublicProfile = lazyWithRetry(() => import("./pages/dashboard/investor/InvestorPublicProfile").then(m => ({ default: m.InvestorPublicProfile })))
+const EmailConfirmed = lazyWithRetry(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
+const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
+const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 
 function CatchAll() {
   const { user, loading } = useAuth();
