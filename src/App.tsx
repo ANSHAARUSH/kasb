@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { lazyWithRetry } from "./lib/lazyWithRetry"
 import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { AdminRoute } from "./components/admin/AdminRoute"

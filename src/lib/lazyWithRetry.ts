@@ -1,4 +1,4 @@
-import { lazy, ComponentType } from "react"
+import { lazy, type ComponentType } from "react"
 
 /**
  * A wrapper around React.lazy that handles "Failed to fetch dynamic module" errors.
