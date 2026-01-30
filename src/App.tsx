@@ -77,8 +77,9 @@ function CatchAll() {
 }
 
 function App() {
-  console.log("[App] Component rendering. Environment:", import.meta.env.MODE);
-  console.log("[App] Current Location Hash:", window.location.hash);
+  console.log("[App.tsx] Component rendering. Environment:", import.meta.env.MODE);
+  console.log("[App.tsx] Current Location Hash:", window.location.hash);
+  console.log("[App.tsx] Base URL:", import.meta.env.BASE_URL);
   return (
     <AuthProvider>
       <ToastProvider>
