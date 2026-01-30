@@ -8,6 +8,8 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { Avatar } from "../ui/Avatar"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { useNavigate } from "react-router-dom"
 
 interface InvestorCardProps {
     investor: Investor
@@ -31,6 +33,7 @@ interface InvestorCardProps {
 export function InvestorCard({ investor, isSelected, isSaved = false, onMessageClick, onToggleSave, onClick, onDoubleClick, isRecommended, aiRecommendation, isFirstInRow, isLastInRow, showPercentage }: InvestorCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
+    const navigate = useNavigate()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
@@ -66,6 +69,12 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
         e.stopPropagation()
         if (!user) {
             toast("Please login to connect", "error")
+            return
+        }
+
+        if (!subscriptionManager.canContact(investor.id)) {
+            toast("Connection limit reached or plan doesn't include direct contact. Upgrade to connect!", "error")
+            navigate('/dashboard/pricing')
             return
         }
 

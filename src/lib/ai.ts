@@ -884,6 +884,7 @@ export async function chatWithAIStream(
                 }
                 throw lastError || new Error("All Gemini streaming fallbacks failed.");
             }
+            throw new Error("Unsupported AI client type");
         } catch (error: unknown) {
             console.error("AI Chat Stream Error:", error);
             throw new Error("Chat stream failed");

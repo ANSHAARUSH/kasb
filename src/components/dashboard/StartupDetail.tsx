@@ -55,7 +55,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
     const [valuationInsights, setValuationInsights] = useState<string | null>(null)
     const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
-    const [showLiteralAnswers, setShowLiteralAnswers] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
     const [hasBoosted, setHasBoosted] = useState(false)
     const [isBoosting, setIsBoosting] = useState(false)
@@ -65,7 +64,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const [founderAnalysis, setFounderAnalysis] = useState<string | null>(null)
     const [isGeneratingFounderAnalysis, setIsGeneratingFounderAnalysis] = useState(false)
     const [documents, setDocuments] = useState<any[]>([])
-    const [isLoadingDocs, setIsLoadingDocs] = useState(false)
     const [prevStartupId, setPrevStartupId] = useState(startup?.id)
 
     if (startup?.id !== prevStartupId) {
@@ -76,7 +74,6 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
         setIsGeneratingValuation(false)
         setIsGeneratingFounderAnalysis(false)
         setIsProcessing(false)
-        setShowLiteralAnswers(false)
         setConnStatus(null)
         if (startup) setImpactPoints(startup.impactPoints || 0)
     }
@@ -177,8 +174,8 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
     const handleConnect = async () => {
         if (!user || !startup) return
 
-        if (!subscriptionManager.canContact()) {
-            toast("Connection limit reached. Upgrade to connect with more startups!", "error")
+        if (!subscriptionManager.canContact(startup.id)) {
+            toast("Connection limit reached or plan doesn't include direct contact. Upgrade to connect!", "error")
             navigate('/dashboard/pricing')
             return
         }
@@ -570,97 +567,81 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
 
                         {/* Literal Answers Toggle */}
                         <div className="pt-4">
-                            {!showLiteralAnswers ? (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setShowLiteralAnswers(true)}
-                                    className="w-full rounded-2xl border-dashed border-2 text-gray-400 hover:text-black hover:bg-gray-50 h-14 font-bold text-xs uppercase tracking-widest"
-                                >
-                                    View literal answers supplied by founder
-                                </Button>
-                            ) : (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Questionnaire Data</h3>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => setShowLiteralAnswers(false)}
-                                            className="h-8 text-[10px] font-bold text-indigo-600 hover:text-indigo-700 px-3"
-                                        >
-                                            Hide Details
-                                        </Button>
-                                    </div>
+                            <Button
+                                variant="outline"
+                                onClick={() => window.open(`/#/dashboard/startup/${startup.id}`, '_blank')}
+                                className="w-full rounded-2xl border-dashed border-2 text-gray-400 hover:text-black hover:bg-gray-50 h-14 font-bold text-xs uppercase tracking-widest"
+                            >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                View literal answers & Full Profile
+                            </Button>
+                        </div>
 
-                                    {/* Problem & Description */}
-                                    <section className="space-y-6">
-                                        <div>
-                                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Problem Statement</h3>
-                                            <p className="text-[15px] text-gray-900 leading-relaxed font-medium bg-white p-4 rounded-2xl border border-gray-50">
-                                                {startup.problemSolving}
-                                            </p>
-                                        </div>
+                        {/* Problem & Description */}
+                        <section className="space-y-6">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Problem Statement</h3>
+                                <p className="text-[15px] text-gray-900 leading-relaxed font-medium bg-white p-4 rounded-2xl border border-gray-50">
+                                    {startup.problemSolving}
+                                </p>
+                            </div>
 
-                                        {startup.description && (
-                                            <div>
-                                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Solution Context</h3>
-                                                <p className="text-[14px] text-gray-600 leading-relaxed bg-white p-4 rounded-2xl border border-gray-50">
-                                                    {startup.description}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </section>
-
-                                    {/* Stage Specific Questions */}
-                                    <section className="space-y-8">
-                                        {stageConfig.map((section: Section) => {
-                                            const sectionAnswers = answers[section.id] || {}
-                                            const hasAnswers = section.questions.some((q: Question) => sectionAnswers[q.id])
-                                            if (!hasAnswers) return null
-
-                                            return (
-                                                <div key={section.id} className="space-y-4">
-                                                    <h4 className="text-[11px] font-bold text-black uppercase tracking-widest border-b border-gray-100 pb-2">
-                                                        {section.title}
-                                                    </h4>
-                                                    <div className="grid gap-6">
-                                                        {section.questions.map((q: Question) => {
-                                                            const answer = sectionAnswers[q.id]
-                                                            if (!answer) return null
-                                                            return (
-                                                                <div key={q.id} className={cn(
-                                                                    "transition-all duration-300 rounded-2xl",
-                                                                    q.id === 'funding_amount' ? "bg-indigo-50/50 p-6 border-2 border-indigo-100/50 shadow-sm ring-1 ring-indigo-50" : ""
-                                                                )}>
-                                                                    <div className="flex items-center justify-between mb-1.5">
-                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.label}</p>
-                                                                        {q.id === 'funding_amount' && (
-                                                                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
-                                                                                <Sparkles className="h-2.5 w-2.5" />
-                                                                                Strategic Metric
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <p className={cn(
-                                                                        "text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium",
-                                                                        q.id === 'funding_amount' ? "text-indigo-900 text-lg" : ""
-                                                                    )}>
-                                                                        {answer}
-                                                                    </p>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </section>
+                            {startup.description && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Solution Context</h3>
+                                    <p className="text-[14px] text-gray-600 leading-relaxed bg-white p-4 rounded-2xl border border-gray-50">
+                                        {startup.description}
+                                    </p>
                                 </div>
                             )}
-                        </div>
+                        </section>
+
+                        {/* Stage Specific Questions */}
+                        <section className="space-y-8">
+                            {stageConfig.map((section: Section) => {
+                                const sectionAnswers = answers[section.id] || {}
+                                const hasAnswers = section.questions.some((q: Question) => sectionAnswers[q.id])
+                                if (!hasAnswers) return null
+
+                                return (
+                                    <div key={section.id} className="space-y-4">
+                                        <h4 className="text-[11px] font-bold text-black uppercase tracking-widest border-b border-gray-100 pb-2">
+                                            {section.title}
+                                        </h4>
+                                        <div className="grid gap-6">
+                                            {section.questions.map((q: Question) => {
+                                                const answer = sectionAnswers[q.id]
+                                                if (!answer) return null
+                                                return (
+                                                    <div key={q.id} className={cn(
+                                                        "transition-all duration-300 rounded-2xl",
+                                                        q.id === 'funding_amount' ? "bg-indigo-50/50 p-6 border-2 border-indigo-100/50 shadow-sm ring-1 ring-indigo-50" : ""
+                                                    )}>
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.label}</p>
+                                                            {q.id === 'funding_amount' && (
+                                                                <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
+                                                                    <Sparkles className="h-2.5 w-2.5" />
+                                                                    Strategic Metric
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className={cn(
+                                                            "text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium",
+                                                            q.id === 'funding_amount' ? "text-indigo-900 text-lg" : ""
+                                                        )}>
+                                                            {answer}
+                                                        </p>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </section>
                     </div>
                 )}
-
                 {activeTab === 'metrics' && (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {/* Key Metrics Grid */}
@@ -823,60 +804,62 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                 </section>
 
                 {/* Investor Boost Section */}
-                {role === 'investor' && (
-                    <section className="mt-12 pt-8 border-t border-gray-100 mb-12">
-                        <div className="bg-orange-50/50 rounded-[2.5rem] p-8 border border-orange-100 text-center relative overflow-hidden group/boost">
-                            <div className="absolute top-0 right-0 p-4 opacity-10">
-                                <TrendingUp className="h-24 w-24 text-orange-600 rotate-12" />
-                            </div>
-
-                            <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-4" />
-                            <h3 className="text-sm font-bold text-orange-900 uppercase tracking-[0.2em] mb-2">Push this startup up</h3>
-                            <p className="text-orange-800/60 text-xs leading-relaxed max-w-[240px] mx-auto font-medium mb-6">
-                                Believe in this team? Award them Impact Points to help them climb the High Impact rankings.
-                            </p>
-
-                            <div className="flex flex-col items-center gap-4">
-                                {hasBoosted && (
-                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/50 text-orange-600 rounded-full border border-orange-100 text-[10px] font-bold shadow-sm mb-2 animate-in fade-in slide-in-from-top-1">
-                                        <Sparkles className="h-3 w-3" />
-                                        You have previously boosted this team
-                                    </div>
-                                )}
-                                <div className="flex flex-col gap-2 w-full max-w-[200px]">
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className="text-[10px] font-bold text-orange-900/50 uppercase tracking-widest">Amount</span>
-                                        <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Budget: {investorBudget}</span>
-                                    </div>
-                                    <div className="relative">
-                                        <Input
-                                            type="number"
-                                            value={boostAmount}
-                                            onChange={(e) => setBoostAmount(parseInt(e.target.value) || 0)}
-                                            className="bg-white/50 border-orange-200 focus:border-orange-500 rounded-2xl h-12 text-center font-bold text-orange-900"
-                                            min={1}
-                                            max={investorBudget}
-                                        />
-                                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-orange-400 uppercase">Pts</div>
-                                    </div>
+                {
+                    role === 'investor' && (
+                        <section className="mt-12 pt-8 border-t border-gray-100 mb-12">
+                            <div className="bg-orange-50/50 rounded-[2.5rem] p-8 border border-orange-100 text-center relative overflow-hidden group/boost">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <TrendingUp className="h-24 w-24 text-orange-600 rotate-12" />
                                 </div>
 
-                                <Button
-                                    onClick={handleBoost}
-                                    disabled={isBoosting || boostAmount <= 0}
-                                    className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8 h-12 text-sm font-bold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95 translate-y-0 w-full max-w-[200px]"
-                                >
-                                    {isBoosting ? "Boosting..." : hasBoosted ? "Boost Again" : "Award Impact Points"}
-                                </Button>
+                                <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-4" />
+                                <h3 className="text-sm font-bold text-orange-900 uppercase tracking-[0.2em] mb-2">Push this startup up</h3>
+                                <p className="text-orange-800/60 text-xs leading-relaxed max-w-[240px] mx-auto font-medium mb-6">
+                                    Believe in this team? Award them Impact Points to help them climb the High Impact rankings.
+                                </p>
+
+                                <div className="flex flex-col items-center gap-4">
+                                    {hasBoosted && (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/50 text-orange-600 rounded-full border border-orange-100 text-[10px] font-bold shadow-sm mb-2 animate-in fade-in slide-in-from-top-1">
+                                            <Sparkles className="h-3 w-3" />
+                                            You have previously boosted this team
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold text-orange-900/50 uppercase tracking-widest">Amount</span>
+                                            <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Budget: {investorBudget}</span>
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                value={boostAmount}
+                                                onChange={(e) => setBoostAmount(parseInt(e.target.value) || 0)}
+                                                className="bg-white/50 border-orange-200 focus:border-orange-500 rounded-2xl h-12 text-center font-bold text-orange-900"
+                                                min={1}
+                                                max={investorBudget}
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-orange-400 uppercase">Pts</div>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        onClick={handleBoost}
+                                        disabled={isBoosting || boostAmount <= 0}
+                                        className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8 h-12 text-sm font-bold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95 translate-y-0 w-full max-w-[200px]"
+                                    >
+                                        {isBoosting ? "Boosting..." : hasBoosted ? "Boost Again" : "Award Impact Points"}
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                    </section>
-                )}
-            </div>
+                        </section>
+                    )
+                }
+            </div >
 
 
             {/* Sticky Action Footer */}
-            <div className="flex-none p-6 border-t border-gray-100 bg-white">
+            < div className="flex-none p-6 border-t border-gray-100 bg-white" >
                 {connStatus?.status === 'accepted' ? (
                     showDisconnectConfirm ? (
                         <div className="flex gap-3 animate-in fade-in zoom-in-95 duration-200">

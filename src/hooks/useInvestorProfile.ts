@@ -10,13 +10,15 @@ export interface InvestorProfileData {
     funds_available: string
     investments_count: number
     bio: string
-    location?: string
+    state?: string
+    city?: string
     email_verified?: boolean
     show_in_feed?: boolean
     adhaar_number?: string
     adhaar_doc_url?: string
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
+    investor_type?: string
     expertise?: string[]
     spentPoints?: number
     purchasedPoints?: number
@@ -135,7 +137,10 @@ export function useInvestorProfile() {
                 email, // Strip email as it's not in the 'investors' table
                 spentPoints,
                 purchasedPoints,
-                expertise,
+                // expertise is a database column, should be saved
+                location, // Remove location as it doesn't exist in DB
+                title, // Strip title as it's not a column
+                investor_type, // Strip investor_type as it's not a column
                 ...updateData
             } = formData as any
 

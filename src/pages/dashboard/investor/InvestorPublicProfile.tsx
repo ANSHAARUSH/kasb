@@ -55,7 +55,13 @@ export function InvestorPublicProfile() {
                     <h2 className="text-xl font-bold">Investor Not Found</h2>
                     <p className="text-gray-500">The investor profile you are looking for does not exist or has been removed.</p>
                 </div>
-                <Button onClick={() => navigate(-1)} variant="outline">
+                <Button onClick={() => {
+                    if (window.history.length > 1) {
+                        navigate(-1)
+                    } else {
+                        navigate('/dashboard')
+                    }
+                }} variant="outline">
                     Go Back
                 </Button>
             </div>
@@ -67,11 +73,17 @@ export function InvestorPublicProfile() {
             <div className="mb-6">
                 <Button
                     variant="ghost"
-                    onClick={() => navigate(-1)}
+                    onClick={() => {
+                        if (window.history.length > 1) {
+                            navigate(-1)
+                        } else {
+                            navigate('/dashboard')
+                        }
+                    }}
                     className="pl-0 hover:bg-transparent hover:text-gray-600 mb-2"
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back
+                    Back to Search
                 </Button>
             </div>
 

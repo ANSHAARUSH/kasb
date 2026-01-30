@@ -8,12 +8,12 @@ import { StartupDetail, type PanelSize } from "../../components/dashboard/Startu
 // import { useAuth } from "../../context/AuthContext"
 // import { useToast } from "../../hooks/useToast"
 
-import { Filter, SlidersHorizontal, X, FileText, Sparkles } from "lucide-react"
+import { Filter, SlidersHorizontal, X, FileText, Sparkles, Lock } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { FilterPanel, type FilterState } from "../../components/dashboard/FilterPanel"
 import { useChat } from "../../hooks/useChat"
 import { useDebounce } from "../../hooks/useDebounce"
-import { useSearchParams, Link } from "react-router-dom"
+import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { parseRevenue, cn } from "../../lib/utils"
 import { useStartups } from "../../hooks/useStartups"
@@ -22,8 +22,10 @@ import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import type { Investor } from "../../data/mockData"
 import { useRecommendations } from "../../hooks/useRecommendations"
+import { isInvestorProfileComplete } from "../../lib/questionnaire"
 
 export function InvestorHome() {
+    const navigate = useNavigate()
     // const { user } = useAuth()
 
     const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -300,6 +302,27 @@ export function InvestorHome() {
                 {/* Scrollable Feed List */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-2xl mx-auto space-y-6">
+                        {/* Profile Incomplete Warning */}
+                        {investor && !isInvestorProfileComplete(investor) && (
+                            <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-200 shadow-sm mb-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-amber-100 rounded-xl">
+                                        <Lock className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-bold text-amber-900 mb-1">Your profile is hidden</h3>
+                                        <p className="text-xs text-amber-700 leading-relaxed mb-3">
+                                            To maintain high-quality matches, profiles are only visible in the community feed once they are 100% complete.
+                                        </p>
+                                        <Link to="/dashboard/investor/settings">
+                                            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl h-8 px-4 text-[10px] font-bold">
+                                                Complete Profile
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <h1 className="text-xl font-bold hidden sm:block">Discover Startups</h1>
 
@@ -367,6 +390,23 @@ export function InvestorHome() {
                                                 {[1, 2].map(i => (
                                                     <div key={i} className="h-40 w-full bg-indigo-50/50 rounded-[2rem] border border-indigo-100/50" />
                                                 ))}
+                                            </div>
+                                        ) : !subscriptionManager.canViewRecommendations() ? (
+                                            <div className="p-8 rounded-[2rem] border border-indigo-100 bg-white shadow-sm text-center relative overflow-hidden group">
+                                                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500/20 via-indigo-500 to-indigo-500/20" />
+                                                <div className="mx-auto w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4">
+                                                    <Lock className="w-6 h-6 text-indigo-400" />
+                                                </div>
+                                                <h3 className="text-sm font-bold text-indigo-950 mb-2">Unlock AI Recommendations</h3>
+                                                <p className="text-xs text-indigo-600/80 leading-relaxed max-w-[240px] mx-auto">
+                                                    Upgrade to Investor Basic to see AI-powered startup matches tailored to your thesis.
+                                                </p>
+                                                <Button
+                                                    onClick={() => navigate('/dashboard/pricing')}
+                                                    className="mt-6 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 px-6"
+                                                >
+                                                    View Plans
+                                                </Button>
                                             </div>
                                         ) : recommendationsError ? (
                                             <div className="p-8 rounded-[2rem] border border-indigo-100 bg-white shadow-sm text-center relative overflow-hidden group">

@@ -3,6 +3,7 @@ import { generateInvestorRecommendations, generateStartupRecommendations, type R
 import type { Startup, Investor } from '../data/mockData';
 import { getGlobalConfig, getUserSetting, getRecentViews } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { subscriptionManager } from '../lib/subscriptionManager';
 
 interface UseRecommendationsProps {
     type: 'investor' | 'startup';
@@ -17,7 +18,7 @@ export function useRecommendations({ type, currentProfile, availableEntities }: 
     const [error, setError] = useState<string | null>(null);
 
     const fetchRecommendations = useCallback(async () => {
-        if (!currentProfile || availableEntities.length === 0) {
+        if (!currentProfile || availableEntities.length === 0 || !subscriptionManager.canViewRecommendations()) {
             return;
         }
 

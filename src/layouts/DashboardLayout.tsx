@@ -67,14 +67,14 @@ export function DashboardLayout() {
     }
 
     return (
-        <div className="min-h-screen bg-off-white flex flex-col md:flex-row">
+        <div className="min-h-screen bg-white md:bg-off-white flex flex-col md:flex-row">
             {/* Desktop Sidebar */}
             <SideNav />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 md:pl-64">
                 {/* Mobile Header */}
-                <header className="sticky top-0 z-40 flex items-center bg-black border-b border-white/10 px-6 py-4">
+                <header className="sticky top-0 z-40 flex items-center bg-black border-b border-white/10 px-4 sm:px-6 py-4">
                     <div className="flex-1 md:hidden">
                         <div className="flex items-center gap-2.5">
                             <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-7 w-auto rounded-md" />
@@ -99,8 +99,8 @@ export function DashboardLayout() {
                     </div>
                 </header>
 
-                <main className="flex-1 px-4 md:py-6 pt-0 pb-24 md:pb-6">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 p-0 md:py-6 pb-24 md:pb-6">
+                    <div className="w-full md:max-w-7xl md:mx-auto">
                         {/* Temporarily disabled KYC requirement */}
                         {/* kycStatus === 'verified' ? (
                             <Outlet />

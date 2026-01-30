@@ -12,9 +12,13 @@ import {
     Clock,
     XCircle,
     Sparkles,
-    Bookmark
+    Bookmark,
+    Lock
 } from "lucide-react"
+import { subscriptionManager } from "../../../lib/subscriptionManager"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
+import { Button } from "../../../components/ui/button"
 import { useAuth } from "../../../context/AuthContext"
 import {
     getProfileViewsCount,
@@ -39,6 +43,7 @@ import {
 } from "recharts"
 
 export function AnalyticsPage() {
+    const navigate = useNavigate()
     const { user } = useAuth()
     const [stats, setStats] = useState({
         totalViews: 0,
@@ -331,7 +336,7 @@ export function AnalyticsPage() {
 
             {/* Geography / Locations */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="border-gray-100">
+                <Card className="border-gray-100 relative overflow-hidden">
                     <CardHeader>
                         <CardTitle className="text-lg font-bold flex items-center gap-2">
                             <Globe className="h-5 w-5" />
@@ -339,23 +344,58 @@ export function AnalyticsPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-5">
-                            {geoData.map((item, idx) => (
-                                <div key={idx} className="space-y-2">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="font-semibold">{item.country}</span>
-                                        <span className="text-gray-500">{item.views} views</span>
+                        {subscriptionManager.canViewDetailedAnalytics() ? (
+                            <div className="space-y-5">
+                                {geoData.map((item, idx) => (
+                                    <div key={idx} className="space-y-2">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="font-semibold">{item.country}</span>
+                                            <span className="text-gray-500">{item.views} views</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${item.percentage}%` }}
+                                                className="h-full bg-black"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${item.percentage}%` }}
-                                            className="h-full bg-black"
-                                        />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-12 flex flex-col items-center justify-center text-center px-4 relative">
+                                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] z-10" />
+                                <div className="relative z-20">
+                                    <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+                                        <Lock className="h-6 w-6 text-gray-400" />
                                     </div>
+                                    <h4 className="font-bold text-gray-900 mb-2">Detailed Geography Locked</h4>
+                                    <p className="text-xs text-gray-500 max-w-[200px] mx-auto mb-6">
+                                        Upgrade to Fundraise Pro to see where your investors are coming from.
+                                    </p>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => navigate('/dashboard/pricing')}
+                                        className="rounded-full h-9 px-6 font-bold"
+                                    >
+                                        Upgrade Now
+                                    </Button>
                                 </div>
-                            ))}
-                        </div>
+
+                                {/* Blurred placeholder data for visual effect */}
+                                <div className="w-full space-y-5 opacity-20 pointer-events-none mt-4">
+                                    {[1, 2].map(i => (
+                                        <div key={i} className="space-y-2">
+                                            <div className="flex items-center justify-between text-sm">
+                                                <div className="h-4 w-24 bg-gray-200 rounded" />
+                                                <div className="h-4 w-12 bg-gray-200 rounded" />
+                                            </div>
+                                            <div className="h-2 w-full bg-gray-100 rounded-full" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

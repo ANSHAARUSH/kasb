@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { type Startup } from '../../data/mockData';
 import {
-    getRequiredDocuments,
-    type DocumentType
+    getRequiredDocuments
 } from '../../lib/documentUtils';
 import { supabase } from '../../lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';

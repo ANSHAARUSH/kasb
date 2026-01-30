@@ -13,6 +13,7 @@ export interface TierConfig {
     currency: string;
     features: string[];
     isPopular?: boolean;
+    freePoints?: number;
 }
 
 export const REGION_CONFIG: Record<UserRegion, { multiplier: number; exchangeRate: number; symbol: string }> = {
@@ -112,6 +113,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Investor Basic',
         price: 3999,
         currency: 'INR',
+        freePoints: 150,
         features: [
             'Unlimited startup viewing',
             '50 startup contacts/month',
@@ -128,6 +130,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Investor Pro',
         price: 8999,
         currency: 'INR',
+        freePoints: 250,
         features: [
             'Unlimited startup viewing',
             '150 startup contacts/month',
@@ -148,6 +151,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
         name: 'Institutional / VC+',
         price: 13999,
         currency: 'INR',
+        freePoints: 350,
         features: [
             'Unlimited startup viewing',
             '150 startup contacts/month',
@@ -355,9 +359,39 @@ class SubscriptionManager {
         return !freeTiers.includes(tier);
     }
 
+    hasGeoFilters(): boolean {
+        const tier = this.getTier();
+        const allowedTiers = ['starter', 'growth', 'fundraise_pro', 'investor_basic', 'investor_pro', 'institutional'];
+        return allowedTiers.includes(tier) || tier === 'admin' as any;
+    }
+
+    canViewRecommendations(): boolean {
+        const tier = this.getTier();
+        const allowedTiers = ['starter', 'growth', 'fundraise_pro', 'investor_basic', 'investor_pro', 'institutional'];
+        return allowedTiers.includes(tier) || tier === 'admin' as any;
+    }
+
+    canExportData(): boolean {
+        const tier = this.getTier();
+        const allowedTiers = ['growth', 'fundraise_pro', 'investor_pro', 'institutional'];
+        return allowedTiers.includes(tier) || tier === 'admin' as any;
+    }
+
+    isPro(): boolean {
+        const tier = this.getTier();
+        const proTiers = ['growth', 'fundraise_pro', 'investor_pro', 'institutional'];
+        return proTiers.includes(tier) || tier === 'admin' as any;
+    }
+
     canContact(entityId?: string): boolean {
         const tier = this.getTier();
-        const limits = TIER_LIMITS[tier];
+
+        // Strict gating for free tiers
+        if (tier === 'discovery' || tier === 'explore') {
+            return false;
+        }
+
+        const limits = TIER_LIMITS[tier] || { contacts: 0 };
         const usage = this.getUsage();
 
         // If we've already contacted this specific entity, we can always contact it again
@@ -370,7 +404,7 @@ class SubscriptionManager {
 
     canCompare(id1?: string, id2?: string): boolean {
         const tier = this.getTier();
-        const limits = TIER_LIMITS[tier];
+        const limits = TIER_LIMITS[tier] || { compares: 0 };
         const usage = this.getUsage();
 
         if (id1 && id2) {
@@ -384,15 +418,23 @@ class SubscriptionManager {
     }
 
     canViewFounderDetails(): boolean {
-        const tier = this.getTier();
-        const proTiers = ['investor_pro', 'institutional', 'fundraise_pro']; // Pro levels
-        return proTiers.includes(tier) || tier === 'admin' as any;
+        return this.isPro();
     }
 
     canViewAISummary(): boolean {
-        const tier = this.getTier();
-        const proTiers = ['investor_pro', 'institutional', 'fundraise_pro'];
-        return proTiers.includes(tier) || tier === 'admin' as any;
+        return this.isPro();
+    }
+
+    canViewDetailedAnalytics(): boolean {
+        return this.isPro();
+    }
+
+    canUseAIChat(): boolean {
+        return this.hasPaidPlan();
+    }
+
+    canRefineMessages(): boolean {
+        return this.hasPaidPlan();
     }
 }
 

@@ -33,6 +33,7 @@ const InvestorPublicProfile = lazyWithRetry(() => import("./pages/dashboard/inve
 const EmailConfirmed = lazyWithRetry(() => import("./pages/auth/EmailConfirmed").then(m => ({ default: m.EmailConfirmed })))
 const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
 const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
+const StartupPublicProfile = lazyWithRetry(() => import("./pages/dashboard/startup/StartupPublicProfile").then(m => ({ default: m.StartupPublicProfile })))
 
 function CatchAll() {
   const { user, loading } = useAuth();
@@ -134,6 +135,7 @@ function App() {
                   <Route path="startup/profile" element={<StartupProfile />} />
                   <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
                   <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
+                  <Route path="startup/:id" element={<StartupPublicProfile />} />
 
                   {/* Shared Routes - Keep for fallbacks or generic access */}
                   <Route path="pricing" element={<DashboardPricing />} />

@@ -2,12 +2,12 @@ import { Card, CardContent } from "../../../components/ui/card"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { VerificationSection } from "./VerificationSection"
 import { useMemo, useState, useEffect } from "react"
-import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText } from "lucide-react"
-import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG } from "../../../lib/questionnaire"
+import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, CheckCircle2, Lock, ExternalLink } from "lucide-react"
+import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, isProfileComplete, getStartupMissingFields } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
 import { cn, parseRevenue, getViewableUrl } from "../../../lib/utils"
-import { getStartupBoosts } from "../../../lib/supabase"
+import { getStartupBoosts, supabase } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
@@ -25,12 +25,16 @@ interface ProfileViewProps {
     onMarkAsLive?: () => void
     onSave?: (data: Partial<StartupProfileData>) => Promise<boolean>
     saving?: boolean
+    readOnly?: boolean
+    id?: string
 }
 
-export function ProfileView({ startup, onRequestReview, onSave, saving }: ProfileViewProps) {
+export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly, id }: ProfileViewProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<'questions' | 'metrics' | 'documents'>('questions')
+    const isComplete = isProfileComplete(startup.stage, startup.questionnaire)
+    const missingFields = getStartupMissingFields(startup.stage, startup.questionnaire)
     const [isEditing, setIsEditing] = useState(false)
     const [localAnswers, setLocalAnswers] = useState<Record<string, Record<string, string>>>({})
     const [localStartup, setLocalStartup] = useState<Partial<StartupProfileData>>({})
@@ -178,7 +182,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
             <Card className="border-0 shadow-none bg-transparent">
                 <CardContent className="p-0 space-y-8">
                     {/* Instagram Style Header */}
-                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-12 px-4 text-center sm:text-left">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-12 px-4 sm:px-4 text-center sm:text-left">
                         <div className="relative group shrink-0">
                             <div className="h-24 w-24 sm:h-32 sm:w-32 flex items-center justify-center rounded-full bg-gray-50/50 border border-gray-100/50 overflow-hidden">
                                 <Avatar
@@ -247,6 +251,49 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                         </div>
                     </div>
 
+                    {/* Completion Progress Card */}
+                    <div className={cn(
+                        "mx-0 sm:mx-4 p-6 rounded-none sm:rounded-[2rem] border-x-0 sm:border transition-all duration-300",
+                        isComplete
+                            ? "bg-green-50/50 border-green-100"
+                            : "bg-amber-50/50 border-amber-200"
+                    )}>
+                        <div className="flex items-start gap-4">
+                            <div className={cn(
+                                "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0",
+                                isComplete ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+                            )}>
+                                {isComplete ? <CheckCircle2 className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+                            </div>
+                            <div className="flex-1">
+                                <h3 className={cn(
+                                    "text-[10px] font-black uppercase tracking-widest leading-none mb-1",
+                                    isComplete ? "text-green-900" : "text-amber-900"
+                                )}>
+                                    {isComplete ? "Startup is Live" : "Visibility Restricted"}
+                                </h3>
+                                <p className={cn(
+                                    "text-sm font-medium leading-relaxed",
+                                    isComplete ? "text-green-800" : "text-amber-800"
+                                )}>
+                                    {isComplete
+                                        ? "Your profile is 100% complete and visible to investors in the discovery feed. Keep it updated for better matching!"
+                                        : "Complete the following required questionnaire sections to become visible in the investor discovery feed:"}
+                                </p>
+
+                                {!isComplete && (
+                                    <div className="flex flex-wrap gap-2 mt-4">
+                                        {missingFields.map(field => (
+                                            <span key={field} className="px-3 py-1 bg-white border border-amber-200 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+                                                • {field}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Tabs Navigation */}
                     <div className="flex border-t border-gray-100 mt-8">
                         {tabs.map(tab => (
@@ -267,58 +314,75 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                     </div>
 
                     {/* Tab Content */}
-                    <div className="pt-4 px-4">
+                    <div className="pt-4 px-4 sm:px-4">
                         {activeTab === 'questions' && (
                             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                 {/* Instructional Banner (Mobile-Optimized) */}
-                                <div className="bg-amber-50 border border-amber-100 rounded-3xl p-6 mb-8">
-                                    <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-700 mb-2">
-                                        <Sparkles className="h-4 w-4" />
-                                        Important for Founders
-                                    </h4>
-                                    <p className="text-sm text-amber-900/80 leading-relaxed font-medium">
-                                        Answer these questions as they will be displayed as the core description of your startup.
-                                        You can further refine the generated AI summary after answering all questions.
-                                    </p>
-                                </div>
+                                {!readOnly && (
+                                    <div className="bg-amber-50 border-y sm:border border-amber-100 rounded-none sm:rounded-3xl p-6 mb-8">
+                                        <h4 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-700 mb-2">
+                                            <Sparkles className="h-4 w-4" />
+                                            Important for Founders
+                                        </h4>
+                                        <p className="text-sm text-amber-900/80 leading-relaxed font-medium">
+                                            Answer these questions as they will be displayed as the core description of your startup.
+                                            You can further refine the generated AI summary after answering all questions.
+                                        </p>
+                                    </div>
+                                )}
 
                                 <div className="flex items-center justify-between py-2 border-b border-gray-100">
                                     <h3 className="text-xl font-extrabold tracking-tight">Stage Questions</h3>
-                                    {!isEditing ? (
-                                        <Button
-                                            onClick={() => setIsEditing(true)}
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest border border-black/10 hover:bg-black/5"
-                                        >
-                                            <Pencil className="h-3 w-3 mr-2" />
-                                            Edit Answers
-                                        </Button>
-                                    ) : (
-                                        <div className="flex gap-2">
-                                            <Button
-                                                onClick={() => {
-                                                    setIsEditing(false)
-                                                    setLocalAnswers(startup.questionnaire || {})
-                                                    setLocalStartup(startup)
-                                                }}
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-8 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 hover:text-red-600"
-                                            >
-                                                <X className="h-3 w-3 mr-2" />
-                                                Cancel
-                                            </Button>
-                                            <Button
-                                                onClick={handleSave}
-                                                disabled={saving}
-                                                size="sm"
-                                                className="h-8 rounded-full px-6 text-[10px] font-bold uppercase tracking-widest bg-black text-white"
-                                            >
-                                                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3 mr-2" />}
-                                                Save
-                                            </Button>
-                                        </div>
+                                    {!readOnly && (
+                                        !isEditing ? (
+                                            <div className="flex gap-2">
+                                                {id && (
+                                                    <Button
+                                                        onClick={() => window.open(`/#/dashboard/startup/${id}`, '_blank')}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest border border-black/10 hover:bg-black/5"
+                                                    >
+                                                        <ExternalLink className="h-3 w-3 mr-2" />
+                                                        Visit Profile
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    onClick={() => setIsEditing(true)}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest border border-black/10 hover:bg-black/5"
+                                                >
+                                                    <Pencil className="h-3 w-3 mr-2" />
+                                                    Edit Answers
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => {
+                                                        setIsEditing(false)
+                                                        setLocalAnswers(startup.questionnaire || {})
+                                                        setLocalStartup(startup)
+                                                    }}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-8 rounded-full px-4 text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 hover:text-red-600"
+                                                >
+                                                    <X className="h-3 w-3 mr-2" />
+                                                    Cancel
+                                                </Button>
+                                                <Button
+                                                    onClick={handleSave}
+                                                    disabled={saving}
+                                                    size="sm"
+                                                    className="h-8 rounded-full px-6 text-[10px] font-bold uppercase tracking-widest bg-black text-white"
+                                                >
+                                                    {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3 mr-2" />}
+                                                    Save
+                                                </Button>
+                                            </div>
+                                        )
                                     )}
                                 </div>
 
@@ -343,7 +407,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving }: Profil
                                                         <div key={q.id} className={cn(
                                                             "min-w-0 rounded-2xl transition-all duration-300",
                                                             q.type === 'textarea' ? 'col-span-2' : '',
-                                                            q.id === 'funding_amount' ? 'bg-indigo-50/50 p-6 ring-1 ring-indigo-100 border-2 border-indigo-200 shadow-sm' : ''
+                                                            q.id === 'funding_amount' ? 'bg-indigo-50/50 p-6 rounded-none sm:rounded-2xl ring-0 sm:ring-1 border-y-2 sm:border-2 border-indigo-200 shadow-sm' : ''
                                                         )}>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">

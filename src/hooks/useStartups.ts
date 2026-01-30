@@ -71,9 +71,7 @@ export function useStartups() {
                             impactPoints: scoreResult.total
                         };
                     }).filter(s => {
-                        const isVerified = s.verificationLevel === 'verified' || s.verificationLevel === 'trusted'
-                        const isComplete = isProfileComplete(s.metrics.stage, s.questionnaire)
-                        return isVerified || isComplete
+                        return isProfileComplete(s.metrics.stage, s.questionnaire)
                     }).sort((a, b) => (b.impactPoints || 0) - (a.impactPoints || 0))
 
                     setStartups(visibleStartups)

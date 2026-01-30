@@ -14,6 +14,7 @@ interface PaymentModalProps {
         name: string
         price: number
         points?: number
+        freePoints?: number
     } | null
 }
 
@@ -39,6 +40,11 @@ export function PaymentModal({ isOpen, onClose, tier }: PaymentModalProps) {
                 // subscriptionManager.setTier now handles Supabase sync with user_subscriptions table
                 await subscriptionManager.setTier(tier.id)
                 subscriptionManager.resetUsage()
+
+                // Award free points if included in the plan
+                if (tier.freePoints) {
+                    await purchaseImpactPoints(user.id, tier.freePoints, 0)
+                }
             }
 
             // Simulate network delay for UX

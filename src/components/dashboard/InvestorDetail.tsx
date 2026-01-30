@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Investor } from "../../data/mockData"
-import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2 } from "lucide-react"
+import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { Avatar } from "../ui/Avatar"
+import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { VerificationBadge } from "../ui/VerificationBadge"
 
@@ -23,6 +24,7 @@ interface InvestorDetailProps {
 
 export function InvestorDetail({ investor, onClose, onDisconnect, onResize, currentSize = 'default' }: InvestorDetailProps) {
     const { user } = useAuth()
+    const navigate = useNavigate()
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
@@ -55,6 +57,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
 
     const handleConnect = async () => {
         if (!user || !investor) return
+
+        if (!subscriptionManager.canContact(investor.id)) {
+            toast("Connection limit reached or plan doesn't include direct contact. Upgrade to connect!", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
 
         setIsConnecting(true)
         try {
@@ -303,9 +311,20 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                     {/* Value Add */}
                     <Card className="bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none shadow-xl">
                         <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2 text-white">
-                                <Award className="h-5 w-5 text-yellow-400" />
-                                Value Beyond Money
+                            <CardTitle className="text-lg flex items-center justify-between text-white w-full">
+                                <div className="flex items-center gap-2">
+                                    <Award className="h-5 w-5 text-yellow-400" />
+                                    Value Beyond Money
+                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(`/#/dashboard/investor/${investor.id}`, '_blank')}
+                                    className="h-8 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/10 px-3 gap-1.5 rounded-full border border-white/10"
+                                >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                    Visit Profile
+                                </Button>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">

@@ -1454,6 +1454,7 @@ export interface Investor {
     }
     state?: string
     city?: string
+    investor_type?: string
 }
 
 export const MOCK_INVESTORS: Investor[] = [

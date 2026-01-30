@@ -18,6 +18,8 @@ import { cn } from "../../lib/utils"
 import { InvestorFilterPanel, type InvestorFilterState } from "../../components/dashboard/InvestorFilterPanel"
 import { parseRevenue } from "../../lib/utils"
 import { subscriptionManager } from "../../lib/subscriptionManager"
+import { isProfileComplete } from "../../lib/questionnaire"
+import { Lock } from "lucide-react"
 
 export function StartupHome() {
     // ... hooks ...
@@ -30,7 +32,7 @@ export function StartupHome() {
         cities: []
     })
     const [showFilters, setShowFilters] = useState(false)
-    const [activeFeed, setActiveFeed] = useState<'discover' | 'top-investors'>('discover')
+    const [activeFeed] = useState<'discover' | 'top-investors'>('discover')
 
     // ... existing hooks ...
     // Note: I need to preserve existing hooks. I will just inject imports and state.
@@ -201,6 +203,27 @@ export function StartupHome() {
                 {/* Scrollable Feed List */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
+                        {/* Profile Incomplete Warning */}
+                        {profileStartup && !isProfileComplete(profileStartup.stage, profileStartup.questionnaire) && (
+                            <div className="max-w-2xl mx-auto p-6 rounded-3xl bg-amber-50 border-2 border-amber-200 shadow-sm mb-6">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-2 bg-amber-100 rounded-xl">
+                                        <Lock className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-sm font-bold text-amber-900 mb-1">Your startup is hidden</h3>
+                                        <p className="text-xs text-amber-700 leading-relaxed mb-3">
+                                            Investors can only discover your startup once you have completed all mandatory profile questions and details.
+                                        </p>
+                                        <Link to="/dashboard/startup/profile">
+                                            <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl h-8 px-4 text-[10px] font-bold">
+                                                Complete Questionnaire
+                                            </Button>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
                             <h1 className="text-2xl font-bold text-center sm:text-left">Discover Investors</h1>
 

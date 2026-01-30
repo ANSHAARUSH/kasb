@@ -1,14 +1,15 @@
 import { Button } from "../../components/ui/button"
 import { useState } from "react"
-import { Pencil, Trash2, Zap } from "lucide-react"
+import { Pencil, Trash2, Zap, Globe, Lock as LockIcon } from "lucide-react"
 import { Link } from "react-router-dom"
 import { useInvestorProfile } from "../../hooks/useInvestorProfile"
-// ... (rest of imports)
 import { ProfileView } from "./investor/ProfileView"
 import { EditProfileModal } from "./investor/EditProfileModal"
 import { supabase } from "../../lib/supabase"
 import { DeleteAccountModal } from "../../components/dashboard/DeleteAccountModal"
 import { useAuth } from "../../context/AuthContext"
+import { isInvestorProfileComplete } from "../../lib/questionnaire"
+import { cn } from "../../lib/utils"
 
 export function InvestorProfile() {
     const { signOut } = useAuth()
@@ -18,6 +19,7 @@ export function InvestorProfile() {
         saving,
         updateProfile,
         requestReview,
+        toggleFeedVisibility,
     } = useInvestorProfile()
 
     const [isEditOpen, setIsEditOpen] = useState(false)
@@ -70,8 +72,8 @@ export function InvestorProfile() {
     }
 
     return (
-        <div className="bg-white rounded-3xl p-4 sm:p-8 border border-gray-100 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+        <div className="bg-white w-full md:max-w-4xl md:mx-auto px-0 pt-4 md:pt-8 min-h-screen">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 sm:mt-0 mb-8 gap-4 px-4 sm:px-0">
                 <div>
                     <h2 className="text-2xl font-bold">Investor Profile</h2>
                     <p className="text-gray-500 text-sm sm:text-base">Manage your investment preferences and public profile</p>
@@ -100,10 +102,34 @@ export function InvestorProfile() {
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit Profile
                     </Button>
+                    {isInvestorProfileComplete(investor) && (
+                        <Button
+                            onClick={toggleFeedVisibility}
+                            variant="outline"
+                            className={cn(
+                                "rounded-xl font-bold border-gray-200 gap-2 transition-all",
+                                investor.show_in_feed
+                                    ? "text-green-600 border-green-200 bg-green-50 hover:bg-green-100"
+                                    : "text-amber-600 border-amber-200 bg-amber-50 hover:bg-amber-100"
+                            )}
+                        >
+                            {investor.show_in_feed ? (
+                                <>
+                                    <Globe className="h-4 w-4" />
+                                    Live in Feed
+                                </>
+                            ) : (
+                                <>
+                                    <LockIcon className="h-4 w-4" />
+                                    Hidden from Feed
+                                </>
+                            )}
+                        </Button>
+                    )}
                 </div>
             </div>
 
-            <ProfileView investor={investor} onRequestReview={requestReview} />
+            <ProfileView id={investor.id} investor={investor} onRequestReview={requestReview} />
 
             {/* Danger Zone */}
             <div className="mt-12 pt-8 border-t border-gray-100">

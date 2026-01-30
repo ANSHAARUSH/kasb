@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
 import { type Investor } from "../data/mockData"
 import { calculateImpactScore } from "../lib/scoring"
+import { isInvestorProfileComplete } from "../lib/questionnaire"
 
 export function useInvestors() {
     const [investors, setInvestors] = useState<Investor[]>([])
@@ -31,14 +32,17 @@ export function useInvestors() {
                             profile_details: i.profile_details,
                             last_active_at: i.last_active_at,
                             state: i.state,
-                            city: i.city
+                            city: i.city,
+                            investor_type: i.investor_type // Added this for isInvestorProfileComplete
                         };
                         const scoreResult = calculateImpactScore(baseInvestor);
                         return {
                             ...baseInvestor,
                             impactPoints: scoreResult.total
                         };
-                    }).sort((a, b) => b.impactPoints - a.impactPoints)
+                    })
+                        .filter(i => isInvestorProfileComplete(i) && (i as any).show_in_feed !== false)
+                        .sort((a, b) => b.impactPoints - a.impactPoints)
                     setInvestors(mappedInvestors)
                 } else {
                     setInvestors([])

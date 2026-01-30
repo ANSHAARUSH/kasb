@@ -76,8 +76,8 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
             return
         }
 
-        if (!subscriptionManager.canContact()) {
-            toast("Connection limit reached. Upgrade to connect with more startups!", "error")
+        if (!subscriptionManager.canContact(startup.id)) {
+            toast("Connection limit reached or plan doesn't include direct contact. Upgrade to connect!", "error")
             navigate('/dashboard/pricing')
             return
         }
@@ -222,17 +222,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        const rect = e.currentTarget.getBoundingClientRect()
-                                                        const spaceOnRight = window.innerWidth - rect.right
-                                                        const spaceOnLeft = rect.left
-
                                                         // Determine best alignment
-                                                        let align: 'left' | 'center' | 'right' = 'center'
-                                                        if (spaceOnRight < 150) align = 'right'
-                                                        else if (spaceOnLeft < 150) align = 'left'
-
-                                                        // Store alignment in a temporary data attribute or state if needed, 
-                                                        // but for simplicity we'll use a robust center-bias with safe max-width.
                                                         setShowAiTooltip(!showAiTooltip)
                                                     }}
                                                     className="flex items-center justify-center hover:bg-indigo-100 rounded-full p-0.5 transition-colors"

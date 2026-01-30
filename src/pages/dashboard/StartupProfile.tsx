@@ -73,8 +73,8 @@ export function StartupProfile() {
     }
 
     return (
-        <div className="pb-24 max-w-4xl mx-auto px-4 pt-4 sm:pt-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+        <div className="pb-24 w-full bg-white md:max-w-4xl md:mx-auto pt-4 md:pt-8 min-h-screen">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 px-4 sm:px-0">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
                     <p className="text-gray-400 text-sm font-medium">Manage your startup identity</p>
@@ -108,6 +108,7 @@ export function StartupProfile() {
             </div>
 
             <ProfileView
+                id={startup.id}
                 startup={startup}
                 onRequestReview={requestReview}
                 onSave={updateProfile}

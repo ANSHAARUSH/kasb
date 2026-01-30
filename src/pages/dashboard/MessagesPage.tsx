@@ -9,6 +9,8 @@ import { Link } from "react-router-dom"
 import { useToast } from "../../hooks/useToast"
 import { chatWithAIStream, refineMessage } from "../../lib/ai"
 import { Wand2 } from "lucide-react"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { useNavigate } from "react-router-dom"
 
 interface Message {
     id: string
@@ -31,6 +33,7 @@ interface Conversation {
 }
 
 export function MessagesPage() {
+    const navigate = useNavigate()
     const { user } = useAuth()
     const { toast } = useToast()
     const [selectedChat, setSelectedChat] = useState<string | null>(null)
@@ -129,6 +132,10 @@ export function MessagesPage() {
 
         if (realUserIds.length === 0) {
             // Only AI bot, no need to query database
+            if (!subscriptionManager.canUseAIChat()) {
+                setConversations([])
+                return
+            }
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
@@ -164,6 +171,7 @@ export function MessagesPage() {
         ]
 
         const formatted: Conversation[] = otherIds
+            .filter(id => id !== 'kasb-ai-bot') // Filter out AI bot for profile matching
             .filter(id => acceptedIds.has(id)) // ONLY show accepted connections
             .map(id => {
                 const lastMsg = conversationMap.get(id)!
@@ -178,17 +186,21 @@ export function MessagesPage() {
                 }
             })
 
-        // Always prepend Kasb AI Bot
-        const aiBot: Conversation = {
-            userId: 'kasb-ai-bot',
-            name: 'Kasb AI',
-            avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
-            lastMessage: 'AI Assistant',
-            time: '',
-            unread: 0
+        const finalConversations = [...formatted]
+
+        if (subscriptionManager.canUseAIChat()) {
+            const aiBot: Conversation = {
+                userId: 'kasb-ai-bot',
+                name: 'Kasb AI',
+                avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
+                lastMessage: 'AI Assistant',
+                time: '',
+                unread: 0
+            }
+            finalConversations.unshift(aiBot)
         }
 
-        setConversations([aiBot, ...formatted])
+        setConversations(finalConversations)
     }, [user, setConversations]) // Added user and setConversations to dependencies
 
     // Fetch messages on mount
@@ -407,14 +419,37 @@ export function MessagesPage() {
             content: newMessage,
         }
 
-        const { error } = await supabase.from('messages').insert([msg])
-        if (error) {
-            console.error('Error sending message:', error)
+        try {
+            const { data, error } = await supabase
+                .from('messages')
+                .insert([msg])
+                .select()
+                .single()
+
+            if (error) {
+                console.error('Error sending message:', error)
+                toast("Failed to send message", "error")
+                // Remove temp msg on failure
+                setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
+            } else if (data) {
+                // Replace temp msg with real one from DB (with UUID)
+                setMessages(prev => prev.map(m => m.id === tempMsg.id ? data : m))
+            }
+        } catch (err) {
+            console.error(err)
+            toast("Failed to send message", "error")
+            setMessages(prev => prev.filter(m => m.id !== tempMsg.id))
         }
     }
 
     const handleRefineMessage = async () => {
         if (!newMessage.trim()) return
+
+        if (!subscriptionManager.canRefineMessages()) {
+            toast("Upgrade your plan to use AI message refinement!", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
 
         const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
         if (!apiKey) {

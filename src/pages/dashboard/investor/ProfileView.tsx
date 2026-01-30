@@ -1,26 +1,77 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
-import { Award, Zap, Target, Briefcase, TrendingUp, MessageSquare, Globe, Linkedin, ShieldCheck, Clock, CheckCircle2 } from "lucide-react"
+import { Award, Zap, Target, Briefcase, TrendingUp, MessageSquare, Globe, Linkedin, ShieldCheck, Clock, CheckCircle2, ExternalLink } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { Avatar } from "../../../components/ui/Avatar"
+import { cn } from "../../../lib/utils"
 import { calculateImpactScore } from "../../../lib/scoring"
 import { type Investor } from "../../../data/mockData"
+import { getInvestorMissingFields, isInvestorProfileComplete } from "../../../lib/questionnaire"
+import { Lock } from "lucide-react"
 
 interface ProfileViewProps {
     investor: InvestorProfileData
     onRequestReview?: () => Promise<boolean>
     readOnly?: boolean
+    id?: string
 }
 
-export function ProfileView({ investor, onRequestReview, readOnly = false }: ProfileViewProps) {
+export function ProfileView({ investor, onRequestReview, readOnly = false, id }: ProfileViewProps) {
     const details = investor.profile_details || {};
+    const isComplete = isInvestorProfileComplete(investor)
+    const missingFields = getInvestorMissingFields(investor)
 
     return (
         <div className="space-y-6">
+            {/* Profile Completion Warning */}
+            {!readOnly && (
+                <div className={cn(
+                    "rounded-none sm:rounded-3xl p-3 sm:p-6 border-y sm:border border-gray-100 sm:border transition-all duration-300",
+                    isComplete
+                        ? "bg-green-50 border-green-100"
+                        : "bg-amber-50 border-amber-200 shadow-sm"
+                )}>
+                    <div className="flex items-start gap-4">
+                        <div className={cn(
+                            "h-10 w-10 rounded-2xl flex items-center justify-center shrink-0",
+                            isComplete ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
+                        )}>
+                            {isComplete ? <CheckCircle2 className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                        </div>
+                        <div className="flex-1">
+                            <h3 className={cn(
+                                "text-xs font-black uppercase tracking-widest leading-none mb-1",
+                                isComplete ? "text-green-900" : "text-amber-900"
+                            )}>
+                                {isComplete ? "Profile 100% Complete" : "Profile Visibility Restricted"}
+                            </h3>
+                            <p className={cn(
+                                "text-sm font-medium leading-relaxed",
+                                isComplete ? "text-green-700" : "text-amber-800"
+                            )}>
+                                {isComplete
+                                    ? "Your profile is now visible in the community discover feed. Keep it updated to stay discoverable!"
+                                    : "Complete the following details to show up in the community discover feed and connect with more startups:"}
+                            </p>
+
+                            {!isComplete && (
+                                <div className="flex flex-wrap gap-2 mt-4">
+                                    {missingFields.map(field => (
+                                        <span key={field} className="px-3 py-1 bg-white border border-amber-200 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-tight">
+                                            • {field}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header / Basic Info */}
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
+                <CardHeader className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6 px-4 py-4 sm:p-6">
                     <div className="h-24 w-24 shrink-0 flex items-center justify-center rounded-full bg-gray-50 overflow-hidden ring-1 ring-gray-100 shadow-sm mx-auto sm:mx-0">
                         <Avatar
                             src={investor.avatar}
@@ -37,8 +88,8 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                         </div>
                         <p className="text-lg text-gray-500 font-medium break-words">{investor.title || 'Investor'}</p>
                         <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-sm text-gray-500 mt-2">
-                            {investor.location && (
-                                <span className="flex items-center gap-1">📍 {investor.location}</span>
+                            {(investor.state || investor.city) && (
+                                <span className="flex items-center gap-1">📍 {[investor.city, investor.state].filter(Boolean).join(', ')}</span>
                             )}
                             {details.social_proof?.investor_type && (
                                 <span className="px-2 py-0.5 bg-gray-100 rounded text-xs font-semibold uppercase">{details.social_proof.investor_type}</span>
@@ -48,7 +99,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
 
                     {/* Impact Points Counter (Visible only in non-readOnly mode) */}
                     {!readOnly && (
-                        <div className="shrink-0 flex items-center gap-4 px-6 py-4 bg-orange-50/50 rounded-3xl border border-orange-100 mt-4 sm:mt-0">
+                        <div className="shrink-0 flex items-center gap-4 px-4 py-4 bg-orange-50/50 rounded-[2rem] sm:rounded-3xl border border-orange-100 mt-4 sm:mt-0">
                             <div className="h-10 w-10 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
                                 <TrendingUp className="h-5 w-5" />
                             </div>
@@ -78,7 +129,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                 {/* Left Column - Key Stats & decision */}
                 <div className="space-y-6 lg:col-span-2">
                     {/* Investment Preferences */}
-                    <Card>
+                    <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Target className="h-5 w-5 text-blue-600" />
@@ -116,7 +167,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                     </Card>
 
                     {/* Decision Style */}
-                    <Card>
+                    <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Zap className="h-5 w-5 text-amber-500" />
@@ -148,7 +199,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                     </Card>
 
                     {/* Portfolio Intelligence */}
-                    <Card>
+                    <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2">
                                 <Briefcase className="h-5 w-5 text-purple-600" />
@@ -192,11 +243,24 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                 {/* Right Column - Value Add & Verification */}
                 <div className="space-y-6">
                     {/* Value Add */}
-                    <Card className="bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none shadow-xl">
+                    <Card className="bg-gradient-to-br from-gray-900 to-gray-800 text-white border-none shadow-xl rounded-none sm:rounded-xl">
                         <CardHeader>
-                            <CardTitle className="text-lg flex items-center gap-2 text-white">
-                                <Award className="h-5 w-5 text-yellow-400" />
-                                Value Beyond Money
+                            <CardTitle className="text-lg flex items-center justify-between text-white w-full">
+                                <div className="flex items-center gap-2">
+                                    <Award className="h-5 w-5 text-yellow-400" />
+                                    Value Beyond Money
+                                </div>
+                                {!readOnly && id && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => window.open(`/#/dashboard/investor/${id}`, '_blank')}
+                                        className="h-8 text-[9px] font-bold uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/10 px-3 gap-1.5 rounded-full border border-white/10"
+                                    >
+                                        <ExternalLink className="h-3.5 w-3.5" />
+                                        Visit Profile
+                                    </Button>
+                                )}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -241,7 +305,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                     </Card>
 
                     {/* Communication */}
-                    <Card>
+                    <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
                         <CardHeader>
                             <CardTitle className="text-base flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
@@ -265,7 +329,7 @@ export function ProfileView({ investor, onRequestReview, readOnly = false }: Pro
                     </Card>
 
                     {/* Verification & Social */}
-                    <Card>
+                    <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x">
                         <CardHeader>
                             <CardTitle className="text-base flex items-center gap-2">
                                 <ShieldCheck className="h-4 w-4" />

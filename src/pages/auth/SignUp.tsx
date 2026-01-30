@@ -58,10 +58,21 @@ export function SignUp() {
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
 
+    // Shared Location States (for both roles)
+    const [state, setState] = useState('')
+    const [city, setCity] = useState('')
+
     // Startup Specific
     const [companyName, setCompanyName] = useState('')
     const [problemSolving, setProblemSolving] = useState('')
+    const [stage, setStage] = useState('')
+    const [teamSize, setTeamSize] = useState('')
     const [isRefining, setIsRefining] = useState(false)
+
+    // Investor Specific
+    const [investorType, setInvestorType] = useState('')
+    const [investmentRange, setInvestmentRange] = useState('')
+    const [investorBio, setInvestorBio] = useState('')
 
     const handleRefineProblem = async () => {
         if (!problemSolving.trim()) return
@@ -97,26 +108,22 @@ export function SignUp() {
             // Prepare metadata
             const metadata: Record<string, any> = {
                 role: role,
+                state: state,
+                city: city,
             }
 
             if (role === 'startup') {
-                const stageVal = (document.getElementById('stage') as HTMLSelectElement)?.value
-                const teamSizeVal = (document.getElementById('teamSize') as HTMLInputElement)?.value
                 metadata.company_name = companyName
                 metadata.founder_name = name
                 metadata.industry = selectedIndustry === 'Others' ? customIndustry : selectedIndustry
-                metadata.stage = stageVal
-                metadata.traction = teamSizeVal ? `${teamSizeVal} employees` : ''
+                metadata.stage = stage
+                metadata.traction = teamSize ? `${teamSize} employees` : ''
                 metadata.problem_solving = problemSolving
             } else {
-                const investorTypeVal = (document.getElementById('investorType') as HTMLSelectElement)?.value
-                const investmentRangeVal = (document.getElementById('investmentRange') as HTMLInputElement)?.value
-                const investorBioVal = (document.getElementById('investorBio') as HTMLTextAreaElement)?.value
-
                 metadata.name = name // align with trigger expectation
-                metadata.investor_type = investorTypeVal
-                metadata.funds_available = investmentRangeVal
-                metadata.bio = investorBioVal
+                metadata.investor_type = investorType
+                metadata.funds_available = investmentRange
+                metadata.bio = investorBio
                 // Expertise (array) - passed as metadata, handled if trigger supports it or user edits later
                 metadata.expertise = selectedExpertise.includes('Others')
                     ? [...selectedExpertise.filter(e => e !== 'Others'), customExpertise]
@@ -329,6 +336,14 @@ export function SignUp() {
                                             setProblemSolving={setProblemSolving}
                                             isRefining={isRefining}
                                             onRefine={handleRefineProblem}
+                                            state={state}
+                                            setState={setState}
+                                            city={city}
+                                            setCity={setCity}
+                                            stage={stage}
+                                            setStage={setStage}
+                                            teamSize={teamSize}
+                                            setTeamSize={setTeamSize}
                                         />
                                     ) : (
                                         <InvestorFields
@@ -337,6 +352,16 @@ export function SignUp() {
                                             setSelectedExpertise={setSelectedExpertise}
                                             customExpertise={customExpertise}
                                             setCustomExpertise={setCustomExpertise}
+                                            state={state}
+                                            setState={setState}
+                                            city={city}
+                                            setCity={setCity}
+                                            investorType={investorType}
+                                            setInvestorType={setInvestorType}
+                                            investmentRange={investmentRange}
+                                            setInvestmentRange={setInvestmentRange}
+                                            investorBio={investorBio}
+                                            setInvestorBio={setInvestorBio}
                                         />
                                     )}
                                 </div>

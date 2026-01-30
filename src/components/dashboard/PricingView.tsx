@@ -6,6 +6,7 @@ import { Button } from "../ui/button"
 import { subscriptionManager, STARTUP_TIERS, INVESTOR_TIERS, type UserRegion, type SubscriptionTier } from "../../lib/subscriptionManager"
 import { PaymentModal } from "./PaymentModal"
 import { useAuth } from "../../context/AuthContext"
+import { cn } from "../../lib/utils"
 
 interface PricingViewProps {
     defaultView?: 'investor' | 'startup'
@@ -19,7 +20,7 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
     const [view, setView] = useState<'investor' | 'startup'>(defaultView)
     const [region] = useState<UserRegion>(subscriptionManager.getRegion())
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
-    const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number, points?: number } | null>(null)
+    const [selectedTier, setSelectedTier] = useState<{ id: SubscriptionTier, name: string, price: number, points?: number, freePoints?: number } | null>(null)
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
     useEffect(() => {
@@ -46,7 +47,8 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
             id: tier.id,
             name: tier.name,
             price: tier.price,
-            points: tier.points
+            points: tier.points,
+            freePoints: tier.freePoints
         })
         setIsPaymentModalOpen(true)
     }
@@ -145,6 +147,12 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
 
                         const isCurrentTier = !!user && subscriptionManager.getTier() === tier.id;
 
+                        // Add free points to features display if present
+                        const features = [...tier.features];
+                        if (tier.freePoints) {
+                            features.unshift(`${tier.freePoints} Free Impact Points Reward`);
+                        }
+
                         return (
                             <motion.div
                                 key={tier.id}
@@ -173,12 +181,14 @@ export function PricingView({ defaultView = 'investor', lockView = false }: Pric
                                 </div>
 
                                 <ul className="flex-1 space-y-4 mb-8">
-                                    {tier.features.map((feature, fIdx) => (
+                                    {features.map((feature, fIdx) => (
                                         <li key={fIdx} className="flex items-start gap-3 text-sm text-gray-600">
                                             <div className="mt-0.5 rounded-full bg-gray-50 p-0.5">
-                                                <Check className="h-3 w-3 text-black" />
+                                                <Check className={cn("h-3 w-3 text-black", feature.includes('Free Impact Points') && "text-indigo-600")} />
                                             </div>
-                                            {feature}
+                                            <span className={cn(feature.includes('Free Impact Points') && "font-bold text-indigo-600")}>
+                                                {feature}
+                                            </span>
                                         </li>
                                     ))}
                                 </ul>

@@ -1,7 +1,10 @@
 import { Button } from "../ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Check } from "lucide-react"
+import { X, Check, Lock } from "lucide-react"
 import { STATES, CITIES } from "../../lib/locationData"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { cn } from "../../lib/utils"
+import { useToast } from "../../hooks/useToast"
 
 export interface FilterState {
     stages: string[]
@@ -34,6 +37,7 @@ const REVENUE_RANGES = [
 ]
 
 export function FilterPanel({ isOpen, filters, onFilterChange, onClose }: FilterPanelProps) {
+    const { toast } = useToast()
     const toggleStage = (stage: string) => {
         const newStages = filters.stages.includes(stage)
             ? filters.stages.filter(s => s !== stage)
@@ -109,36 +113,76 @@ export function FilterPanel({ isOpen, filters, onFilterChange, onClose }: Filter
 
                             {/* State Filter */}
                             <div className="space-y-3">
-                                <h3 className="font-semibold text-gray-900">State</h3>
-                                <select
-                                    className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-black outline-none"
-                                    value={filters.states[0] || ""}
-                                    onChange={(e) => onFilterChange({ ...filters, states: e.target.value ? [e.target.value] : [] })}
-                                >
-                                    <option value="">All States</option>
-                                    {STATES.map(state => (
-                                        <option key={state} value={state}>
-                                            {state}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-gray-900">State</h3>
+                                    {!subscriptionManager.hasGeoFilters() && (
+                                        <Lock className="h-3 w-3 text-amber-500" />
+                                    )}
+                                </div>
+                                <div className="relative group">
+                                    <select
+                                        className={cn(
+                                            "w-full p-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-black outline-none transition-all",
+                                            !subscriptionManager.hasGeoFilters() && "opacity-60 cursor-not-allowed grayscale"
+                                        )}
+                                        value={filters.states[0] || ""}
+                                        onChange={(e) => {
+                                            if (!subscriptionManager.hasGeoFilters()) {
+                                                toast("Location filters require a paid plan", "error")
+                                                return
+                                            }
+                                            onFilterChange({ ...filters, states: e.target.value ? [e.target.value] : [] })
+                                        }}
+                                        disabled={!subscriptionManager.hasGeoFilters()}
+                                    >
+                                        <option value="">All States</option>
+                                        {STATES.map(state => (
+                                            <option key={state} value={state}>
+                                                {state}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {!subscriptionManager.hasGeoFilters() && (
+                                        <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={() => toast("Upgrade plan to unlock Location filters", "error")} />
+                                    )}
+                                </div>
                             </div>
 
                             {/* City Filter */}
                             <div className="space-y-3">
-                                <h3 className="font-semibold text-gray-900">City</h3>
-                                <select
-                                    className="w-full p-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-black outline-none"
-                                    value={filters.cities[0] || ""}
-                                    onChange={(e) => onFilterChange({ ...filters, cities: e.target.value ? [e.target.value] : [] })}
-                                >
-                                    <option value="">All Cities</option>
-                                    {CITIES.map(city => (
-                                        <option key={city} value={city}>
-                                            {city}
-                                        </option>
-                                    ))}
-                                </select>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-gray-900">City</h3>
+                                    {!subscriptionManager.hasGeoFilters() && (
+                                        <Lock className="h-3 w-3 text-amber-500" />
+                                    )}
+                                </div>
+                                <div className="relative group">
+                                    <select
+                                        className={cn(
+                                            "w-full p-2 rounded-lg border border-gray-200 bg-white text-sm focus:ring-2 focus:ring-black outline-none transition-all",
+                                            !subscriptionManager.hasGeoFilters() && "opacity-60 cursor-not-allowed grayscale"
+                                        )}
+                                        value={filters.cities[0] || ""}
+                                        onChange={(e) => {
+                                            if (!subscriptionManager.hasGeoFilters()) {
+                                                toast("Location filters require a paid plan", "error")
+                                                return
+                                            }
+                                            onFilterChange({ ...filters, cities: e.target.value ? [e.target.value] : [] })
+                                        }}
+                                        disabled={!subscriptionManager.hasGeoFilters()}
+                                    >
+                                        <option value="">All Cities</option>
+                                        {CITIES.map(city => (
+                                            <option key={city} value={city}>
+                                                {city}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {!subscriptionManager.hasGeoFilters() && (
+                                        <div className="absolute inset-0 z-10 cursor-not-allowed" onClick={() => toast("Upgrade plan to unlock Location filters", "error")} />
+                                    )}
+                                </div>
                             </div>
 
                             {/* Revenue & Actions */}

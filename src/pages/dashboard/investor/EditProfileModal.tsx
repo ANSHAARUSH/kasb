@@ -4,7 +4,7 @@ import { ImageUploadInput } from "../../../components/ui/ImageUploadInput"
 import { Modal } from "../../../components/ui/modal"
 import { useState, useEffect } from "react"
 import type { InvestorProfileData, InvestorProfileDetails } from "../../../hooks/useInvestorProfile"
-import { COUNTRIES } from "../../../lib/locationData"
+import { COUNTRIES, CITIES } from "../../../lib/locationData"
 import { EXPERTISE_AREAS } from "../../../lib/constants"
 
 interface EditProfileModalProps {
@@ -121,34 +121,33 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
                                 <div className="grid grid-cols-2 gap-2">
                                     <select
                                         className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
-                                        value={editForm.location?.split(', ')[1] || ''}
-                                        onChange={e => {
-                                            const country = e.target.value
-                                            const currentState = editForm.location?.split(', ')[0] || ''
-                                            setEditForm(prev => ({ ...prev, location: `${currentState}, ${country}` }))
-                                        }}
+                                        value={editForm.city || ''}
+                                        onChange={e => setEditForm(prev => ({ ...prev, city: e.target.value }))}
                                     >
-                                        <option value="">Select Country...</option>
-                                        {COUNTRIES.map(c => (
-                                            <option key={c.name} value={c.name}>{c.name}</option>
+                                        <option value="">Select City / District...</option>
+                                        {CITIES.map(city => (
+                                            <option key={city} value={city}>{city}</option>
                                         ))}
+                                        {!CITIES.includes(editForm.city || '') && editForm.city && (
+                                            <option value={editForm.city}>{editForm.city}</option>
+                                        )}
                                     </select>
                                     <select
                                         className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
-                                        value={editForm.location?.split(', ')[0] || ''}
-                                        onChange={e => {
-                                            const state = e.target.value
-                                            const currentCountry = editForm.location?.split(', ')[1] || ''
-                                            setEditForm(prev => ({ ...prev, location: `${state}, ${currentCountry}` }))
-                                        }}
-                                        disabled={!editForm.location?.split(', ')[1]}
+                                        value={editForm.state || ''}
+                                        onChange={e => setEditForm(prev => ({ ...prev, state: e.target.value, city: '' }))}
                                     >
                                         <option value="">Select State...</option>
-                                        {COUNTRIES.find(c => c.name === editForm.location?.split(', ')[1])?.states.map(s => (
+                                        {COUNTRIES.find(c => c.name === 'India')?.states.map(s => (
                                             <option key={s} value={s}>{s}</option>
                                         ))}
                                     </select>
                                 </div>
+                                {(!COUNTRIES.find(c => c.name === 'India')?.states.find(s => s === editForm.state)) && (
+                                    <div className="mt-2 text-[10px] text-gray-400">
+                                        Note: We currently focus on Indian ecosystems. {editForm.state && "Selected state not found."}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="space-y-2">
