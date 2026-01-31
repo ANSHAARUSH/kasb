@@ -127,3 +127,52 @@ export function getStartupMissingFields(stage: string | undefined, questionnaire
     }
     return missing
 }
+
+export function calculateStartupProgress(stage: string | undefined, questionnaire: Record<string, Record<string, string>> | undefined): number {
+    const config = QUESTIONNAIRE_CONFIG[stage || 'Ideation'] || DEFAULT_STAGE_CONFIG
+    let totalRequired = 0
+    let answeredRequired = 0
+
+    for (const section of config) {
+        for (const question of section.questions) {
+            if (question.required) {
+                totalRequired++
+                const answer = questionnaire?.[section.id]?.[question.id]
+                if (answer && answer.trim() !== '') {
+                    answeredRequired++
+                }
+            }
+        }
+    }
+    return totalRequired === 0 ? 0 : Math.round((answeredRequired / totalRequired) * 100)
+}
+
+export function calculateInvestorProgress(investor: any): number {
+    if (!investor) return 0
+
+    const requiredFields = ['name', 'bio', 'state', 'city']
+    let totalRequired = requiredFields.length + 3 // + funds, type, expertise
+    let answered = 0
+
+    requiredFields.forEach(field => {
+        if (investor[field] && (typeof investor[field] === 'string' && investor[field].trim() !== '')) {
+            answered++
+        }
+    })
+
+    const funds = investor.funds_available || investor.fundsAvailable
+    if (funds && (typeof funds === 'string' && funds.trim() !== '')) {
+        answered++
+    }
+
+    const type = investor.investor_type || investor.profile_details?.social_proof?.investor_type
+    if (type && (typeof type === 'string' && type.trim() !== '')) {
+        answered++
+    }
+
+    if (investor.expertise && Array.isArray(investor.expertise) && investor.expertise.length > 0) {
+        answered++
+    }
+
+    return Math.round((answered / totalRequired) * 100)
+}

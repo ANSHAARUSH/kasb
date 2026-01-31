@@ -176,7 +176,7 @@ export function AnalyticsPage() {
     }
 
     return (
-        <div className="space-y-8 pb-10">
+        <div className="space-y-8 pb-10 px-6 pt-6 md:px-0 md:pt-0">
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Startup Analytics</h2>
                 <p className="text-gray-500 mt-1">Track your performance and investor interest in real-time.</p>

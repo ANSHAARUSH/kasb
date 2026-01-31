@@ -72,13 +72,11 @@ export function SideNav() {
             <div className="p-4 border-t border-gray-50 flex flex-col gap-1">
                 {subscriptionManager.hasPaidPlan() && (
                     <a
-                        href="https://mail.google.com/mail/?view=cm&fs=1&to=kasbai2025@gmail.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href="mailto:kasbai2025@gmail.com"
                         className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black group"
                     >
                         <Mail className="h-5 w-5 text-gray-400 group-hover:text-black" />
-                        <span className="text-sm font-semibold">Contact Support</span>
+                        <span className="text-sm font-semibold">kasbai2025@gmail.com</span>
                     </a>
                 )}
 

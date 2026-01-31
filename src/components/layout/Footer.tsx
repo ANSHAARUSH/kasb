@@ -35,12 +35,10 @@ export function Footer() {
                         <ul className="space-y-2 text-sm text-gray-500">
                             <li>
                                 <a
-                                    href="https://mail.google.com/mail/?view=cm&fs=1&to=kasbai2025@gmail.com"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    href="mailto:kasbai2025@gmail.com"
                                     className="hover:text-black flex items-center gap-2"
                                 >
-                                    Contact Support
+                                    kasbai2025@gmail.com
                                 </a>
                             </li>
                         </ul>

@@ -99,7 +99,7 @@ export function StartupCheatSheetPage() {
     const [selectedTopic, setSelectedTopic] = useState<typeof FOUNDER_TOPICS[number] | null>(null)
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 px-6 pt-6 md:px-0 md:pt-0">
             <div className="flex flex-col gap-2">
                 <h1 className="text-4xl font-black tracking-tighter text-black">Founder's Cheat Sheet</h1>
                 <p className="text-gray-500 font-medium text-lg">Essential guides to help you navigate the journey from seed to series A.</p>

@@ -148,7 +148,7 @@ export function CheatSheetPage() {
     }
 
     return (
-        <div className="space-y-6 pb-20">
+        <div className="space-y-6 pb-20 px-6 pt-6 md:px-0 md:pt-0">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="flex flex-col gap-2">
                     <h1 className="text-4xl font-black tracking-tighter">Industry Cheat Sheet</h1>
@@ -279,7 +279,7 @@ export function CheatSheetPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
                                     <Globe className="h-6 w-6 text-black mb-3" />
                                     <h5 className="font-bold text-gray-900 mb-1">Global Leader</h5>

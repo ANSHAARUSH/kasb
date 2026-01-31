@@ -2,10 +2,9 @@ import { BottomNav } from "../components/layout/BottomNav"
 import { SideNav } from "../components/layout/SideNav"
 import { NotificationBell } from "../components/layout/NotificationBell"
 import { UsageIcon } from "../components/layout/UsageIcon"
-import { Mail } from "lucide-react"
+import { ProfileCompletionIndicator } from "../components/layout/ProfileCompletionIndicator"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { subscriptionManager } from "../lib/subscriptionManager"
 // import { KYCVerification } from "../components/dashboard/KYCVerification"
 import { useEffect } from "react"
 
@@ -83,17 +82,7 @@ export function DashboardLayout() {
                     </div>
                     <div className="flex-1 hidden md:block" /> {/* Spacer */}
                     <div className="flex-none flex items-center gap-2">
-                        {subscriptionManager.hasPaidPlan() && (
-                            <a
-                                href="https://mail.google.com/mail/?view=cm&fs=1&to=kasbai2025@gmail.com"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 text-white/60 hover:text-white transition-colors"
-                                title="Contact Support"
-                            >
-                                <Mail className="w-5 h-5" />
-                            </a>
-                        )}
+                        <ProfileCompletionIndicator />
                         <UsageIcon isMobile className="md:hidden" />
                         <NotificationBell />
                     </div>

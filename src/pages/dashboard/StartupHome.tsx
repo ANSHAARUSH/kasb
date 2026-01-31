@@ -201,7 +201,7 @@ export function StartupHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-20 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Incomplete Warning */}
                         {profileStartup && !isProfileComplete(profileStartup.stage, profileStartup.questionnaire) && (
