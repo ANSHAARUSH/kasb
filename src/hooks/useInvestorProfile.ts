@@ -24,6 +24,7 @@ export interface InvestorProfileData {
     purchasedPoints?: number
     last_active_at?: string
     profile_details?: InvestorProfileDetails
+    tier?: string
 }
 
 export interface InvestorProfileDetails {
@@ -90,11 +91,13 @@ export function useInvestorProfile() {
             const [
                 investorRes,
                 boostRes,
-                purchaseRes
+                purchaseRes,
+                subRes
             ] = await Promise.all([
                 supabase.from('investors').select('*').eq('id', user.id).single(),
                 supabase.from('investor_boosts').select('points_awarded').eq('investor_id', user.id),
-                supabase.from('point_purchases').select('points').eq('investor_id', user.id)
+                supabase.from('point_purchases').select('points').eq('investor_id', user.id),
+                supabase.from('user_subscriptions').select('tier').eq('user_id', user.id).single()
             ])
 
             if (investorRes.error) console.error('Profile Investor fetch error:', investorRes.error)
@@ -109,7 +112,8 @@ export function useInvestorProfile() {
                 setInvestor({
                     ...investorRes.data,
                     spentPoints: spent,
-                    purchasedPoints: purchased
+                    purchasedPoints: purchased,
+                    tier: subRes.data?.tier || investorRes.data.subscription_tier || 'explore'
                 })
             }
         } catch (error) {
@@ -141,6 +145,7 @@ export function useInvestorProfile() {
                 location, // Remove location as it doesn't exist in DB
                 title, // Strip title as it's not a column
                 investor_type, // Strip investor_type as it's not a column
+                tier,
                 ...updateData
             } = formData as any
 

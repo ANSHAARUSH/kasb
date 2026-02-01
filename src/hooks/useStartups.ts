@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "../lib/supabase"
 import { type Startup } from "../data/mockData"
-import { isProfileComplete } from "../lib/questionnaire"
+import { calculateStartupProgress } from "../lib/questionnaire"
 import { calculateImpactScore } from "../lib/scoring"
 
 export function useStartups() {
@@ -13,78 +13,113 @@ export function useStartups() {
         const fetchStartups = async () => {
             setLoading(true)
             try {
-                const { data, error } = await supabase
+                const { data: startupData, error: startupError } = await supabase
                     .from('startups')
                     .select('*')
-                    .eq('show_in_feed', true)
 
-                if (data && data.length > 0) {
-                    // Fetch all boosts
-                    const { data: boostData } = await supabase
-                        .from('investor_boosts')
-                        .select('startup_id, points_awarded')
+                if (startupError) throw startupError;
 
+                if (startupError) throw startupError
+
+                if (startupData && startupData.length > 0) {
+                    const userIds = startupData.map(s => s.id)
                     const boostMap: Record<string, number> = {}
-                    boostData?.forEach(b => {
-                        boostMap[b.startup_id] = (boostMap[b.startup_id] || 0) + (b.points_awarded || 0)
-                    })
+                    const subMap: Record<string, string> = {}
 
-                    const mappedStartups: Startup[] = data.map(s => ({
-                        id: s.id,
-                        name: s.name,
-                        logo: s.logo || '🚀',
-                        problemSolving: s.problem_solving || 'No problem statement provided',
-                        description: s.description,
-                        history: s.history || '',
-                        metrics: {
-                            valuation: s.valuation || '',
-                            stage: s.stage || '',
-                            traction: s.traction || ''
-                        },
-                        founder: {
-                            name: s.founder_name || 'Founder',
-                            avatar: s.founder_avatar || '',
-                            bio: s.founder_bio || '',
-                            education: s.founder_education || '',
-                            workHistory: s.founder_work_history || ''
-                        },
-                        tags: s.tags || [],
-                        emailVerified: s.email_verified,
-                        showInFeed: s.show_in_feed,
-                        verificationLevel: s.verification_level,
-                        industry: s.industry,
-                        aiSummary: s.ai_summary,
-                        summaryStatus: s.summary_status,
-                        questionnaire: s.questionnaire,
-                        communityBoosts: boostMap[s.id] || 0,
-                        last_active_at: s.last_active_at,
-                        country: s.country,
-                        state: s.state,
-                        city: s.city
-                    }))
+                    // Fetch supplementary data in parallel with error handling
+                    try {
+                        const [boostRes, subRes] = await Promise.all([
+                            supabase
+                                .from('investor_boosts')
+                                .select('startup_id, points_awarded')
+                                .in('startup_id', userIds),
+                            supabase
+                                .from('user_subscriptions')
+                                .select('user_id, tier')
+                                .in('user_id', userIds)
+                        ])
 
-                    // Calculate scores and filter
-                    const visibleStartups = mappedStartups.map(s => {
-                        const scoreResult = calculateImpactScore(s);
-                        return {
-                            ...s,
-                            impactPoints: scoreResult.total
-                        };
-                    }).filter(s => {
-                        return isProfileComplete(s.metrics.stage, s.questionnaire)
+                        boostRes.data?.forEach((b: any) => {
+                            boostMap[b.startup_id] = (boostMap[b.startup_id] || 0) + (b.points_awarded || 0)
+                        })
+
+                        subRes.data?.forEach((s: any) => {
+                            subMap[s.user_id] = s.tier
+                        })
+                    } catch (secErr) {
+                        console.error("Secondary fetches failed (likely RLS):", secErr)
+                    }
+
+                    const mappedStartups: Startup[] = (startupData || []).map((s: any) => {
+                        if (!s) return null;
+                        try {
+                            return {
+                                id: s.id,
+                                name: s.name || 'Unnamed Startup',
+                                logo: s.logo || '',
+                                problemSolving: s.problem_solving || 'No problem statement provided',
+                                description: s.description || '',
+                                history: s.history || '',
+                                metrics: {
+                                    valuation: s.valuation || '',
+                                    stage: s.stage || 'Ideation',
+                                    traction: s.traction || ''
+                                },
+                                founder: {
+                                    name: s.founder_name || 'Founder',
+                                    avatar: s.founder_avatar || '',
+                                    bio: s.founder_bio || '',
+                                    education: s.founder_education || '',
+                                    workHistory: s.founder_work_history || ''
+                                },
+                                tags: Array.isArray(s.tags) ? s.tags : [],
+                                emailVerified: !!s.email_verified,
+                                showInFeed: !!s.show_in_feed,
+                                verificationLevel: s.verification_level || 'basic',
+                                industry: s.industry || 'Unknown',
+                                aiSummary: s.ai_summary || '',
+                                summaryStatus: s.summary_status || 'draft',
+                                questionnaire: typeof s.questionnaire === 'object' ? s.questionnaire : {},
+                                communityBoosts: boostMap[s.id] || 0,
+                                last_active_at: s.last_active_at,
+                                country: s.country,
+                                state: s.state,
+                                city: s.city,
+                                tier: subMap[s.id] || s.subscription_tier || 'discovery'
+                            }
+                        } catch (e) {
+                            console.error("Mapping error for single startup:", e, s);
+                            return null;
+                        }
+                    }).filter(Boolean) as Startup[]
+
+                    // Calculate scores and completion
+                    const visibleStartups = mappedStartups.filter(s => s.showInFeed).map(s => {
+                        try {
+                            const scoreResult = calculateImpactScore(s);
+                            const completionPercentage = calculateStartupProgress(s.metrics.stage, s.questionnaire);
+                            return {
+                                ...s,
+                                impactPoints: scoreResult?.total || 100,
+                                completionPercentage: completionPercentage || 0
+                            };
+                        } catch (e) {
+                            console.error("Score calculation error:", e, s);
+                            return {
+                                ...s,
+                                impactPoints: 100,
+                                completionPercentage: 0
+                            }
+                        }
                     }).sort((a, b) => (b.impactPoints || 0) - (a.impactPoints || 0))
 
                     setStartups(visibleStartups)
                 } else {
                     setStartups([])
                 }
-
-                if (error) {
-                    console.error("Error fetching startups:", error)
-                    setError(error)
-                }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Critical error fetching startups:", err)
+                setError(err.message || String(err))
             } finally {
                 setLoading(false)
             }

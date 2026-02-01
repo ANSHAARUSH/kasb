@@ -31,6 +31,8 @@ export interface Startup {
     country?: string
     state?: string
     city?: string
+    completionPercentage?: number
+    tier?: string
 }
 
 export const MOCK_STARTUPS: Startup[] = [
@@ -1455,6 +1457,8 @@ export interface Investor {
     state?: string
     city?: string
     investor_type?: string
+    completionPercentage?: number
+    tier?: string
 }
 
 export const MOCK_INVESTORS: Investor[] = [

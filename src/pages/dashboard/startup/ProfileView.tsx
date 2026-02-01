@@ -6,6 +6,7 @@ import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Lo
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, isProfileComplete, getStartupMissingFields } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
+import { PlanBadge } from "../../../components/ui/PlanBadge"
 import { cn, parseRevenue, getViewableUrl } from "../../../lib/utils"
 import { getStartupBoosts, supabase } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
@@ -152,6 +153,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
             )
             const updatedData = {
                 ...localStartup,
+                questionnaire: localAnswers,
                 ai_summary: summary,
                 summary_status: 'draft' as const
             }
@@ -201,6 +203,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
                                     <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-indigo-100">
                                         {startup.stage || 'Ideation'}
                                     </div>
+                                    <PlanBadge tier={startup.tier} />
                                     <VerificationBadge level={startup.verification_level} />
                                 </div>
                             </div>

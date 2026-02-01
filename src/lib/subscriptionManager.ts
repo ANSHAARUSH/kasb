@@ -222,6 +222,29 @@ class SubscriptionManager {
                 console.error('Error saving subscription to Supabase:', error);
                 throw new Error(`Sync failed: ${error.message}`);
             }
+
+            // Also sync to main tables for public visibility in feed (fallback)
+            const syncTiers = async () => {
+                try {
+                    const startupTiers = ['discovery', 'starter', 'growth', 'fundraise_pro']
+                    const investorTiers = ['explore', 'investor_basic', 'investor_pro', 'institutional']
+
+                    const promises = []
+                    if (startupTiers.includes(tier)) {
+                        promises.push(supabase.from('startups').update({ subscription_tier: tier }).eq('id', this.userId))
+                    }
+                    if (investorTiers.includes(tier)) {
+                        promises.push(supabase.from('investors').update({ subscription_tier: tier }).eq('id', this.userId))
+                    }
+
+                    if (promises.length > 0) {
+                        await Promise.all(promises)
+                    }
+                } catch (syncErr) {
+                    console.error('Fallback tier sync failed:', syncErr);
+                }
+            };
+            syncTiers();
         }
     }
 

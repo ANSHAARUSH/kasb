@@ -4,6 +4,7 @@ import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { Award, Zap, Target, Briefcase, TrendingUp, MessageSquare, Globe, Linkedin, ShieldCheck, Clock, CheckCircle2, ExternalLink } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { Avatar } from "../../../components/ui/Avatar"
+import { PlanBadge } from "../../../components/ui/PlanBadge"
 import { cn } from "../../../lib/utils"
 import { calculateImpactScore } from "../../../lib/scoring"
 import { type Investor } from "../../../data/mockData"
@@ -82,7 +83,8 @@ export function ProfileView({ investor, onRequestReview, readOnly = false, id }:
                     <div className="space-y-2 w-full">
                         <div className="flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-2">
                             <CardTitle className="text-3xl font-bold break-words max-w-full">{investor.name}</CardTitle>
-                            <div className="shrink-0">
+                            <div className="flex items-center gap-2 shrink-0">
+                                <PlanBadge tier={investor.tier} />
                                 <VerificationBadge level={investor.verification_level} />
                             </div>
                         </div>

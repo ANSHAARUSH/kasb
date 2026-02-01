@@ -27,6 +27,7 @@ export interface StartupProfileData {
     ai_summary?: string
     summary_status?: 'draft' | 'final'
     last_active_at?: string
+    tier?: string
 }
 
 export function useStartupProfile() {
@@ -43,14 +44,26 @@ export function useStartupProfile() {
                 return
             }
 
-            const { data, error } = await supabase
-                .from('startups')
-                .select('*')
-                .eq('id', user.id)
-                .single()
+            const [profileRes, subRes] = await Promise.all([
+                supabase
+                    .from('startups')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single(),
+                supabase
+                    .from('user_subscriptions')
+                    .select('tier')
+                    .eq('user_id', user.id)
+                    .single()
+            ])
 
-            if (error) throw error
-            if (data) setStartup(data)
+            if (profileRes.error) throw profileRes.error
+            if (profileRes.data) {
+                setStartup({
+                    ...profileRes.data,
+                    tier: subRes.data?.tier || profileRes.data.subscription_tier || 'discovery'
+                })
+            }
         } catch (error) {
             console.error('Error fetching profile:', error)
         } finally {
@@ -72,7 +85,8 @@ export function useStartupProfile() {
                 created_at,
                 updated_at,
                 email_verified,
-                email, // Strip email as it's not in the 'startups' table
+                email,
+                tier,
                 ...updateData
             } = formData as any
 

@@ -17,21 +17,25 @@ export function Avatar({ src, name, className, fallbackClassName }: AvatarProps)
         setError(false)
     }
 
+    const isPlaceholder = (path: string) => {
+        const p = path.toLowerCase()
+        return p.includes('placeholder') ||
+            p.includes('dummy') ||
+            p.includes('random') ||
+            p.includes('i.pravatar.cc') ||
+            p.includes('ui-avatars.com') ||
+            p.includes('dicebear.com') ||
+            p.includes('unsplash.com') ||
+            p.includes('pexels.com') ||
+            p.includes('pixabay.com')
+    }
+
     const isInternalOrExternal = (path: string) => {
-        if (!path) return false
+        if (!path || isPlaceholder(path)) return false
         return path.startsWith('http') || path.startsWith('/') || path.startsWith('.') || path.startsWith('data:') || (!path.includes('://') && path.includes('.'))
     }
 
     const renderFallback = () => {
-        // If src is a 1-2 character string (like an emoji), use it as fallback
-        if (src && src.length <= 2) {
-            return (
-                <div className={cn("flex h-full w-full items-center justify-center font-bold bg-gray-100 text-gray-500", fallbackClassName)}>
-                    {src}
-                </div>
-            )
-        }
-
         return (
             <div className={cn("flex h-full w-full items-center justify-center bg-[#E6E6E6] text-[#FFFFFF]", fallbackClassName)}>
                 <svg viewBox="0 0 24 24" className="w-full h-full p-[15%] drop-shadow-sm" fill="currentColor" xmlns="http://www.w3.org/2000/svg">

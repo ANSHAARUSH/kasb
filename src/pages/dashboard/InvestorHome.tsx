@@ -310,9 +310,9 @@ export function InvestorHome() {
                                         <Lock className="w-5 h-5 text-amber-600" />
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-sm font-bold text-amber-900 mb-1">Your profile is hidden</h3>
+                                        <h3 className="text-sm font-bold text-amber-900 mb-1">Your profile is incomplete</h3>
                                         <p className="text-xs text-amber-700 leading-relaxed mb-3">
-                                            To maintain high-quality matches, profiles are only visible in the community feed once they are 100% complete.
+                                            To maintain high-quality matches, profiles with 100% completion are prioritized. Complete your profile to stand out in the community feed.
                                         </p>
                                         <Link to="/dashboard/investor/settings">
                                             <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl h-8 px-4 text-[10px] font-bold">

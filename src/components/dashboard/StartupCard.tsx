@@ -8,6 +8,7 @@ import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, de
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { Avatar } from "../ui/Avatar"
+import { PlanBadge } from "../ui/PlanBadge"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { useNavigate } from "react-router-dom"
 
@@ -208,6 +209,7 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                             <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase truncate" title={startup.name}>{startup.name}</h3>
+                                    <PlanBadge tier={startup.tier} />
                                     {startup.verificationLevel === 'trusted' && (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 border border-amber-100 uppercase tracking-tighter shadow-sm flex-shrink-0">
                                             <ShieldCheck className="w-2.5 h-2.5" />
@@ -280,6 +282,16 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                         <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-black text-orange-600 border border-orange-100 uppercase tracking-tighter shadow-sm">
                                             <TrendingUp className="w-2.5 h-2.5" />
                                             {startup.impactPoints} pts
+                                        </span>
+                                    )}
+                                    {startup.completionPercentage !== undefined && (
+                                        <span className={cn(
+                                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black border uppercase tracking-tighter shadow-sm",
+                                            startup.completionPercentage === 100
+                                                ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                                : "bg-amber-50 text-amber-600 border-amber-100"
+                                        )}>
+                                            {startup.completionPercentage}% Complete
                                         </span>
                                     )}
                                 </div>

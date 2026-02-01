@@ -8,6 +8,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { Avatar } from "../ui/Avatar"
+import { PlanBadge } from "../ui/PlanBadge"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { useNavigate } from "react-router-dom"
 
@@ -191,6 +192,7 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                                 <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase truncate" title={investor.name}>{investor.name}</h3>
+                                <PlanBadge tier={investor.tier} />
                                 {isRecommended && aiRecommendation && (
                                     <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1 text-[10px] font-black text-white border border-emerald-500 uppercase tracking-tighter shadow-lg shadow-emerald-200 group/tooltip relative flex-shrink-0 animate-pulse">
                                         <Sparkles className="w-2.5 h-2.5" />
@@ -256,6 +258,16 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                 <span className="text-[10px] font-black bg-green-50 text-green-700 px-2 py-1 rounded-lg border border-green-100 uppercase tracking-tighter">
                                     {investor.fundsAvailable}
                                 </span>
+                                {investor.completionPercentage !== undefined && (
+                                    <span className={cn(
+                                        "text-[10px] font-black px-2 py-1 rounded-lg border uppercase tracking-tighter",
+                                        investor.completionPercentage === 100
+                                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                                            : "bg-amber-50 text-amber-600 border-amber-100"
+                                    )}>
+                                        {investor.completionPercentage}% Complete
+                                    </span>
+                                )}
                             </div>
                         </div>
                         <p className="text-xs font-medium text-gray-400 mt-1 line-clamp-1 italic">
