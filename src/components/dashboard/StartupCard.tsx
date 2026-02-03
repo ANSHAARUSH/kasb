@@ -3,7 +3,7 @@ import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { BookmarkPlus, ShieldCheck, MessageSquare, UserPlus, Clock, CheckCircle, X, Sparkles, TrendingUp, Info } from "lucide-react"
 import { cn } from "../../lib/utils"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, disconnectConnection, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
@@ -183,10 +183,26 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
         }
     }
 
+    const lastClickTime = useRef<number>(0)
+
+    const handleInternalClick = (e: React.MouseEvent) => {
+        const now = Date.now()
+        const diff = now - lastClickTime.current
+
+        // Always call onClick for selection
+        onClick?.()
+
+        if (diff < 300 && diff > 0) {
+            onDoubleClick?.()
+            lastClickTime.current = 0 // Reset to avoid triple-click issues
+        } else {
+            lastClickTime.current = now
+        }
+    }
+
     return (
         <Card
-            onClick={onClick}
-            onDoubleClick={onDoubleClick}
+            onClick={handleInternalClick}
             className={cn(
                 "group flex flex-col relative cursor-pointer transition-all duration-300 shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
@@ -207,8 +223,8 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                                 />
                             </div>
                             <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase truncate" title={startup.name}>{startup.name}</h3>
+                                <div className="flex flex-wrap items-start gap-2">
+                                    <h3 className="text-xl font-bold text-soft-black tracking-tight group-hover:text-gray-600 transition-colors uppercase whitespace-normal break-words" title={startup.name}>{startup.name}</h3>
                                     <PlanBadge tier={startup.tier} />
                                     {startup.verificationLevel === 'trusted' && (
                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 border border-amber-100 uppercase tracking-tighter shadow-sm flex-shrink-0">

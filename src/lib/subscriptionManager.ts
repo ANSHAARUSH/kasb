@@ -111,7 +111,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
     {
         id: 'investor_basic',
         name: 'Investor Basic',
-        price: 3999,
+        price: 8999,
         currency: 'INR',
         freePoints: 150,
         features: [
@@ -128,7 +128,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
     {
         id: 'investor_pro',
         name: 'Investor Pro',
-        price: 8999,
+        price: 12999,
         currency: 'INR',
         freePoints: 250,
         features: [
@@ -149,7 +149,7 @@ export const INVESTOR_TIERS: TierConfig[] = [
     {
         id: 'institutional',
         name: 'Institutional / VC+',
-        price: 13999,
+        price: 17999,
         currency: 'INR',
         freePoints: 350,
         features: [

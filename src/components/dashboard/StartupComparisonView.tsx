@@ -3,6 +3,7 @@ import { X, Trophy, AlertTriangle, Target, TrendingUp } from "lucide-react"
 import type { Startup } from "../../data/mockData"
 import type { ComparisonResult } from "../../lib/ai"
 import { Button } from "../ui/button"
+import { Avatar } from "../ui/Avatar"
 
 interface StartupComparisonViewProps {
     startup1: Startup
@@ -50,8 +51,14 @@ export function StartupComparisonView({ startup1, startup2, result, onClose }: S
                         {/* Startup 1 col */}
                         <div className="rounded-2xl border bg-white p-6 shadow-sm">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="text-4xl">{startup1.logo}</div>
-                                <div>
+                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
+                                    <Avatar
+                                        src={startup1.logo}
+                                        name={startup1.name}
+                                        fallbackClassName="text-3xl text-gray-500"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
                                     <h3 className="font-bold text-xl">{startup1.name}</h3>
                                     <p className="text-sm text-gray-500">{startup1.metrics.stage}</p>
                                 </div>
@@ -64,8 +71,14 @@ export function StartupComparisonView({ startup1, startup2, result, onClose }: S
                         {/* Startup 2 col */}
                         <div className="rounded-2xl border bg-white p-6 shadow-sm">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="text-4xl">{startup2.logo}</div>
-                                <div>
+                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
+                                    <Avatar
+                                        src={startup2.logo}
+                                        name={startup2.name}
+                                        fallbackClassName="text-3xl text-gray-500"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
                                     <h3 className="font-bold text-xl">{startup2.name}</h3>
                                     <p className="text-sm text-gray-500">{startup2.metrics.stage}</p>
                                 </div>
