@@ -262,7 +262,7 @@ export function StartupHome() {
                                 <p>Try adjusting your search.</p>
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-6 max-w-2xl mx-auto">
+                            <div className="flex flex-col gap-4 max-w-2xl mx-auto">
                                 {filteredInvestors.map(investor => (
                                     <div
                                         key={investor.id}
@@ -275,10 +275,6 @@ export function StartupHome() {
                                             onMessageClick={handleMessageClick}
                                             onToggleSave={() => handleToggleSave(investor.id, "Investor")}
                                             onClick={() => setSelectedId(investor.id)}
-                                            isRecommended={false}
-                                            aiRecommendation={investor.aiRecommendation}
-                                            isFirstInRow={true}
-                                            isLastInRow={true}
                                             onDoubleClick={() => {
                                                 if (window.innerWidth >= 1024) {
                                                     setDetailInvestor(investor)

@@ -301,7 +301,7 @@ export function InvestorHome() {
 
                 {/* Scrollable Feed List */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-20 custom-scrollbar">
-                    <div className="max-w-2xl mx-auto space-y-6">
+                    <div className="max-w-2xl mx-auto space-y-4">
                         {/* Profile Incomplete Warning */}
                         {investor && !isInvestorProfileComplete(investor) && (
                             <div className="p-6 rounded-3xl bg-amber-50 border-2 border-amber-200 shadow-sm mb-6">
@@ -440,9 +440,6 @@ export function InvestorHome() {
                                                             }}
                                                             onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                                             onMessageClick={handleMessage}
-                                                            isRecommended={true}
-                                                            aiRecommendation={startup.aiRecommendation}
-                                                            showPercentage={true}
                                                         />
                                                     </div>
                                                 ))}
@@ -494,11 +491,6 @@ export function InvestorHome() {
                                                 }}
                                                 onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                                 onMessageClick={handleMessage}
-                                                isRecommended={false}
-                                                aiRecommendation={startup.aiRecommendation}
-                                                showImpactPoints={activeFeed === 'high-impact'}
-                                                isFirstInRow={true}
-                                                isLastInRow={true}
                                             />
                                         </div>
                                     ))}

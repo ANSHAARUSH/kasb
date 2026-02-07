@@ -85,13 +85,12 @@ export function PlanBadge({ tier, className }: PlanBadgeProps) {
     const Icon = config.icon;
 
     return (
-        <span className={cn(
-            "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-black border uppercase tracking-tighter shrink-0",
+        <div className={cn(
+            "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 shadow-sm transition-transform duration-300 hover:scale-110",
             config.classes,
             className
-        )}>
-            <Icon className={cn("w-2.5 h-2.5", config.iconColor)} />
-            {config.label}
-        </span>
+        )} title={config.label}>
+            <Icon className={cn("w-5 h-5", config.iconColor)} />
+        </div>
     );
 }
