@@ -16,6 +16,7 @@ export type DocumentType =
     | 'cin'
     | 'pan_card'
     | 'office_address_proof'
+    | 'product_photo'
 
     // Idea / Pre-seed
     | 'concept_note'

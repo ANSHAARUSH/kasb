@@ -596,6 +596,34 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
                             )}
                         </section>
 
+                        {/* Product Gallery */}
+                        {documents.filter(d =>
+                            d.document_type === 'product_photo' ||
+                            d.document_type?.toLowerCase().includes('product photo')
+                        ).length > 0 && (
+                                <section className="mt-8">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
+                                        <Sparkles className="h-3 w-3" />
+                                        Product Gallery
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {documents.filter(d =>
+                                            d.document_type === 'product_photo' ||
+                                            d.document_type?.toLowerCase().includes('product photo')
+                                        ).map((doc) => (
+                                            <div key={doc.id} className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm transition-transform hover:scale-[1.02] cursor-pointer group relative">
+                                                <img
+                                                    src={getViewableUrl(doc.file_url)}
+                                                    alt="Product"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
                         {/* Stage Specific Questions */}
                         <section className="space-y-8">
                             {stageConfig.map((section: Section) => {

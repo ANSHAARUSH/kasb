@@ -139,86 +139,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkUserRole = async (userId: string) => {
         try {
+            // Run all checks in parallel to minimize latency
+            const [
+                { data: adminRows },
+                { data: startupRows, error: startupError },
+                { data: investorRows, error: investorError },
+                { data: subRows }
+            ] = await Promise.all([
+                supabase.from('admins').select('id').eq('id', userId).limit(1),
+                supabase.from('startups').select('id, kyc_status').eq('id', userId).limit(1),
+                supabase.from('investors').select('id, kyc_status').eq('id', userId).limit(1),
+                supabase.from('user_subscriptions').select('tier').eq('user_id', userId).limit(1)
+            ]);
+
             // 1. Check Admin
-            const { data: adminRows } = await supabase.from('admins').select('id').eq('id', userId).limit(1)
             if (adminRows && adminRows.length > 0) {
-                setRole('admin')
-                setKycStatus('verified')
-                return
+                setRole('admin');
+                setKycStatus('verified');
+                return;
             }
 
-            // 2. Fetch Subscription Tier
-            const { data: subRows } = await supabase
-                .from('user_subscriptions')
-                .select('tier')
-                .eq('user_id', userId)
-                .limit(1)
+            const subData = subRows?.[0];
 
-            const subData = subRows?.[0]
-
-            // 3. Check Startup
-            const { data: startupRows, error: startupError } = await supabase
-                .from('startups')
-                .select('id, kyc_status')
-                .eq('id', userId)
-                .limit(1)
-
+            // 2. Check Startup
             if (startupRows && startupRows.length > 0) {
-                const startupData = startupRows[0]
-                setRole('startup')
-                setKycStatus(startupData.kyc_status as KYCStatus || 'pending')
-                const tier = (subData?.tier || 'discovery') as SubscriptionTier
-                subscriptionManager.updateLocalTier(tier)
-                return
+                const startupData = startupRows[0];
+                setRole('startup');
+                setKycStatus(startupData.kyc_status as KYCStatus || 'pending');
+                const tier = (subData?.tier || 'discovery') as SubscriptionTier;
+                subscriptionManager.updateLocalTier(tier);
+                return;
             }
 
-            // 4. Check Investor
-            const { data: investorRows, error: investorError } = await supabase
-                .from('investors')
-                .select('id, kyc_status')
-                .eq('id', userId)
-                .limit(1)
-
+            // 3. Check Investor
             if (investorRows && investorRows.length > 0) {
-                const investorData = investorRows[0]
-                setRole('investor')
-                setKycStatus(investorData.kyc_status as KYCStatus || 'pending')
-                const tier = (subData?.tier || 'explore') as SubscriptionTier
-                subscriptionManager.updateLocalTier(tier)
-                return
+                const investorData = investorRows[0];
+                setRole('investor');
+                setKycStatus(investorData.kyc_status as KYCStatus || 'pending');
+                const tier = (subData?.tier || 'explore') as SubscriptionTier;
+                subscriptionManager.updateLocalTier(tier);
+                return;
             }
 
-            // Log purely informational errors (exclude "no rows found")
-            if (startupError && startupError.code !== 'PGRST116') console.error('Startup check error:', startupError)
-            if (investorError && investorError.code !== 'PGRST116') console.error('Investor check error:', investorError)
+            // Log informational errors
+            if (startupError && startupError.code !== 'PGRST116') console.error('Startup check error:', startupError);
+            if (investorError && investorError.code !== 'PGRST116') console.error('Investor check error:', investorError);
 
-            // 5. Fallback: Check user metadata (for new OAuth users)
-            const { data: { user } } = await supabase.auth.getUser()
+            // 4. Fallback: Check user metadata
+            const { data: { user } } = await supabase.auth.getUser();
             if (user?.user_metadata?.role) {
-                const metaRole = user.user_metadata.role as UserRole
-                console.log("Using role from metadata:", metaRole)
-                setRole(metaRole)
-                return
+                const metaRole = user.user_metadata.role as UserRole;
+                setRole(metaRole);
+                return;
             }
 
-            // 6. Last Resort: Check localStorage for pending role (OAuth signup)
-            const pendingRole = localStorage.getItem('kasb_pending_role') as UserRole
+            // 5. Last Resort: Check localStorage
+            const pendingRole = localStorage.getItem('kasb_pending_role') as UserRole;
             if (pendingRole) {
-                console.log("Using role from localStorage fallback:", pendingRole)
-                setRole(pendingRole)
-                // Don't remove yet! Wait for successful dashboard navigation
-                return
+                setRole(pendingRole);
+                return;
             }
 
-            setRole(null)
-            setKycStatus(null)
+            setRole(null);
+            setKycStatus(null);
         } catch (error) {
-            console.error('Critical Auth Error:', error)
-            setRole(null)
-            setKycStatus(null)
+            console.error('Critical Auth Error:', error);
+            setRole(null);
+            setKycStatus(null);
         } finally {
-            console.log(`[AuthContext] checkUserRole Finished. User: ${userId}, Role: ${roleRef.current}`)
-            setLoading(false)
+            setLoading(false);
         }
     }
 

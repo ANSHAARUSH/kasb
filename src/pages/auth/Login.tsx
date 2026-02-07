@@ -46,36 +46,15 @@ export function Login() {
         setLoading(true)
 
         try {
-            const { data: { user }, error } = await supabase.auth.signInWithPassword({
+            const { error } = await supabase.auth.signInWithPassword({
                 email,
                 password
             })
 
             if (error) throw error
-            if (user) {
-                // Check for admin
-                const { data: admin } = await supabase.from('admins').select('id').eq('id', user.id).single()
-                if (admin) {
-                    navigate("/admin")
-                    return
-                }
-
-                // Check role by querying tables
-                const { data: startup } = await supabase.from('startups').select('id').eq('id', user.id).single()
-                if (startup) {
-                    navigate("/dashboard/startup")
-                    return
-                }
-
-                const { data: investor } = await supabase.from('investors').select('id').eq('id', user.id).single()
-                if (investor) {
-                    navigate("/dashboard/investor")
-                    return
-                }
-
-                // Fallback if no role found (maybe Admin or new user)
-                alert("Login successful but no profile found. Please contact support.")
-            }
+            // Redirection is handled by the global useEffect in this component
+            // which monitors the 'user' and 'role' from useAuth()
+            return;
         } catch (error) {
             if (error instanceof Error) {
                 if (error.message.includes("Email not confirmed")) {

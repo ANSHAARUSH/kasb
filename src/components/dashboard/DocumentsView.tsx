@@ -36,6 +36,7 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
     const { toast } = useToast();
     const [stats, setStats] = useState<Record<string, DocStatus>>({});
     const [customDocs, setCustomDocs] = useState<{ id: string, label: string, file?: File }[]>([]);
+    const [productPhotos, setProductPhotos] = useState<{ id: string, fileName: string, fileUrl: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState<string | null>(null);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -58,14 +59,21 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
             const newStats: Record<string, DocStatus> = {};
             const standardTypes = new Set(requiredDocs.map(d => d.type as string));
             const customs: { id: string, label: string }[] = [];
+            const photos: { id: string, fileName: string, fileUrl: string }[] = [];
 
             data?.forEach((doc: any) => {
-                if (standardTypes.has(doc.document_type)) {
+                if (doc.document_type === 'product_photo' || doc.document_type?.toLowerCase().includes('product photo')) {
+                    photos.push({
+                        id: doc.id,
+                        fileName: doc.file_name,
+                        fileUrl: doc.file_url
+                    });
+                } else if (standardTypes.has(doc.document_type)) {
                     newStats[doc.document_type] = {
                         id: doc.id,
                         status: doc.status,
                         fileName: doc.file_name,
-                        fileUrl: doc.file_url // Ensure we keep the URL
+                        fileUrl: doc.file_url
                     } as any;
                 } else {
                     // It's a custom document
@@ -74,14 +82,14 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
                         status: doc.status,
                         fileName: doc.file_name,
                         label: doc.document_type,
-                        fileUrl: doc.file_url // Ensure we keep the URL
+                        fileUrl: doc.file_url
                     } as any;
                     customs.push({ id: doc.id, label: doc.document_type });
                 }
             });
             setStats(newStats);
-            // We only show existing customs, new ones are added via state
             setCustomDocs(customs);
+            setProductPhotos(photos);
         } catch (error) {
             console.error('Error fetching docs:', error);
         } finally {
@@ -137,20 +145,37 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
             toast("Document uploaded successfully!", "success");
 
             const finalId = data.id;
-            setStats(prev => ({
-                ...prev,
-                [typeOrId]: {
-                    id: finalId,
-                    status: 'verified',
-                    fileName: file.name,
-                    label: customLabel,
-                    fileUrl: fileUrl // Save to local state too
-                }
-            }));
 
-            // If it was a new custom doc, we might need to update its ID in customDocs
-            if (customLabel) {
+            if (customLabel === 'product_photo') {
+                setProductPhotos(prev => [...prev, {
+                    id: finalId,
+                    fileName: file.name,
+                    fileUrl: fileUrl
+                }]);
+            } else if (customLabel) {
+                // If it was a new custom doc, we might need to update its ID in customDocs
                 setCustomDocs(prev => prev.map(d => d.id === typeOrId ? { ...d, id: finalId } : d));
+                setStats(prev => ({
+                    ...prev,
+                    [typeOrId]: {
+                        id: finalId,
+                        status: 'verified',
+                        fileName: file.name,
+                        label: customLabel,
+                        fileUrl: fileUrl
+                    }
+                }));
+            } else {
+                setStats(prev => ({
+                    ...prev,
+                    [typeOrId]: {
+                        id: finalId,
+                        status: 'verified',
+                        fileName: file.name,
+                        label: customLabel,
+                        fileUrl: fileUrl
+                    }
+                }));
             }
 
         } catch (error: any) {
@@ -167,21 +192,51 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
         setCustomDocs(prev => [...prev, { id: tempId, label: '' }]);
     };
 
+    const removeDocument = async (id: string, isPhoto = false) => {
+        try {
+            console.log(`[DocumentsView] Attempting to delete document: ${id}`);
+            const { error, status } = await supabase
+                .from('startup_documents')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                console.error('[DocumentsView] Delete error:', error);
+                throw error;
+            }
+
+            // status 204 means successful deletion with no content returned
+            // or status 200 with data if select was used
+            console.log(`[DocumentsView] Delete response status: ${status}`);
+
+            if (isPhoto) {
+                setProductPhotos(prev => prev.filter(p => p.id !== id));
+            } else {
+                setCustomDocs(prev => prev.filter(d => d.id !== id));
+                setStats(prev => {
+                    const next = { ...prev };
+                    delete next[id];
+                    return next;
+                });
+            }
+            toast("Document removed permanently", "success");
+        } catch (error: any) {
+            console.error('[DocumentsView] Removal failed:', error);
+            toast(`Removal failed: ${error.message || 'Database error'}`, "error");
+        }
+    };
+
     const removeCustomSlot = async (id: string) => {
         if (!id.startsWith('temp-')) {
-            // It's in the DB, delete it
-            const { error } = await supabase.from('startup_documents').delete().eq('id', id);
-            if (error) {
-                toast("Failed to delete document", "error");
-                return;
-            }
+            await removeDocument(id);
+        } else {
+            setCustomDocs(prev => prev.filter(d => d.id !== id));
+            setStats(prev => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+            });
         }
-        setCustomDocs(prev => prev.filter(d => d.id !== id));
-        setStats(prev => {
-            const next = { ...prev };
-            delete next[id];
-            return next;
-        });
     };
 
     const triggerFileSelect = (id: string) => {
@@ -201,6 +256,7 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
                     </h2>
                     <p className="text-sm text-gray-500 mt-1 font-medium">
                         Upload your core pitch deck in **PowerPoint (.pptx)** format for investors to review.
+                        Add product photos (supported formats: **JPG, PNG, WEBP**) to showcase your product in the profile view.
                     </p>
                 </div>
             </div>
@@ -301,6 +357,81 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
                         </Card>
                     );
                 })}
+
+                {/* Product Gallery Management Section */}
+                <div className="space-y-6 pt-6 border-t border-gray-100">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                <Plus className="h-5 w-5 text-gray-400" />
+                                Product Gallery
+                            </h3>
+                            <p className="text-xs text-gray-500 font-medium mt-1">
+                                Showcase your product. These images will be displayed in an aspect-ratio friendly grid on your profile.
+                            </p>
+                        </div>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={el => { fileInputRefs.current['new_product_photo'] = el }}
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleFileUpload('new_product_photo', file, 'product_photo');
+                            }}
+                            disabled={uploading === 'new_product_photo'}
+                        />
+                        <Button
+                            onClick={() => triggerFileSelect('new_product_photo')}
+                            variant="outline"
+                            className="rounded-xl h-10 px-4 text-xs font-bold uppercase tracking-widest border-2 border-indigo-100 hover:border-black hover:bg-black hover:text-white transition-all shadow-sm"
+                            disabled={uploading === 'new_product_photo'}
+                        >
+                            {uploading === 'new_product_photo' ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <Plus className="h-4 w-4 mr-2" />
+                            )}
+                            Add Photo
+                        </Button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {productPhotos.map((photo) => (
+                            <div key={photo.id} className="group relative aspect-square rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 shadow-sm transition-all hover:border-indigo-200">
+                                <img
+                                    src={getViewableUrl(photo.fileUrl)}
+                                    alt="Product"
+                                    className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button
+                                        onClick={() => removeDocument(photo.id, true)}
+                                        className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors transform translate-y-2 group-hover:translate-y-0 duration-300"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+                                <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                                    <p className="text-[10px] text-white font-bold truncate">{photo.fileName}</p>
+                                </div>
+                            </div>
+                        ))}
+
+                        {productPhotos.length === 0 && !uploading && (
+                            <div className="col-span-full py-8 text-center bg-indigo-50/20 rounded-3xl border-2 border-dashed border-indigo-100">
+                                <p className="text-sm font-bold text-indigo-400 uppercase tracking-widest">No Photos in Gallery</p>
+                                <p className="text-[10px] text-indigo-400 mt-1 font-medium">Click "Add Photo" to showcase your product</p>
+                            </div>
+                        )}
+
+                        {uploading === 'new_product_photo' && (
+                            <div className="aspect-square rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50/30 flex items-center justify-center">
+                                <Loader2 className="h-6 w-6 animate-spin text-indigo-500" />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* Additional Documents Section */}
@@ -367,7 +498,7 @@ export function DocumentsView({ startup }: DocumentsViewProps) {
                                         <div className="space-y-2">
                                             <input
                                                 type="file"
-                                                accept=".pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls"
+                                                accept="image/*,.pdf,.pptx,.ppt,.docx,.doc,.xlsx,.xls"
                                                 className="hidden"
                                                 ref={el => { fileInputRefs.current[doc.id] = el }}
                                                 onChange={(e) => {
