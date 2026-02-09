@@ -289,7 +289,6 @@ export function HistoryPage() {
                             isSelected={selectedIds.includes(startup.id)}
                             isSaved={true}
                             onClick={() => handleSelect(startup.id)}
-                            onDoubleClick={() => { }}
                             onToggleSave={handleRemove}
                         />
                     ))}

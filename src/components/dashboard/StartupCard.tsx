@@ -3,7 +3,7 @@ import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { BookmarkPlus, MessageSquare, UserPlus, Clock, CheckCircle } from "lucide-react"
 import { cn } from "../../lib/utils"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, type ConnectionStatus } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom"
 interface StartupCardProps {
     startup: Startup
     onClick: () => void
-    onDoubleClick: () => void
+    onDoubleClick?: () => void
     isSelected: boolean
     action?: React.ReactNode
     isSaved?: boolean
@@ -25,7 +25,7 @@ interface StartupCardProps {
     onConnectionChange?: (startupId: string) => void
 }
 
-export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange }: StartupCardProps) {
+export function StartupCard({ startup, onClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -140,26 +140,11 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
         }
     }
 
-    const lastClickTime = useRef<number>(0)
 
-    const handleInternalClick = () => {
-        const now = Date.now()
-        const diff = now - lastClickTime.current
-
-        // Always call onClick for selection
-        onClick?.()
-
-        if (diff < 300 && diff > 0) {
-            onDoubleClick?.()
-            lastClickTime.current = 0 // Reset to avoid triple-click issues
-        } else {
-            lastClickTime.current = now
-        }
-    }
 
     return (
         <Card
-            onClick={handleInternalClick}
+            onClick={onClick}
             className={cn(
                 "group flex flex-col relative cursor-pointer transition-all duration-300 shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
@@ -279,7 +264,10 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                 </div>
 
                 {/* Additional Info (Consolidated/Floating) */}
-                <div className="absolute top-2 right-14 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={cn(
+                    "absolute top-2 right-14 flex gap-1 transition-opacity",
+                    isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
                     {onToggleSave && (
                         <Button
                             size="sm"

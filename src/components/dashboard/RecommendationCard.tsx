@@ -87,7 +87,6 @@ export function RecommendationCard({
                     isSelected={isSelected || false}
                     isSaved={isSaved || false}
                     onClick={() => onSelect(entity.id)}
-                    onDoubleClick={() => onSelect(entity.id)}
                     onToggleSave={onSave ? () => onSave(entity.id) : undefined}
                     onMessageClick={onMessage ? () => onMessage(entity as Startup) : undefined}
                 />
@@ -97,7 +96,6 @@ export function RecommendationCard({
                     isSelected={isSelected || false}
                     isSaved={isSaved || false}
                     onClick={() => onSelect(entity.id)}
-                    onDoubleClick={() => onSelect(entity.id)}
                     onToggleSave={onSave ? () => onSave(entity.id) : undefined}
                     onMessageClick={onMessage ? () => onMessage(entity as Investor) : undefined}
                 />

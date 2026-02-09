@@ -3,7 +3,7 @@ import { Card, CardContent } from "../ui/card"
 import { cn } from "../../lib/utils"
 import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle } from "lucide-react"
 import { Button } from "../ui/button"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, closeDeal, type ConnectionStatus } from "../../lib/supabase"
@@ -19,10 +19,9 @@ interface InvestorCardProps {
     onMessageClick?: (investor: Investor) => void
     onToggleSave?: (investor: Investor) => void
     onClick?: () => void
-    onDoubleClick?: () => void
 }
 
-export function InvestorCard({ investor, isSelected, isSaved = false, onMessageClick, onToggleSave, onClick, onDoubleClick }: InvestorCardProps) {
+export function InvestorCard({ investor, isSelected, isSaved = false, onMessageClick, onToggleSave, onClick }: InvestorCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -130,25 +129,11 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
         }
     }
 
-    const lastClickTime = useRef<number>(0)
 
-    const handleInternalClick = () => {
-        const now = Date.now()
-        const diff = now - lastClickTime.current
-
-        onClick?.()
-
-        if (diff < 300 && diff > 0) {
-            onDoubleClick?.()
-            lastClickTime.current = 0
-        } else {
-            lastClickTime.current = now
-        }
-    }
 
     return (
         <Card
-            onClick={handleInternalClick}
+            onClick={onClick}
             className={cn(
                 "group flex flex-col relative cursor-pointer transition-all duration-300 shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
@@ -268,7 +253,10 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                 </div>
 
                 {/* Additional Info (Consolidated/Floating) */}
-                <div className="absolute top-2 right-14 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={cn(
+                    "absolute top-2 right-14 flex gap-1 transition-opacity",
+                    isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}>
                     {onToggleSave && (
                         <Button
                             size="sm"

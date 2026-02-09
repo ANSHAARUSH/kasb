@@ -431,12 +431,14 @@ export function InvestorHome() {
                                                             startup={startup}
                                                             isSelected={selectedId === startup.id}
                                                             isSaved={savedStartupIds.includes(startup.id)}
-                                                            onClick={() => setSelectedId(startup.id)}
-                                                            onDoubleClick={() => {
-                                                                subscriptionManager.trackView(startup.id)
-                                                                setDetailStartup(startup)
-                                                                setSelectedId(startup.id)
-                                                                if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
+                                                            onClick={() => {
+                                                                if (selectedId === startup.id) {
+                                                                    subscriptionManager.trackView(startup.id)
+                                                                    setDetailStartup(startup)
+                                                                    if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
+                                                                } else {
+                                                                    setSelectedId(startup.id)
+                                                                }
                                                             }}
                                                             onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                                             onMessageClick={handleMessage}
@@ -478,15 +480,12 @@ export function InvestorHome() {
                                                 isSelected={selectedId === startup.id}
                                                 isSaved={savedStartupIds.includes(startup.id)}
                                                 onClick={() => {
-                                                    setSelectedId(startup.id)
-                                                }}
-                                                onDoubleClick={() => {
-                                                    subscriptionManager.trackView(startup.id)
-                                                    setDetailStartup(startup)
-                                                    setSelectedId(startup.id)
-
-                                                    if (window.innerWidth >= 1024) {
-                                                        if (panelSize === 'minimized') setPanelSize('default')
+                                                    if (selectedId === startup.id) {
+                                                        subscriptionManager.trackView(startup.id)
+                                                        setDetailStartup(startup)
+                                                        if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
+                                                    } else {
+                                                        setSelectedId(startup.id)
                                                     }
                                                 }}
                                                 onToggleSave={() => handleToggleSave(startup.id, "Startup")}

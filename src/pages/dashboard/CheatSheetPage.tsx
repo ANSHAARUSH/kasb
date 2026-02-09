@@ -9,13 +9,23 @@ import { useState } from "react"
 import { FieldDetailPanel } from "../../components/dashboard/FieldDetailPanel"
 import { motion } from "framer-motion"
 import { Input } from "../../components/ui/input"
-import { Search, Loader2, Sparkles, Zap, BarChart3, Globe, TrendingUp } from "lucide-react"
+import { Search, Loader2, Sparkles, Zap } from "lucide-react"
 import { getIndustryInsights } from "../../lib/ai"
 import { useToast } from "../../hooks/useToast"
 import { useAuth } from "../../context/AuthContext"
 import { getUserSetting, getGlobalConfig } from "../../lib/supabase"
 
-const TOPICS = [
+interface CheatSheetField {
+    title: string
+    icon: LucideIcon
+    desc: string
+    color: string
+    isAI?: boolean
+    isFastest?: boolean
+    aiGrowthData?: { country: string; value: number; growth: string }[]
+}
+
+const TOPICS: CheatSheetField[] = [
     {
         title: "EdTech",
         icon: BookOpen,
@@ -47,10 +57,11 @@ const TOPICS = [
         color: "bg-orange-50 text-orange-600"
     },
     {
-        title: "AI & SaaS",
+        title: "AI & DeepTech",
         icon: Bot,
-        desc: "Artificial Intelligence and Software as a Service solutions.",
-        color: "bg-purple-50 text-purple-600"
+        desc: "Advanced intelligence, deep learning, and semiconductor innovations.",
+        color: "bg-purple-50 text-purple-600",
+        isFastest: true
     },
     {
         title: "AgriTech",
@@ -88,16 +99,7 @@ const TOPICS = [
         desc: "Technologies mitigating climate change and space exploration.",
         color: "bg-sky-50 text-sky-600"
     }
-] as const
-
-interface CheatSheetField {
-    title: string
-    icon: LucideIcon
-    desc: string
-    color: string
-    isAI?: boolean
-    aiGrowthData?: { country: string; value: number; growth: string }[]
-}
+]
 
 export function CheatSheetPage() {
     const [selectedField, setSelectedField] = useState<CheatSheetField | null>(null)
@@ -185,8 +187,16 @@ export function CheatSheetPage() {
                     >
                         <Card
                             onClick={() => setSelectedField(topic)}
-                            className="group cursor-pointer hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white border-2 border-black/5 hover:border-black shadow-sm"
+                            className={`group cursor-pointer hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 transition-all duration-300 rounded-[2.5rem] overflow-hidden bg-white border-2 hover:border-black shadow-sm relative ${topic.isFastest ? "border-black ring-1 ring-black/5" : "border-black/5"}`}
                         >
+                            {topic.isFastest && (
+                                <div className="absolute top-6 right-8">
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-black text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-lg animate-pulse">
+                                        <Zap className="h-3 w-3 fill-white" />
+                                        Fastest Growing in India
+                                    </div>
+                                </div>
+                            )}
                             <CardHeader className="flex flex-row items-center gap-5 pb-2 p-8">
                                 <div className={`rounded-2xl p-4 transition-transform group-hover:rotate-6 ${topic.color}`}>
                                     <topic.icon className="h-7 w-7" />
@@ -205,106 +215,7 @@ export function CheatSheetPage() {
                 ))}
             </div>
 
-            {/* Fastest Growing Industry Section */}
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="mt-12"
-            >
-                <Card className="border-0 ring-1 ring-gray-100 rounded-[3rem] overflow-hidden bg-white shadow-xl shadow-gray-100/20">
-                    <CardHeader className="bg-black p-8 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
-                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl">
-                                    <Zap className="h-8 w-8 text-white fill-white" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="px-3 py-1 bg-white text-black text-[10px] font-black uppercase tracking-wider rounded-full">Fastest Growing</span>
-                                        <h3 className="text-sm font-bold opacity-80 uppercase tracking-widest text-gray-400 italic">Sector Spotlight</h3>
-                                    </div>
-                                    <h2 className="text-4xl font-black tracking-tight">AI & DeepTech</h2>
-                                </div>
-                            </div>
-                            <div className="flex gap-4">
-                                <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">India Growth</p>
-                                    <p className="text-2xl font-black text-white">+35.2% CAGR</p>
-                                </div>
-                                <div className="px-6 py-3 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">Market Cap (2030)</p>
-                                    <p className="text-2xl font-black text-white">$450B+</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardHeader>
 
-                    <CardContent className="p-10">
-                        <div className="grid lg:grid-cols-2 gap-16">
-                            <div className="space-y-8">
-                                <div className="space-y-4">
-                                    <h4 className="text-xl font-black flex items-center gap-2">
-                                        <BarChart3 className="h-5 w-5 text-black" />
-                                        Regional Growth Trajectory
-                                    </h4>
-                                    <p className="text-gray-500 font-medium leading-relaxed">
-                                        Artificial Intelligence and DeepTech sectors are currently outpacing all other traditional tech sectors in India, driven by massive adoption of GenAI and government initiatives in semiconductor and space tech.
-                                    </p>
-                                </div>
-
-                                <div className="space-y-5">
-                                    {[
-                                        { region: "India", growth: "35.2%", color: "bg-black" },
-                                        { region: "SE Asia", growth: "24.5%", color: "bg-gray-700" },
-                                        { region: "USA", growth: "21.0%", color: "bg-gray-400" },
-                                        { region: "Europe", growth: "15.8%", color: "bg-gray-200" }
-                                    ].map((item, i) => (
-                                        <div key={item.region} className="space-y-2">
-                                            <div className="flex justify-between text-xs font-black uppercase tracking-[0.1em]">
-                                                <span className="text-gray-400">{item.region}</span>
-                                                <span className="text-gray-900">+{item.growth}</span>
-                                            </div>
-                                            <div className="h-2.5 bg-gray-50 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: item.growth }}
-                                                    transition={{ delay: 1 + (i * 0.1), duration: 1, ease: "easeOut" }}
-                                                    className={`h-full rounded-full ${item.color}`}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
-                                    <Globe className="h-6 w-6 text-black mb-3" />
-                                    <h5 className="font-bold text-gray-900 mb-1">Global Leader</h5>
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">India currently holds the 3rd largest AI startup ecosystem globally.</p>
-                                </div>
-                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
-                                    <TrendingUp className="h-6 w-6 text-black mb-3" />
-                                    <h5 className="font-bold text-gray-900 mb-1">VC Inflow</h5>
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">Over $8.5B invested in deeptech startups in the last 24 months.</p>
-                                </div>
-                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
-                                    <Sparkles className="h-6 w-6 text-black mb-3" />
-                                    <h5 className="font-bold text-gray-900 mb-1">Job Creation</h5>
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">Projected 1.2M new high-skilled jobs in AI research by 2026.</p>
-                                </div>
-                                <div className="p-6 rounded-[2rem] bg-gray-50 border border-gray-100 flex flex-col justify-center">
-                                    <Building2 className="h-6 w-6 text-black mb-3" />
-                                    <h5 className="font-bold text-gray-900 mb-1">M&A Activity</h5>
-                                    <p className="text-xs text-gray-500 leading-relaxed font-medium">Exits in this sector have increased by 45% year-over-year.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
 
             <FieldDetailPanel
                 field={selectedField}

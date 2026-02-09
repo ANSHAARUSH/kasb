@@ -93,12 +93,12 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
     const getIndustryGrowthData = (title: string) => {
         const lowerTitle = title.toLowerCase()
 
-        if (lowerTitle.includes('ai') || lowerTitle.includes('saas')) {
+        if (lowerTitle.includes('ai') || lowerTitle.includes('deeptech') || lowerTitle.includes('saas')) {
             return [
-                { country: 'India', growthNum: 28.0, growth: '+28.0%' },
+                { country: 'India', growthNum: 35.2, growth: '+35.2%' },
                 { country: 'USA', growthNum: 21.0, growth: '+21.0%' },
-                { country: 'Europe', growthNum: 16.5, growth: '+16.5%' },
-                { country: 'SE Asia', growthNum: 19.0, growth: '+19.0%' },
+                { country: 'Europe', growthNum: 15.8, growth: '+15.8%' },
+                { country: 'SE Asia', growthNum: 24.5, growth: '+24.5%' },
             ]
         }
         if (lowerTitle.includes('health')) {
