@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Eye, Users, Zap, X } from "lucide-react"
+import { Sparkles, Eye, Users, Crown, X } from "lucide-react"
 
 export function UsageIcon({ className, showLabel = false, placement = 'top', isMobile = false }: { className?: string, showLabel?: boolean, placement?: 'top' | 'right', isMobile?: boolean }) {
     const [showTooltip, setShowTooltip] = useState(false)
@@ -10,9 +10,6 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
     const usage = subscriptionManager.getUsage()
     const tier = subscriptionManager.getTier()
     const limits = TIER_LIMITS[tier] || { profileViews: Infinity, contacts: Infinity, compares: Infinity }
-
-    const isUnlimited = limits.profileViews === Infinity
-    const usagePercentage = isUnlimited ? 0 : (usage.profileViews / limits.profileViews) * 100
 
     useEffect(() => {
         if (!showTooltip) return
@@ -49,13 +46,11 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                 )}
                 title={`View Plan Usage (${tier.replace('_', ' ')})`}
             >
-                <Zap
+                <Crown
                     className={cn(
                         isMobile ? "h-6 w-6" : "h-5 w-5",
                         "transition-transform group-hover:scale-110",
-                        !isUnlimited && usagePercentage > 90
-                            ? "text-amber-500 fill-amber-500"
-                            : (showTooltip ? "text-black fill-black" : "currentColor")
+                        showTooltip ? "text-black fill-black" : "currentColor"
                     )}
                 />
                 {showLabel && <span className={cn("text-[10px] font-medium leading-none", showTooltip && !isMobile && "text-black")}>Usage</span>}
@@ -88,8 +83,8 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                         {/* Tooltip Header */}
                         <div className="flex items-center justify-between mb-4 pb-2 border-b border-indigo-50">
                             <div className="flex items-center gap-2">
-                                <div className="h-6 w-6 rounded-lg bg-indigo-50 flex items-center justify-center">
-                                    <Zap className="w-3.5 h-3.5 text-indigo-600 fill-indigo-600" />
+                                <div className="h-6 w-6 rounded-lg bg-black flex items-center justify-center">
+                                    <Crown className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
                                 </div>
                                 <span className="font-bold text-black text-sm uppercase tracking-tighter">{tier.replace('_', ' ')} Plan</span>
                             </div>

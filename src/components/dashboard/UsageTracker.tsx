@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { subscriptionManager, TIER_LIMITS } from "../../lib/subscriptionManager"
-import { Eye, Users, Zap, Sparkles } from "lucide-react"
+import { Eye, Users, Crown, Sparkles } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export function UsageTracker() {
@@ -44,7 +44,7 @@ export function UsageTracker() {
     return (
         <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 mx-4 mb-4">
             <div className="flex items-center gap-2 mb-4 text-xs font-bold uppercase tracking-wider text-gray-400">
-                <Zap className="h-3 w-3 fill-gray-400" />
+                <Crown className="h-3 w-3 fill-gray-400" />
                 Plan Usage
             </div>
 
