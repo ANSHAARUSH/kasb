@@ -26,11 +26,11 @@ export const TIER_LIMITS: Record<SubscriptionTier, { profileViews: number; conta
     'discovery': { profileViews: Infinity, contacts: 0, compares: 0 },
     'starter': { profileViews: Infinity, contacts: 50, compares: 50 },
     'growth': { profileViews: Infinity, contacts: 150, compares: 200 },
-    'fundraise_pro': { profileViews: Infinity, contacts: 150, compares: 200 },
+    'fundraise_pro': { profileViews: Infinity, contacts: Infinity, compares: Infinity },
     'explore': { profileViews: Infinity, contacts: 0, compares: 0 },
     'investor_basic': { profileViews: Infinity, contacts: 50, compares: 50 },
     'investor_pro': { profileViews: Infinity, contacts: 150, compares: 200 },
-    'institutional': { profileViews: Infinity, contacts: 150, compares: 200 }
+    'institutional': { profileViews: Infinity, contacts: Infinity, compares: Infinity }
 };
 
 export const STARTUP_TIERS: TierConfig[] = [
@@ -84,8 +84,8 @@ export const STARTUP_TIERS: TierConfig[] = [
         currency: 'INR',
         features: [
             'Unlimited investor viewing',
-            '150 investor contacts/month',
-            '200 comparisons/month',
+            'Unlimited investor contacts',
+            'Unlimited comparisons',
             'Top-tier feed visibility',
             'AI-curated recommendations',
             'AI Insights Summary',
@@ -154,8 +154,8 @@ export const INVESTOR_TIERS: TierConfig[] = [
         freePoints: 350,
         features: [
             'Unlimited startup viewing',
-            '150 startup contacts/month',
-            '200 comparisons/month',
+            'Unlimited startup contacts',
+            'Unlimited comparisons',
             'Top-tier feed visibility',
             'AI-curated recommendations',
             'AI Insights Summary',
