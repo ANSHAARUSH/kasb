@@ -275,6 +275,7 @@ export function StartupHome() {
                                             onMessageClick={handleMessageClick}
                                             onToggleSave={() => handleToggleSave(investor.id, "Investor")}
                                             onClick={() => setSelectedId(investor.id)}
+                                            showImpactPoints={false}
                                             onDoubleClick={() => {
                                                 if (window.innerWidth >= 1024) {
                                                     setDetailInvestor(investor)

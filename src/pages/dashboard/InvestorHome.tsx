@@ -442,6 +442,7 @@ export function InvestorHome() {
                                                             }}
                                                             onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                                             onMessageClick={handleMessage}
+                                                            showImpactPoints={false}
                                                         />
                                                     </div>
                                                 ))}
@@ -490,6 +491,7 @@ export function InvestorHome() {
                                                 }}
                                                 onToggleSave={() => handleToggleSave(startup.id, "Startup")}
                                                 onMessageClick={handleMessage}
+                                                showImpactPoints={activeFeed === 'high-impact'}
                                             />
                                         </div>
                                     ))}

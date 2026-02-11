@@ -23,9 +23,10 @@ interface StartupCardProps {
     onMessageClick?: (startup: Startup) => void
     triggerUpdate?: { startupId: string; timestamp: number } | null
     onConnectionChange?: (startupId: string) => void
+    showImpactPoints?: boolean
 }
 
-export function StartupCard({ startup, onClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange }: StartupCardProps) {
+export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSaved = false, onToggleSave, onMessageClick, triggerUpdate, onConnectionChange, showImpactPoints }: StartupCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -145,6 +146,7 @@ export function StartupCard({ startup, onClick, isSelected, isSaved = false, onT
     return (
         <Card
             onClick={onClick}
+            onDoubleClick={onDoubleClick}
             className={cn(
                 "group flex flex-col relative cursor-pointer transition-all duration-300 shadow-sm h-auto sm:h-full touch-manipulation",
                 "hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:border-black",
@@ -180,16 +182,28 @@ export function StartupCard({ startup, onClick, isSelected, isSaved = false, onT
 
                 {/* Bottom Row: Completion % and CTAs */}
                 <div className="flex items-center justify-between gap-4 pt-2 border-t border-black/5">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                         {startup.completionPercentage !== undefined && (
                             <div className="flex items-center gap-2">
-                                <div className="h-8 w-8 rounded-full bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center">
+                                <div className="h-8 w-8 rounded-full bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center shadow-sm">
                                     <span className="text-[10px] font-black text-emerald-600">
                                         {startup.completionPercentage}%
                                     </span>
                                 </div>
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:block">
                                     Profile
+                                </span>
+                            </div>
+                        )}
+                        {showImpactPoints && startup.impactPoints !== undefined && startup.impactPoints > 0 && (
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-full bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center shadow-sm">
+                                    <span className="text-[10px] font-black text-indigo-600">
+                                        {startup.impactPoints}
+                                    </span>
+                                </div>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden sm:block">
+                                    Impact
                                 </span>
                             </div>
                         )}
@@ -276,8 +290,8 @@ export function StartupCard({ startup, onClick, isSelected, isSaved = false, onT
                             className={cn(
                                 "rounded-full h-8 w-8 p-0 transition-all duration-300",
                                 isSaved
-                                    ? "bg-indigo-50 text-indigo-600 shadow-inner"
-                                    : "bg-white/80 backdrop-blur-sm border border-gray-100 text-gray-400 hover:text-indigo-600 hover:border-indigo-100"
+                                    ? "bg-black text-white shadow-inner"
+                                    : "bg-white/80 backdrop-blur-sm border border-gray-100 text-gray-400 hover:text-black hover:border-black/10"
                             )}
                         >
                             <BookmarkPlus className={cn("h-4 w-4", isSaved && "fill-current")} />
