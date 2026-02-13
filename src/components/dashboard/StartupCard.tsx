@@ -210,6 +210,19 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                     </div>
 
                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                        {onToggleSave && (
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleToggleSave}
+                                className={cn(
+                                    "rounded-xl h-9 w-9 p-0 border-2 transition-all duration-300 shadow-sm",
+                                    "bg-white text-black border-black/10 hover:bg-black hover:text-white hover:border-black"
+                                )}
+                            >
+                                <BookmarkPlus className={cn("h-4 w-4", isSaved && "fill-current")} />
+                            </Button>
+                        )}
                         {onMessageClick && connStatus?.status === 'accepted' && (
                             <Button
                                 size="sm"
@@ -277,27 +290,6 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                     </div>
                 </div>
 
-                {/* Additional Info (Consolidated/Floating) */}
-                <div className={cn(
-                    "absolute top-2 right-14 flex gap-1 transition-opacity",
-                    isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                )}>
-                    {onToggleSave && (
-                        <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleToggleSave}
-                            className={cn(
-                                "rounded-full h-8 w-8 p-0 transition-all duration-300",
-                                isSaved
-                                    ? "bg-black text-white shadow-inner"
-                                    : "bg-white/80 backdrop-blur-sm border border-gray-100 text-gray-400 hover:text-black hover:border-black/10"
-                            )}
-                        >
-                            <BookmarkPlus className={cn("h-4 w-4", isSaved && "fill-current")} />
-                        </Button>
-                    )}
-                </div>
 
                 {/* Tags (Subtle) */}
                 <div className="flex flex-wrap gap-1.5 mt-auto">

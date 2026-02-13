@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { StartupCard } from "../../components/dashboard/StartupCard"
+import { StartupDetail } from "../../components/dashboard/StartupDetail"
 import { StartupComparisonView } from "../../components/dashboard/StartupComparisonView"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -10,7 +11,7 @@ import type { Startup } from "../../data/mockData"
 import type { StartupDB } from "../../types"
 import { compareStartups, type ComparisonResult } from "../../lib/ai"
 import { Button } from "../../components/ui/button"
-import { Sparkles, Lock } from "lucide-react"
+import { Sparkles, Lock, X } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function HistoryPage() {
@@ -25,6 +26,7 @@ export function HistoryPage() {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isComparing, setIsComparing] = useState(false)
     const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
+    const [detailStartup, setDetailStartup] = useState<Startup | null>(null)
 
     useEffect(() => {
         if (!user || activeTab !== 'future') return
@@ -237,7 +239,7 @@ export function HistoryPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 relative min-h-[50vh]">
+        <div className="flex flex-col gap-6 relative min-h-[50vh] px-6 pt-6 md:px-0 md:pt-0">
             {/* Toggle Switch */}
             <div className="mx-auto flex w-full max-w-xs items-center justify-center rounded-full bg-gray-100 p-1">
                 {(['history', 'future'] as const).map((tab) => (
@@ -289,6 +291,7 @@ export function HistoryPage() {
                             isSelected={selectedIds.includes(startup.id)}
                             isSaved={true}
                             onClick={() => handleSelect(startup.id)}
+                            onDoubleClick={() => setDetailStartup(startup)}
                             onToggleSave={handleRemove}
                         />
                     ))}
@@ -346,6 +349,39 @@ export function HistoryPage() {
                         result={comparisonResult}
                         onClose={() => setComparisonResult(null)}
                     />
+                )}
+            </AnimatePresence>
+
+            {/* Startup Detail Modal */}
+            <AnimatePresence>
+                {detailStartup && (
+                    <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                            onClick={() => setDetailStartup(null)}
+                        />
+                        <motion.div
+                            initial={{ y: "100%", opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: "100%", opacity: 0 }}
+                            className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+                        >
+                            <div className="absolute top-2 right-2 z-10 lg:hidden">
+                                <Button variant="ghost" size="icon" onClick={() => setDetailStartup(null)} className="rounded-full bg-white/50 hover:bg-white">
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </div>
+                            <div className="flex-1 overflow-hidden">
+                                <StartupDetail
+                                    startup={detailStartup}
+                                    onClose={() => setDetailStartup(null)}
+                                />
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>

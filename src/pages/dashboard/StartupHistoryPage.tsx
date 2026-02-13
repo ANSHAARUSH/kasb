@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
+import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
@@ -10,7 +11,7 @@ import type { InvestorDB } from "../../types"
 import { compareInvestors, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
-import { Sparkles } from "lucide-react"
+import { Sparkles, X } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 
 
@@ -26,6 +27,7 @@ export function StartupHistoryPage() {
    const [selectedIds, setSelectedIds] = useState<string[]>([])
    const [isComparing, setIsComparing] = useState(false)
    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
+   const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
 
    useEffect(() => {
       if (!user || activeTab !== 'future') return
@@ -201,7 +203,7 @@ export function StartupHistoryPage() {
    const displayedInvestors = activeTab === 'history' ? historyInvestors : savedInvestors
 
    return (
-      <div className="flex flex-col gap-6 relative min-h-[50vh]">
+      <div className="flex flex-col gap-6 relative min-h-[50vh] px-6 pt-6 md:px-0 md:pt-0">
          {/* Toggle Switch */}
          <div className="mx-auto flex w-full max-w-xs items-center justify-center rounded-full bg-gray-100 p-1">
             {(['history', 'future'] as const).map(tab => (
@@ -253,6 +255,7 @@ export function StartupHistoryPage() {
                      isSelected={selectedIds.includes(investor.id)}
                      isSaved={true}
                      onClick={() => handleSelect(investor.id)}
+                     onDoubleClick={() => setDetailInvestor(investor)}
                      onToggleSave={handleRemove}
                   />
                ))}
@@ -306,6 +309,34 @@ export function StartupHistoryPage() {
                   result={comparisonResult}
                   onClose={() => setComparisonResult(null)}
                />
+            )}
+         </AnimatePresence>
+
+         {/* Investor Detail Modal */}
+         <AnimatePresence>
+            {detailInvestor && (
+               <div className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center p-4">
+                  <motion.div
+                     initial={{ opacity: 0 }}
+                     animate={{ opacity: 1 }}
+                     exit={{ opacity: 0 }}
+                     className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                     onClick={() => setDetailInvestor(null)}
+                  />
+                  <motion.div
+                     initial={{ y: "100%", opacity: 0 }}
+                     animate={{ y: 0, opacity: 1 }}
+                     exit={{ y: "100%", opacity: 0 }}
+                     className="relative w-full max-w-lg bg-white rounded-t-3xl sm:rounded-3xl h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+                  >
+                     <div className="flex-1 overflow-hidden">
+                        <InvestorDetail
+                           investor={detailInvestor}
+                           onClose={() => setDetailInvestor(null)}
+                        />
+                     </div>
+                  </motion.div>
+               </div>
             )}
          </AnimatePresence>
       </div>
