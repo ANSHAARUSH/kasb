@@ -11,7 +11,7 @@ import type { InvestorDB } from "../../types"
 import { compareInvestors, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
-import { Sparkles, X } from "lucide-react"
+import { Sparkles } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 
 
