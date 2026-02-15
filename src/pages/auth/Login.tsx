@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
+import { SEO } from "../../components/common/SEO"
 
 export function Login() {
     const navigate = useNavigate()
@@ -108,6 +109,11 @@ export function Login() {
 
     return (
         <div className="flex min-h-[80vh] items-center justify-center px-4">
+            <SEO
+                title="Login to Your Account | Startup & Investor Dashboard"
+                description="Access your Kasb.AI dashboard to manage your fundraising campaign or discover new investment opportunities."
+                keywords="Kasb.AI login, startup dashboard login, investor portal access, secure fundraising login"
+            />
             <Card className="w-full max-w-md transition-all duration-300 hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 border-2 border-black/5 hover:border-black">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-4xl font-extrabold tracking-tight">Log In</CardTitle>

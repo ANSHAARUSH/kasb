@@ -76,83 +76,88 @@ function CatchAll() {
   return <Navigate to="/" replace />;
 }
 
+import { HelmetProvider } from 'react-helmet-async'
+
 function App() {
+
   console.log("[App.tsx] Component rendering. Environment:", import.meta.env.MODE);
   console.log("[App.tsx] Current Location Hash:", window.location.hash);
   console.log("[App.tsx] Base URL:", import.meta.env.BASE_URL);
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <ChatProvider>
-          <Router>
-            <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
-              <AuthEventHandler />
-              <Routes>
-                {/* Public Routes */}
-                <Route element={<PublicLayout />}>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<SignUp />} />
-                  <Route path="/email-confirmed" element={<EmailConfirmed />} />
-                  <Route path="/auth/callback" element={<AuthCallback />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/update-password" element={<UpdatePassword />} />
-                  <Route path="/pricing" element={<PricingPage />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  {/* Placeholders for public links */}
-                  <Route path="/about" element={<Navigate to="/#about-us" replace />} />
-                  <Route path="/features" element={<Navigate to="/#features" replace />} />
-                  <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
-                </Route>
+    <HelmetProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <ChatProvider>
+            <Router>
+              <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+                <AuthEventHandler />
+                <Routes>
+                  {/* Public Routes */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                    <Route path="/auth/callback" element={<AuthCallback />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/update-password" element={<UpdatePassword />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    {/* Placeholders for public links */}
+                    <Route path="/about" element={<Navigate to="/#about-us" replace />} />
+                    <Route path="/features" element={<Navigate to="/#features" replace />} />
+                    <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
+                  </Route>
 
 
 
 
 
-                {/* Admin Route (Standalone) - Protected */}
-                <Route path="/admin" element={
-                  <AdminRoute>
-                    <AdminDashboard />
-                  </AdminRoute>
-                } />
+                  {/* Admin Route (Standalone) - Protected */}
+                  <Route path="/admin" element={
+                    <AdminRoute>
+                      <AdminDashboard />
+                    </AdminRoute>
+                  } />
 
-                {/* Dashboard Routes */}
-                <Route path="/dashboard" element={<DashboardLayout />}>
-                  {/* Default redirect to investor dashboard */}
-                  <Route index element={<Navigate to="/dashboard/investor" replace />} />
+                  {/* Dashboard Routes */}
+                  <Route path="/dashboard" element={<DashboardLayout />}>
+                    {/* Default redirect to investor dashboard */}
+                    <Route index element={<Navigate to="/dashboard/investor" replace />} />
 
-                  {/* Investor Dashboard & Routes */}
-                  <Route path="investor" element={<InvestorHome />} />
-                  <Route path="investor/history" element={<HistoryPage />} />
-                  <Route path="investor/messages" element={<MessagesPage />} />
-                  <Route path="investor/profile" element={<InvestorProfile />} />
-                  <Route path="investor/cheatsheet" element={<CheatSheetPage />} />
-                  <Route path="investor/:id" element={<InvestorPublicProfile />} />
+                    {/* Investor Dashboard & Routes */}
+                    <Route path="investor" element={<InvestorHome />} />
+                    <Route path="investor/history" element={<HistoryPage />} />
+                    <Route path="investor/messages" element={<MessagesPage />} />
+                    <Route path="investor/profile" element={<InvestorProfile />} />
+                    <Route path="investor/cheatsheet" element={<CheatSheetPage />} />
+                    <Route path="investor/:id" element={<InvestorPublicProfile />} />
 
-                  {/* Startup Dashboard & Routes */}
-                  <Route path="startup" element={<StartupHome />} />
-                  <Route path="startup/history" element={<StartupHistoryPage />} />
-                  <Route path="startup/messages" element={<MessagesPage />} />
-                  <Route path="startup/profile" element={<StartupProfile />} />
-                  <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
-                  <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
-                  <Route path="startup/:id" element={<StartupPublicProfile />} />
+                    {/* Startup Dashboard & Routes */}
+                    <Route path="startup" element={<StartupHome />} />
+                    <Route path="startup/history" element={<StartupHistoryPage />} />
+                    <Route path="startup/messages" element={<MessagesPage />} />
+                    <Route path="startup/profile" element={<StartupProfile />} />
+                    <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
+                    <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
+                    <Route path="startup/:id" element={<StartupPublicProfile />} />
 
-                  {/* Shared Routes - Keep for fallbacks or generic access */}
-                  <Route path="pricing" element={<DashboardPricing />} />
-                  <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
-                </Route>
+                    {/* Shared Routes - Keep for fallbacks or generic access */}
+                    <Route path="pricing" element={<DashboardPricing />} />
+                    <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
+                  </Route>
 
-                {/* Redirect unknown to landing, but save auth fragments */}
-                <Route path="*" element={<CatchAll />} />
+                  {/* Redirect unknown to landing, but save auth fragments */}
+                  <Route path="*" element={<CatchAll />} />
 
-              </Routes>
-            </Suspense>
-            <ChatDialog />
-          </Router>
-        </ChatProvider>
-      </ToastProvider>
-    </AuthProvider>
+                </Routes>
+              </Suspense>
+              <ChatDialog />
+            </Router>
+          </ChatProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </HelmetProvider>
   )
 }
 

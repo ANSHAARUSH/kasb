@@ -4,6 +4,7 @@ import { CheckCircle2, TrendingUp, Users, MessageSquare } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { useEffect } from "react"
+import { SEO } from "../components/common/SEO"
 
 export function Landing() {
     const { user, loading } = useAuth()
@@ -18,13 +19,19 @@ export function Landing() {
 
     return (
         <div className="flex flex-col gap-16 pb-20 overflow-hidden">
+            <SEO
+                title="Connecting Visionary Capital with Extraordinary Innovation"
+                description="Kasb.AI is the premium matchmaking platform connecting visionary capital with extraordinary innovation. Empowering startups to raise capital and providing investors with vetted deal flow."
+                keywords="Kasb.AI, AI-powered startup platform, startup fundraising, raise capital for startups, find angel investors, venture capital platform, investor deal flow, angel investor network, AI matchmaking engine"
+            />
             {/* Hero Section */}
-            <section id="hero" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20">
+            <section id="hero" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20" aria-labelledby="hero-title">
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 -z-10 bg-white">
                     <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-indigo-50/50 blur-[120px]"></div>
                     <div className="absolute bottom-[-10%] right-[-10%] h-[40%] w-[40%] rounded-full bg-blue-50/50 blur-[120px]"></div>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
+
                 </div>
 
                 <motion.div
@@ -38,9 +45,9 @@ export function Landing() {
                         Growing Community of Founders & Investors
                     </div>
 
-                    <h1 className="text-6xl font-extrabold tracking-tighter text-soft-black sm:text-8xl leading-tight">
-                        Connecting <span className="text-gray-400 font-light">Vision</span> <br />
-                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with Valuation</span>
+                    <h1 id="hero-title" className="text-6xl font-extrabold tracking-tighter text-soft-black sm:text-8xl leading-tight">
+                        Connecting <span className="text-gray-400 font-light">Visionary Capital</span> <br />
+                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with Extraordinary Innovation</span>
                     </h1>
 
                     <p className="mx-auto max-w-2xl text-lg text-gray-500 sm:text-2xl leading-relaxed">
@@ -74,7 +81,7 @@ export function Landing() {
                         <div className="relative z-10 overflow-hidden rounded-[3rem] shadow-2xl">
                             <img
                                 src={`${import.meta.env.BASE_URL}founders.jpg`}
-                                alt="Founders"
+                                alt="Kasb.AI Co-Founders Aarush and Ansh - Building the future of startup fundraising"
                                 className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
                             />
                         </div>
@@ -103,7 +110,7 @@ export function Landing() {
                         className="space-y-8"
                     >
                         <div>
-                            <h2 className="text-5xl font-black mt-4 mb-6 tracking-tight text-soft-black leading-tight">Driven by Vision, <br />Built for Opportunity</h2>
+                            <h2 className="text-5xl font-black mt-4 mb-6 tracking-tight text-soft-black leading-tight">Next-Gen Investor Deal Flow <br />Driven by AI Analysis</h2>
                             <p className="text-xl text-gray-500 leading-relaxed italic">
                                 "We started Kasb.AI with a simple goal: to remove the friction between great ideas and the capital they deserve."
                             </p>
@@ -147,8 +154,8 @@ export function Landing() {
             {/* Features (Refined) */}
             <section id="features" className="container mx-auto px-4 py-24">
                 <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold tracking-tight mb-4">Precision Matchmaking</h2>
-                    <p className="text-gray-500 text-lg max-w-2xl mx-auto">We've eliminated the noise. Get matched with connections that actually matter for your business or portfolio.</p>
+                    <h2 className="text-4xl font-bold tracking-tight mb-4">AI Matchmaking & Startup Discovery</h2>
+                    <p className="text-gray-500 text-lg max-w-2xl mx-auto">Discover high-growth startups and venture capital opportunities through our vetted investor network.</p>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">

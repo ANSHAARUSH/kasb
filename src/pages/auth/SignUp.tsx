@@ -14,7 +14,7 @@ import { getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import { INDUSTRIES, EXPERTISE_AREAS, APP_URL } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
-
+import { SEO } from "../../components/common/SEO"
 
 export function SignUp() {
     const { toast } = useToast()
@@ -221,10 +221,14 @@ export function SignUp() {
 
     return (
         <div className="min-h-screen bg-gray-50/50 flex flex-col items-center justify-center p-4 md:p-8">
+            <SEO
+                title="Joint the Vetted Network | Startup & Investor Registration"
+                description="Create your Kasb.AI account today. Join an exclusive community of ambitious founders and visionary investors scaling innovation together."
+                keywords="create Kasb.AI account, startup registration, investor signup, join venture capital network, angel investor registration"
+            />
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="w-full max-w-xl"
             >
                 <div className="text-center mb-8">
                     <Link to="/" className="inline-block text-2xl font-black tracking-tighter hover:scale-105 transition-transform">
