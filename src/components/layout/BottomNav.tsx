@@ -1,7 +1,8 @@
-import { Home, History, MessageSquare, User, FileText, BarChart3 } from "lucide-react"
+import { Home, History, MessageSquare, User, FileText, BarChart3, Shield } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
+import { useAuth } from "../../context/AuthContext"
 
 export function BottomNav() {
     const location = useLocation()
@@ -15,6 +16,7 @@ export function BottomNav() {
     const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/cheatsheet' : '/dashboard/investor/cheatsheet'
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
     const analyticsRoute = '/dashboard/startup/analytics'
+    const { role } = useAuth()
 
     const navItems = [
         { icon: Home, label: "Home", href: dashboardHome },
@@ -22,6 +24,7 @@ export function BottomNav() {
         { icon: MessageSquare, label: "Chat", href: messagesRoute },
         { icon: FileText, label: "Cheat", href: cheatSheetRoute },
         ...(isStartupDashboard ? [{ icon: BarChart3, label: "Data", href: analyticsRoute }] : []),
+        ...(role === 'admin' ? [{ icon: Shield, label: "Admin", href: "/admin" }] : []),
         { icon: User, label: "Profile", href: profileRoute },
     ]
 

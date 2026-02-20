@@ -161,7 +161,23 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                     </span>
                                 )}
                                 {investor.verificationLevel && (
-                                    <div className="shrink-0">
+                                    <div className="shrink-0 flex items-center gap-2">
+                                        {investor.investor_type === 'grant' && (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm">
+                                                <span className="text-sm">🏛️</span>
+                                                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                                                    Gov Grant
+                                                </span>
+                                            </div>
+                                        )}
+                                        {investor.investor_type === 'vc' && (
+                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm">
+                                                <span className="text-sm">🏢</span>
+                                                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">
+                                                    VC Firm
+                                                </span>
+                                            </div>
+                                        )}
                                         <VerificationBadge level={investor.verificationLevel} />
                                     </div>
                                 )}
@@ -393,6 +409,22 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                 ) : connStatus?.status === 'pending' ? (
                     <Button size="lg" disabled className="w-full rounded-2xl h-12 text-base bg-gray-100 text-gray-400">
                         Request Pending
+                    </Button>
+                ) : (investor.investor_type === 'vc' || investor.investor_type === 'grant') ? (
+                    <Button
+                        size="lg"
+                        onClick={() => {
+                            if (investor.website) {
+                                const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                            } else {
+                                alert('No official website provided for this firm.');
+                            }
+                        }}
+                        className="w-full rounded-2xl h-12 text-base bg-black hover:bg-gray-800 text-white shadow-lg transition-all"
+                    >
+                        <Zap className="h-4 w-4 mr-2" />
+                        Official Website
                     </Button>
                 ) : (
                     <Button

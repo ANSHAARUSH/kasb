@@ -31,6 +31,9 @@ interface AdminModalsProps {
         avatar: string
         funds_available: string
         investments_count: number
+        bio?: string
+        website?: string
+        investor_type?: 'direct' | 'vc' | 'grant'
     }
     setNewInvestor: React.Dispatch<React.SetStateAction<AdminModalsProps['newInvestor']>>
     handleAddInvestor: () => Promise<void>
@@ -136,6 +139,30 @@ export function AdminModals({
                         <label className="text-sm font-medium">Investor Name / Firm</label>
                         <Input value={newInvestor.name} onChange={e => setNewInvestor({ ...newInvestor, name: e.target.value })} />
                     </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Investor Type</label>
+                        <select
+                            className="w-full rounded-md border border-gray-200 p-2 text-sm"
+                            value={newInvestor.investor_type}
+                            onChange={e => setNewInvestor({ ...newInvestor, investor_type: e.target.value as any })}
+                        >
+                            <option value="direct">Direct Investor</option>
+                            <option value="vc">VC Firm</option>
+                            <option value="grant">Government Grant</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Bio / Tagline</label>
+                        <Input value={newInvestor.bio} onChange={e => setNewInvestor({ ...newInvestor, bio: e.target.value })} placeholder="Short description..." />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Website URL</label>
+                        <Input value={newInvestor.website} onChange={e => setNewInvestor({ ...newInvestor, website: e.target.value })} placeholder="https://..." />
+                    </div>
+
                     <div className="space-y-2">
                         <label className="text-sm font-medium">Avatar URL</label>
                         <Input value={newInvestor.avatar} onChange={e => setNewInvestor({ ...newInvestor, avatar: e.target.value })} />

@@ -1456,7 +1456,8 @@ export interface Investor {
     }
     state?: string
     city?: string
-    investor_type?: string
+    investor_type?: 'direct' | 'vc' | 'grant'
+    website?: string
     completionPercentage?: number
     tier?: string
 }

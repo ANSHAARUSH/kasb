@@ -45,7 +45,7 @@ export function Landing() {
                         Growing Community of Founders & Investors
                     </div>
 
-                    <h1 id="hero-title" className="text-6xl font-extrabold tracking-tighter text-soft-black sm:text-8xl leading-tight">
+                    <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-tight">
                         Connecting <span className="text-gray-400 font-light">Visionary Capital</span> <br />
                         <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with Extraordinary Innovation</span>
                     </h1>

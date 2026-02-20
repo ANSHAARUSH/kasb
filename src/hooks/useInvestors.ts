@@ -58,6 +58,7 @@ export function useInvestors() {
                                 state: i.state || '',
                                 city: i.city || '',
                                 investor_type: i.investor_type || 'Individual',
+                                website: i.website || '',
                                 tier: subMap[i.id] || i.subscription_tier || 'explore'
                             };
                             const scoreResult = calculateImpactScore(baseInvestor);

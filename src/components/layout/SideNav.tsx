@@ -1,4 +1,4 @@
-import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3, Mail } from "lucide-react"
+import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3, Mail, Shield } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
@@ -27,6 +27,7 @@ export function SideNav() {
         { icon: FileText, label: "Cheat Sheet", href: cheatSheetRoute },
         { icon: User, label: "Profile", href: profileRoute },
         ...(isStartupDashboard ? [{ icon: BarChart3, label: "Analytics", href: analyticsRoute }] : []),
+        ...(role === 'admin' ? [{ icon: Shield, label: "Admin Panel", href: "/admin" }] : []),
     ]
 
     return (

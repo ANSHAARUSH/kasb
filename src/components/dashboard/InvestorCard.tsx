@@ -1,7 +1,7 @@
 import type { Investor } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { cn } from "../../lib/utils"
-import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle } from "lucide-react"
+import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle, Sparkles } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
@@ -160,11 +160,29 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                             {investor.name}
                         </h3>
                     </div>
-                    <PlanBadge tier={investor.tier} className="shrink-0" />
+                    <div className="flex items-center gap-2 shrink-0">
+                        {investor.investor_type === 'grant' && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm">
+                                <span className="text-sm">🏛️</span>
+                                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                                    Gov Grant
+                                </span>
+                            </div>
+                        )}
+                        {investor.investor_type === 'vc' && (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm">
+                                <span className="text-sm">🏢</span>
+                                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">
+                                    VC Firm
+                                </span>
+                            </div>
+                        )}
+                        <PlanBadge tier={investor.tier} className="shrink-0" />
+                    </div>
                 </div>
 
-                {/* Middle Row: Bio */}
-                <div className="flex-1 flex items-center py-1">
+                {/* Middle Row: Bio & Website */}
+                <div className="flex-1 flex flex-col items-center py-1 gap-2">
                     <p className="text-xs text-gray-500 font-medium leading-tight text-center w-full px-2 italic line-clamp-2">
                         "{investor.bio}"
                     </p>
@@ -227,15 +245,34 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                         )}
 
                         {!connStatus && user?.id !== investor.id && (
-                            <Button
-                                size="sm"
-                                disabled={isConnecting}
-                                onClick={handleConnect}
-                                className="rounded-xl h-9 px-6 text-xs font-bold bg-black text-white hover:bg-gray-800 transition-all hover:shadow-lg active:scale-95"
-                            >
-                                <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-                                {isConnecting ? "..." : "Connect"}
-                            </Button>
+                            (investor.investor_type === 'vc' || investor.investor_type === 'grant') ? (
+                                <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (investor.website) {
+                                            const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
+                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                            alert('No official website provided for this firm.');
+                                        }
+                                    }}
+                                    className="rounded-xl h-9 px-6 text-xs font-bold bg-black text-white hover:bg-gray-800 transition-all hover:shadow-lg active:scale-95"
+                                >
+                                    <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                                    Official Website
+                                </Button>
+                            ) : (
+                                <Button
+                                    size="sm"
+                                    disabled={isConnecting}
+                                    onClick={handleConnect}
+                                    className="rounded-xl h-9 px-6 text-xs font-bold bg-black text-white hover:bg-gray-800 transition-all hover:shadow-lg active:scale-95"
+                                >
+                                    <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                                    {isConnecting ? "..." : "Connect"}
+                                </Button>
+                            )
                         )}
 
                         {connStatus?.status === 'pending' && connStatus.isIncoming && (

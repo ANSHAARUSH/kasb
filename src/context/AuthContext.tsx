@@ -153,11 +153,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ]);
 
             // 1. Check Admin
+            console.log('[AuthContext] Checking admin status for:', userId);
             if (adminRows && adminRows.length > 0) {
+                console.log('[AuthContext] Admin confirmed');
                 setRole('admin');
                 setKycStatus('verified');
                 return;
             }
+            console.log('[AuthContext] Not an admin in DB');
 
             const subData = subRows?.[0];
 

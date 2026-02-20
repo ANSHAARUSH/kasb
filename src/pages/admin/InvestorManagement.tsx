@@ -17,6 +17,9 @@ interface Investor {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     subscription_tier?: string
+    bio?: string
+    website?: string
+    investor_type?: 'direct' | 'vc' | 'grant'
 }
 
 interface InvestorManagementProps {

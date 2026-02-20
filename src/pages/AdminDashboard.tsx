@@ -56,6 +56,9 @@ interface Investor {
     verification_level: 'basic' | 'verified' | 'trusted'
     review_requested?: boolean
     subscription_tier?: string
+    bio?: string
+    website?: string
+    investor_type?: 'direct' | 'vc' | 'grant'
 }
 
 export function AdminDashboard() {
@@ -87,7 +90,23 @@ export function AdminDashboard() {
         founder_name: '', founder_avatar: '', founder_bio: '', founder_education: '', founder_work_history: '', history: '', tags: '',
         industry: ''
     })
-    const [newInvestor, setNewInvestor] = useState({ name: '', avatar: '', funds_available: '', investments_count: 0 })
+    const [newInvestor, setNewInvestor] = useState<{
+        name: string
+        avatar: string
+        funds_available: string
+        investments_count: number
+        bio?: string
+        website?: string
+        investor_type?: 'direct' | 'vc' | 'grant'
+    }>({
+        name: '',
+        avatar: '',
+        funds_available: '',
+        investments_count: 0,
+        bio: '',
+        website: '',
+        investor_type: 'direct'
+    })
 
     const fetchData = useCallback(async () => {
         try {
@@ -170,13 +189,50 @@ export function AdminDashboard() {
     }
 
     const handleAddInvestor = async () => {
-        const { error } = await supabase.from('investors').insert([{ ...newInvestor, email_verified: true, show_in_feed: true }])
-        if (!error) {
+        console.log('Attempting to add investor:', newInvestor)
+        try {
+            const generateUUID = () => {
+                if (typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+                // Robust UUID v4 fallback
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                    const r = (Math.random() * 16) | 0
+                    const v = c === 'x' ? r : (r & 0x3) | 0x8
+                    return v.toString(16)
+                })
+            }
+
+            const id = generateUUID()
+            console.log('Generated ID (V5):', id)
+
+            const { error } = await supabase.from('investors').insert([{
+                id,
+                ...newInvestor,
+                email_verified: true,
+                show_in_feed: true,
+                verification_level: 'verified'
+            }])
+
+            if (error) {
+                console.error('Supabase error:', error)
+                alert('Error adding investor: ' + error.message)
+                return
+            }
+
+            console.log('Investor added successfully')
             setIsInvestorModalOpen(false)
             fetchData()
-            setNewInvestor({ name: '', avatar: '', funds_available: '', investments_count: 0 })
-        } else {
-            alert('Error adding investor: ' + error.message)
+            setNewInvestor({
+                name: '',
+                avatar: '',
+                funds_available: '',
+                investments_count: 0,
+                bio: '',
+                website: '',
+                investor_type: 'direct'
+            })
+        } catch (err) {
+            console.error('Unexpected error:', err)
+            alert('Unexpected error: ' + (err instanceof Error ? err.message : String(err)))
         }
     }
 
