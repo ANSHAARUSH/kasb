@@ -12,6 +12,7 @@ export interface InvestorProfileData {
     bio: string
     state?: string
     city?: string
+    website?: string
     email_verified?: boolean
     show_in_feed?: boolean
     adhaar_number?: string
@@ -25,6 +26,9 @@ export interface InvestorProfileData {
     last_active_at?: string
     profile_details?: InvestorProfileDetails
     tier?: string
+    grant_scheme?: string
+    grant_advantages?: string | string[]
+    grant_eligibility?: string | string[]
 }
 
 export interface InvestorProfileDetails {

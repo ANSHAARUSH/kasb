@@ -58,7 +58,10 @@ interface Investor {
     subscription_tier?: string
     bio?: string
     website?: string
-    investor_type?: 'direct' | 'vc' | 'grant'
+    investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
+    grant_scheme?: string
+    grant_advantages?: string
+    grant_eligibility?: string
 }
 
 export function AdminDashboard() {
@@ -97,7 +100,22 @@ export function AdminDashboard() {
         investments_count: number
         bio?: string
         website?: string
-        investor_type?: 'direct' | 'vc' | 'grant'
+        investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
+        grant_scheme?: string
+        grant_advantages?: string
+        grant_eligibility?: string
+        check_size_range?: string
+        target_stages?: string
+        sector_focus?: string
+        geography_focus?: string
+        portfolio_highlights?: string
+        investment_philosophy?: string
+        is_lead_investor?: boolean
+        equity_taken?: string
+        batch_dates?: string
+        location_type?: string
+        cohort_size?: number
+        has_demo_day?: boolean
     }>({
         name: '',
         avatar: '',
@@ -105,7 +123,22 @@ export function AdminDashboard() {
         investments_count: 0,
         bio: '',
         website: '',
-        investor_type: 'direct'
+        investor_type: 'direct',
+        grant_scheme: '',
+        grant_advantages: '',
+        grant_eligibility: '',
+        check_size_range: '',
+        target_stages: '',
+        sector_focus: '',
+        geography_focus: '',
+        portfolio_highlights: '',
+        investment_philosophy: '',
+        is_lead_investor: false,
+        equity_taken: '',
+        batch_dates: '',
+        location_type: 'remote',
+        cohort_size: 0,
+        has_demo_day: false
     })
 
     const fetchData = useCallback(async () => {
@@ -207,6 +240,12 @@ export function AdminDashboard() {
             const { error } = await supabase.from('investors').insert([{
                 id,
                 ...newInvestor,
+                grant_advantages: newInvestor.grant_advantages?.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) || [],
+                grant_eligibility: newInvestor.grant_eligibility?.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) || [],
+                target_stages: newInvestor.target_stages?.split(',').map(s => s.trim()).filter(Boolean) || [],
+                sector_focus: newInvestor.sector_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
+                geography_focus: newInvestor.geography_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
+                portfolio_highlights: newInvestor.portfolio_highlights?.split(',').map(s => s.trim()).filter(Boolean) || [],
                 email_verified: true,
                 show_in_feed: true,
                 verification_level: 'verified'
@@ -228,7 +267,22 @@ export function AdminDashboard() {
                 investments_count: 0,
                 bio: '',
                 website: '',
-                investor_type: 'direct'
+                investor_type: 'direct',
+                grant_scheme: '',
+                grant_advantages: '',
+                grant_eligibility: '',
+                check_size_range: '',
+                target_stages: '',
+                sector_focus: '',
+                geography_focus: '',
+                portfolio_highlights: '',
+                investment_philosophy: '',
+                is_lead_investor: false,
+                equity_taken: '',
+                batch_dates: '',
+                location_type: 'remote',
+                cohort_size: 0,
+                has_demo_day: false
             })
         } catch (err) {
             console.error('Unexpected error:', err)

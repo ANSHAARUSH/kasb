@@ -1442,7 +1442,9 @@ export interface Investor {
     title?: string
     bio: string
     fundsAvailable: string
+    funds_available?: string
     investments: number
+    investments_count?: number
     expertise: string[]
     impactPoints?: number
     verificationLevel?: 'basic' | 'verified' | 'trusted'
@@ -1456,10 +1458,25 @@ export interface Investor {
     }
     state?: string
     city?: string
-    investor_type?: 'direct' | 'vc' | 'grant'
+    investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
     website?: string
     completionPercentage?: number
     tier?: string
+    grant_scheme?: string
+    grant_advantages?: string[]
+    grant_eligibility?: string[]
+    check_size_range?: string
+    target_stages?: string[]
+    sector_focus?: string[]
+    geography_focus?: string[]
+    portfolio_highlights?: string[]
+    investment_philosophy?: string
+    is_lead_investor?: boolean
+    equity_taken?: string
+    batch_dates?: string
+    location_type?: string
+    cohort_size?: number
+    has_demo_day?: boolean
 }
 
 export const MOCK_INVESTORS: Investor[] = [

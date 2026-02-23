@@ -1,7 +1,7 @@
 import type { Investor } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { cn } from "../../lib/utils"
-import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle, Sparkles } from "lucide-react"
+import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle, Sparkles, Landmark } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
@@ -162,22 +162,23 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                         {investor.investor_type === 'grant' && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm" title="Government Grant">
                                 <span className="text-sm">🏛️</span>
-                                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
-                                    Gov Grant
-                                </span>
                             </div>
                         )}
                         {investor.investor_type === 'vc' && (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm" title="VC Firm">
                                 <span className="text-sm">🏢</span>
-                                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">
-                                    VC Firm
-                                </span>
                             </div>
                         )}
-                        <PlanBadge tier={investor.tier} className="shrink-0" />
+                        {investor.investor_type === 'accelerator' && (
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-50 border-2 border-orange-200 shadow-sm" title="Accelerator">
+                                <span className="text-sm">🚀</span>
+                            </div>
+                        )}
+                        {(!investor.investor_type || (investor.investor_type !== 'grant' && investor.investor_type !== 'vc' && investor.investor_type !== 'accelerator')) && (
+                            <PlanBadge tier={investor.tier} className="shrink-0" />
+                        )}
                     </div>
                 </div>
 
@@ -186,6 +187,47 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                     <p className="text-xs text-gray-500 font-medium leading-tight text-center w-full px-2 italic line-clamp-2">
                         "{investor.bio}"
                     </p>
+
+                    {investor.investor_type === 'grant' && investor.grant_scheme && (
+                        <div className="w-full mt-2 p-3 rounded-2xl bg-blue-50/50 border border-blue-100/50 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
+                                    <Landmark className="h-3 w-3" />
+                                </div>
+                                <div className="text-[11px] font-black text-blue-900 uppercase tracking-tight">
+                                    {investor.grant_scheme}
+                                </div>
+                            </div>
+
+                            {(investor.grant_advantages?.length ?? 0) > 0 && (
+                                <div className="space-y-1">
+                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider px-1">Advantages</div>
+                                    <ul className="space-y-1 px-1">
+                                        {investor.grant_advantages?.map((adv, i) => (
+                                            <li key={i} className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-tight">
+                                                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
+                                                {adv}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+
+                            {(investor.grant_eligibility?.length ?? 0) > 0 && (
+                                <div className="space-y-1">
+                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider px-1">Eligibility</div>
+                                    <ul className="space-y-1 px-1">
+                                        {investor.grant_eligibility?.map((el, i) => (
+                                            <li key={i} className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-tight">
+                                                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
+                                                {el}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Bottom Row: Completion % and CTAs */}
@@ -245,7 +287,7 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                         )}
 
                         {!connStatus && user?.id !== investor.id && (
-                            (investor.investor_type === 'vc' || investor.investor_type === 'grant') ? (
+                            (investor.investor_type === 'vc' || investor.investor_type === 'grant' || investor.investor_type === 'accelerator' || investor.investor_type === 'direct') ? (
                                 <Button
                                     size="sm"
                                     onClick={(e) => {

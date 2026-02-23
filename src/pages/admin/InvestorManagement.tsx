@@ -19,7 +19,10 @@ interface Investor {
     subscription_tier?: string
     bio?: string
     website?: string
-    investor_type?: 'direct' | 'vc' | 'grant'
+    investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
+    grant_scheme?: string
+    grant_advantages?: string
+    grant_eligibility?: string
 }
 
 interface InvestorManagementProps {
