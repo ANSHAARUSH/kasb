@@ -198,34 +198,6 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                     {investor.grant_scheme}
                                 </div>
                             </div>
-
-                            {(investor.grant_advantages?.length ?? 0) > 0 && (
-                                <div className="space-y-1">
-                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider px-1">Advantages</div>
-                                    <ul className="space-y-1 px-1">
-                                        {investor.grant_advantages?.map((adv, i) => (
-                                            <li key={i} className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-tight">
-                                                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
-                                                {adv}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            {(investor.grant_eligibility?.length ?? 0) > 0 && (
-                                <div className="space-y-1">
-                                    <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider px-1">Eligibility</div>
-                                    <ul className="space-y-1 px-1">
-                                        {investor.grant_eligibility?.map((el, i) => (
-                                            <li key={i} className="flex items-start gap-1.5 text-[10px] text-blue-800 leading-tight">
-                                                <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
-                                                {el}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
