@@ -9,6 +9,7 @@ import { ToastProvider } from "./components/ui/use-toast"
 import { ChatProvider } from "./context/ChatContext"
 import { ChatDialog } from "./components/chat/ChatDialog"
 import { AuthEventHandler } from "./components/auth/AuthEventHandler"
+import { LoadingScreen } from "./components/ui/LoadingScreen"
 
 // Lazy load pages for code splitting with reload-on-failure logic
 const Landing = lazyWithRetry(() => import("./pages/Landing").then(m => ({ default: m.Landing })))
@@ -47,22 +48,12 @@ function CatchAll() {
 
   if (isAuthFragment) {
     console.log("[CatchAll] Auth fragment detected. Suppressing router redirect.");
-    return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <div className="animate-pulse text-white/50 font-bold uppercase tracking-widest text-sm">
-          Securing Session...
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // 2. If we are still loading, show a subtle loading state
   if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-white">
-        <div className="text-gray-400 font-medium animate-pulse">Initializing app...</div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // 3. If authenticated but hitting an unknown route, go to dashboard
@@ -89,7 +80,7 @@ function App() {
         <ToastProvider>
           <ChatProvider>
             <Router>
-              <Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}>
+              <Suspense fallback={<LoadingScreen />}>
                 <AuthEventHandler />
                 <Routes>
                   {/* Public Routes */}

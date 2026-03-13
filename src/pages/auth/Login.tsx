@@ -57,11 +57,18 @@ export function Login() {
             // which monitors the 'user' and 'role' from useAuth()
             return;
         } catch (error) {
+            console.error("[Login] error:", error)
             if (error instanceof Error) {
                 if (error.message.includes("Email not confirmed")) {
                     setNeedsVerification(true)
                 }
-                alert(error.message)
+
+                // Specific handling for "Failed to fetch" which usually indicates a paused project or network issue
+                if (error.message.toLowerCase().includes("failed to fetch")) {
+                    alert("Connection failed. This often happens if the database project is 'Paused' or your internet is unstable. Please check your Supabase dashboard or your connection.")
+                } else {
+                    alert(error.message)
+                }
             } else {
                 alert("An unknown error occurred")
             }

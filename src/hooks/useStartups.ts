@@ -22,7 +22,7 @@ export function useStartups() {
                 if (startupError) throw startupError
 
                 if (startupData && startupData.length > 0) {
-                    const userIds = startupData.map(s => s.id)
+                    const userIds = startupData.map((s: any) => s.id)
                     const boostMap: Record<string, number> = {}
                     const subMap: Record<string, string> = {}
 

@@ -36,7 +36,7 @@ export function VerificationSection({ startup, onRequestReview }: VerificationSe
                 .eq('startup_id', startup.id)
                 .eq('status', 'verified')
 
-            const verifiedTypes = new Set(data?.map(d => d.document_type) || [])
+            const verifiedTypes = new Set(data?.map((d: any) => d.document_type) || [])
             const missing = requirements.filter(req => !verifiedTypes.has(req.type)).length
 
             setMissingDocs(missing)

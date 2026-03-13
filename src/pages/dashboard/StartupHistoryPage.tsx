@@ -13,6 +13,7 @@ import { InvestorComparisonView } from "../../components/dashboard/InvestorCompa
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
+import { ensureArray } from "../../lib/utils"
 
 
 export function StartupHistoryPage() {
@@ -52,7 +53,16 @@ export function StartupHistoryPage() {
                   fundsAvailable: i.funds_available || '$0',
                   investments: i.investments_count || 0,
                   expertise: i.expertise || [],
-                  last_active_at: i.last_active_at
+                  last_active_at: i.last_active_at,
+                  investor_type: (i as any).investor_type,
+                  grant_scheme: (i as any).grant_scheme,
+                  grant_advantages: ensureArray((i as any).grant_advantages),
+                  grant_eligibility: ensureArray((i as any).grant_eligibility),
+                  check_size_range: (i as any).check_size_range,
+                  target_stages: ensureArray((i as any).target_stages),
+                  sector_focus: ensureArray((i as any).sector_focus),
+                  geography_focus: ensureArray((i as any).geography_focus),
+                  portfolio_highlights: ensureArray((i as any).portfolio_highlights)
                } as Investor
             })
             setSavedInvestors(mapped)
@@ -93,7 +103,16 @@ export function StartupHistoryPage() {
                   fundsAvailable: i.funds_available || '$0',
                   investments: i.investments_count || 0,
                   expertise: i.expertise || [],
-                  last_active_at: i.last_active_at
+                  last_active_at: i.last_active_at,
+                  investor_type: (i as any).investor_type,
+                  grant_scheme: (i as any).grant_scheme,
+                  grant_advantages: ensureArray((i as any).grant_advantages),
+                  grant_eligibility: ensureArray((i as any).grant_eligibility),
+                  check_size_range: (i as any).check_size_range,
+                  target_stages: ensureArray((i as any).target_stages),
+                  sector_focus: ensureArray((i as any).sector_focus),
+                  geography_focus: ensureArray((i as any).geography_focus),
+                  portfolio_highlights: ensureArray((i as any).portfolio_highlights)
                } as Investor))
                setHistoryInvestors(mapped)
             }

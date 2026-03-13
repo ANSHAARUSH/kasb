@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase"
 import { type Investor } from "../data/mockData"
 import { calculateImpactScore } from "../lib/scoring"
 import { calculateInvestorProgress } from "../lib/questionnaire"
+import { ensureArray } from "../lib/utils"
 
 export function useInvestors() {
     const [investors, setInvestors] = useState<Investor[]>([])
@@ -22,7 +23,7 @@ export function useInvestors() {
                 if (investorError) throw investorError
 
                 if (investorData && investorData.length > 0) {
-                    const userIds = investorData.map(i => i.id)
+                    const userIds = investorData.map((i: any) => i.id)
                     const subMap: Record<string, string> = {}
 
                     try {
@@ -59,7 +60,23 @@ export function useInvestors() {
                                 city: i.city || '',
                                 investor_type: i.investor_type || 'Individual',
                                 website: i.website || '',
-                                tier: subMap[i.id] || i.subscription_tier || 'explore'
+                                tier: subMap[i.id] || i.subscription_tier || 'explore',
+                                // Include all missing admin/institutional fields
+                                grant_scheme: i.grant_scheme,
+                                grant_advantages: ensureArray(i.grant_advantages),
+                                grant_eligibility: ensureArray(i.grant_eligibility),
+                                check_size_range: i.check_size_range,
+                                target_stages: ensureArray(i.target_stages),
+                                sector_focus: ensureArray(i.sector_focus),
+                                geography_focus: ensureArray(i.geography_focus),
+                                portfolio_highlights: ensureArray(i.portfolio_highlights),
+                                investment_philosophy: i.investment_philosophy,
+                                is_lead_investor: i.is_lead_investor,
+                                equity_taken: i.equity_taken,
+                                batch_dates: i.batch_dates,
+                                location_type: i.location_type,
+                                cohort_size: i.cohort_size,
+                                has_demo_day: i.has_demo_day
                             };
                             const scoreResult = calculateImpactScore(baseInvestor);
                             const completionPercentage = calculateInvestorProgress(i);

@@ -147,7 +147,11 @@ export function SignUp() {
         } catch (err: any) {
             console.error("Signup Error:", err)
             // Improved error extraction
-            const message = err?.message || JSON.stringify(err) || 'An unknown error occurred'
+            let message = err?.message || JSON.stringify(err) || 'An unknown error occurred'
+
+            if (message.toLowerCase().includes("failed to fetch")) {
+                message = "Connection failed. Your database project might be paused. Please check your Supabase dashboard or internet connection."
+            }
             setError(message)
         } finally {
             setLoading(false)

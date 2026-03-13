@@ -11,6 +11,7 @@ import { Avatar } from "../ui/Avatar"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { VerificationBadge } from "../ui/VerificationBadge"
+import { ensureArray } from "../../lib/utils"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -144,68 +145,86 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                             />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-2xl font-bold">{investor.name}</h2>
-                                {investor.last_active_at && (
-                                    <span className="flex items-center gap-1 font-bold text-[10px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        Active {(() => {
-                                            const diff = Date.now() - new Date(investor.last_active_at).getTime()
-                                            const minutes = Math.floor(diff / 60000)
-                                            if (minutes < 5) return 'now'
-                                            if (minutes < 60) return `${minutes}m ago`
-                                            const hours = Math.floor(minutes / 60)
-                                            if (hours < 24) return `${hours}h ago`
-                                            return `${Math.floor(hours / 24)}d ago`
-                                        })()}
-                                    </span>
-                                )}
-                                {investor.grant_scheme && (
-                                    <div className="mt-1">
-                                        <p className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block uppercase tracking-tight">
-                                            {investor.grant_scheme}
-                                        </p>
+                            {!(investor.investor_type === 'vc' || investor.investor_type === 'grant' || investor.investor_type === 'accelerator' || investor.investor_type === 'direct') ? (
+                                <>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-2xl font-bold">{investor.name}</h2>
+                                        {investor.last_active_at && (
+                                            <span className="flex items-center gap-1 font-bold text-[10px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                Active {(() => {
+                                                    const diff = Date.now() - new Date(investor.last_active_at).getTime()
+                                                    const minutes = Math.floor(diff / 60000)
+                                                    if (minutes < 5) return 'now'
+                                                    if (minutes < 60) return `${minutes}m ago`
+                                                    const hours = Math.floor(minutes / 60)
+                                                    if (hours < 24) return `${hours}h ago`
+                                                    return `${Math.floor(hours / 24)}d ago`
+                                                })()}
+                                            </span>
+                                        )}
+                                        {investor.grant_scheme && (
+                                            <div className="mt-1">
+                                                <p className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded inline-block uppercase tracking-tight">
+                                                    {investor.grant_scheme}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {investor.verificationLevel && (
+                                            <div className="shrink-0 flex items-center gap-2">
+                                                {investor.investor_type === 'grant' && (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm">
+                                                        <span className="text-sm">🏛️</span>
+                                                        <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
+                                                            Gov Grant
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {investor.investor_type === 'vc' && (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm">
+                                                        <span className="text-sm">🏢</span>
+                                                        <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">
+                                                            VC Firm
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {investor.investor_type === 'accelerator' && (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border-2 border-orange-200 shadow-sm">
+                                                        <span className="text-sm">🚀</span>
+                                                        <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest">
+                                                            Accelerator
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {investor.investor_type === 'direct' && (
+                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border-2 border-emerald-200 shadow-sm">
+                                                        <span className="text-sm">👤</span>
+                                                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
+                                                            Direct Investor
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <VerificationBadge level={investor.verificationLevel} />
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {investor.verificationLevel && (
-                                    <div className="shrink-0 flex items-center gap-2">
-                                        {investor.investor_type === 'grant' && (
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-200 shadow-sm">
-                                                <span className="text-sm">🏛️</span>
-                                                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest">
-                                                    Gov Grant
-                                                </span>
-                                            </div>
-                                        )}
-                                        {investor.investor_type === 'vc' && (
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 border-2 border-purple-200 shadow-sm">
-                                                <span className="text-sm">🏢</span>
-                                                <span className="text-[10px] font-black text-purple-700 uppercase tracking-widest">
-                                                    VC Firm
-                                                </span>
-                                            </div>
-                                        )}
-                                        {investor.investor_type === 'accelerator' && (
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 border-2 border-orange-200 shadow-sm">
-                                                <span className="text-sm">🚀</span>
-                                                <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest">
-                                                    Accelerator
-                                                </span>
-                                            </div>
-                                        )}
-                                        {investor.investor_type === 'direct' && (
-                                            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border-2 border-emerald-200 shadow-sm">
-                                                <span className="text-sm">👤</span>
-                                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">
-                                                    Direct Investor
-                                                </span>
-                                            </div>
-                                        )}
-                                        <VerificationBadge level={investor.verificationLevel} />
+                                    <span className="text-sm text-gray-500">{(investor.investments || investor.investments_count || 0)} Portfolio Companies</span>
+                                </>
+                            ) : (
+                                <div className="space-y-1">
+                                    <h2 className="text-xl font-black uppercase tracking-tight text-black">{investor.name}</h2>
+                                    <div className="flex items-center gap-2">
+                                        <div className="px-3 py-1 rounded-full bg-black border border-black shadow-sm">
+                                            <span className="text-[9px] font-black text-white uppercase tracking-widest">
+                                                {investor.investor_type === 'grant' ? 'Government Grant' :
+                                                    investor.investor_type === 'vc' ? 'Venture Capital' :
+                                                        investor.investor_type === 'accelerator' ? 'Accelerator Program' : 'Direct Investor'}
+                                            </span>
+                                        </div>
+                                        <VerificationBadge level={investor.verificationLevel || (investor as any).verification_level || 'verified'} />
                                     </div>
-                                )}
-                            </div>
-                            <span className="text-sm text-gray-500">{(investor.investments || investor.investments_count || 0)} Portfolio Companies</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -397,182 +416,135 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                         </div>
                     </>
                 ) : (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        {/* 1. Core Metrics Grid (Type Specific) */}
-                        <div className="grid grid-cols-2 gap-4">
-                            {/* Common: Check Size / Investment Amount */}
-                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
-                                    {investor.investor_type === 'accelerator' ? '💰 Investment' :
-                                        investor.investor_type === 'grant' ? 'Grant Amount' : 'Check Size'}
-                                </p>
-                                <p className="text-lg font-bold text-gray-900">{investor.check_size_range || investor.funds_available || investor.fundsAvailable || 'N/A'}</p>
-                            </div>
+                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {(() => {
+                            const stages = ensureArray(investor.target_stages || (investor as any).profile_details?.target_stages);
+                            const sectors = ensureArray(investor.sector_focus || (investor as any).profile_details?.sector_focus);
+                            const geos = ensureArray(investor.geography_focus || (investor as any).profile_details?.geography_focus);
+                            const highlights = ensureArray(investor.portfolio_highlights || (investor as any).profile_details?.portfolio_highlights);
+                            const advantages = ensureArray(investor.grant_advantages || (investor as any).profile_details?.grant_advantages);
+                            const eligibility = ensureArray(investor.grant_eligibility || (investor as any).profile_details?.grant_eligibility);
+                            const scheme = investor.grant_scheme || (investor as any).profile_details?.grant_scheme;
 
-                            {/* Accelerator Specific Metrics */}
-                            {investor.investor_type === 'accelerator' && (
+                            return (
                                 <>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Equity Taken</p>
-                                        <p className="text-lg font-bold text-gray-900">{investor.equity_taken || 'N/A'}</p>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Batch Dates</p>
-                                        <p className="text-base font-bold text-gray-900 tracking-tight">{investor.batch_dates || 'N/A'}</p>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Cohort Size</p>
-                                        <p className="text-lg font-bold text-gray-900">{investor.cohort_size || 'N/A'} Startups</p>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Facility</p>
-                                        <p className="text-lg font-bold text-gray-900 capitalize">{investor.location_type || 'N/A'}</p>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Demo Day</p>
-                                        <p className="text-lg font-bold text-gray-900">{investor.has_demo_day ? 'Yes' : 'No'}</p>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* VC & Direct Specific Metrics */}
-                            {(investor.investor_type === 'vc' || investor.investor_type === 'direct') && (
-                                <>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Portfolio size</p>
-                                        <p className="text-lg font-bold text-gray-900">{(investor.investments || investor.investments_count || 0)} Companies</p>
-                                    </div>
-                                    <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Lead Status</p>
-                                        <p className="text-lg font-bold text-gray-900">{investor.is_lead_investor ? 'Yes, leads rounds' : 'Co-investor'}</p>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Target Stages (Common for ALL institutional types including Grants) */}
-                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Target Stages</p>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                    {investor.target_stages?.map(s => (
-                                        <span key={s} className="px-2 py-0.5 bg-white border border-gray-200 rounded text-[10px] font-bold text-gray-600">
-                                            {s}
-                                        </span>
-                                    )) || <span className="text-gray-400 text-xs">N/A</span>}
-                                </div>
-                            </div>
-
-                            {/* Funds Available (Grant Focus) */}
-                            {investor.investor_type === 'grant' && (
-                                <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Funds Available</p>
-                                    <p className="text-lg font-bold text-gray-900">{investor.funds_available || investor.fundsAvailable || 'Inquire'}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 2. Investment Philosophy (For VC, Direct, Accelerator) */}
-                        {investor.investment_philosophy && (
-                            <section>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1">Investment Philosophy</h3>
-                                <div className="p-6 bg-white border border-gray-100 rounded-3xl relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-1 h-full bg-black/10" />
-                                    <p className="italic text-gray-600 leading-relaxed font-medium">"{investor.investment_philosophy}"</p>
-                                </div>
-                            </section>
-                        )}
-
-                        {/* 3. Strategic Focus (Sectors & Geography) */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {(investor.sector_focus?.length ?? 0) > 0 && (
-                                <section>
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1">Sector Focus</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {investor.sector_focus?.map(s => (
-                                            <span key={s} className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-wider">
-                                                {s}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                            {(investor.geography_focus?.length ?? 0) > 0 && (
-                                <section>
-                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1">Geography Focus</h3>
-                                    <div className="flex flex-wrap gap-2">
-                                        {investor.geography_focus?.map(g => (
-                                            <span key={g} className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-2xl text-[10px] font-black text-gray-700 uppercase tracking-wider">
-                                                {g}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-                        </div>
-
-                        {/* 4. Portfolio Highlights */}
-                        {(investor.portfolio_highlights?.length ?? 0) > 0 && (
-                            <section>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
-                                    <Zap className="h-3 w-3" />
-                                    Portfolio highlights
-                                </h3>
-                                <div className="flex flex-wrap gap-3">
-                                    {investor.portfolio_highlights?.map(p => (
-                                        <div key={p} className="px-4 py-2.5 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-widest border border-black shadow-lg">
-                                            {p}
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
-
-                        {/* 5. Grant/Accelerator Specific Sections (Advantages & Eligibility) */}
-                        {investor.grant_advantages && investor.grant_advantages.length > 0 && (
-                            <section>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
-                                    <Award className="h-3 w-3" />
-                                    {investor.investor_type === 'accelerator' ? 'Value-Add Advantages' : 'Program Benefits'}
-                                </h3>
-                                <div className="grid gap-3">
-                                    {investor.grant_advantages.map((adv, idx) => (
-                                        <div key={idx} className="flex items-start gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl group hover:border-emerald-200 transition-colors">
-                                            <div className="h-5 w-5 rounded-full bg-white flex items-center justify-center border border-emerald-100 mt-0.5 shrink-0 group-hover:scale-110 transition-transform">
-                                                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                    {/* 1. Scheme Name (Top Box) */}
+                                    {(scheme || investor.name) && (
+                                        <div className="p-6 rounded-3xl bg-black text-white shadow-xl border border-black relative overflow-hidden group">
+                                            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                                                <Award className="h-24 w-24" />
                                             </div>
-                                            <p className="text-sm font-medium text-emerald-900 leading-tight">{adv}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Scheme / Entity Name</p>
+                                            <h3 className="text-xl font-black uppercase tracking-tight">{scheme || investor.name}</h3>
                                         </div>
-                                    ))}
-                                </div>
-                            </section>
-                        )}
+                                    )}
 
-                        {investor.grant_eligibility && investor.grant_eligibility.length > 0 && (
-                            <section>
-                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
-                                    <Target className="h-3 w-3" />
-                                    Eligibility Criteria
-                                </h3>
-                                <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6">
-                                    <ul className="space-y-4">
-                                        {investor.grant_eligibility.map((crit, idx) => (
-                                            <li key={idx} className="flex items-start gap-3 text-sm text-gray-700 font-medium">
-                                                <div className="h-1.5 w-1.5 rounded-full bg-black/20 mt-1.5 shrink-0" />
-                                                {crit}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </section>
-                        )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* 2. Investment Range */}
+                                        <div className="p-6 rounded-3xl bg-white border border-gray-200 shadow-sm">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                                                {investor.investor_type === 'accelerator' ? 'Investment Amount' :
+                                                    investor.investor_type === 'grant' ? 'Grant Size Range' : 'Average Ticket Size'}
+                                            </p>
+                                            <p className="text-xl font-bold text-black">{investor.check_size_range || investor.fundsAvailable || 'Inquire for details'}</p>
+                                        </div>
 
-                        {/* Official Support Note */}
-                        <div className="p-8 rounded-[2rem] bg-gray-900 text-white text-center shadow-xl border border-gray-800">
-                            <ExternalLink className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
-                            <h4 className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2">Institutional Support</h4>
-                            <p className="text-gray-300 text-xs leading-relaxed max-w-[240px] mx-auto font-medium">
-                                For complete documentation and application procedures, please visit the official institutional portal.
-                            </p>
-                        </div>
+                                        {/* 3. Target Stages */}
+                                        <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 shadow-sm">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Stages to Invest In</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {stages.map(s => (
+                                                    <span key={s} className="px-3 py-1 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-black uppercase tracking-wider">
+                                                        {s}
+                                                    </span>
+                                                ))}
+                                                {stages.length === 0 && <span className="text-gray-400 text-xs font-medium">Not specified</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 4. Sector Focus */}
+                                        <div className="p-6 rounded-3xl bg-white border border-gray-200 shadow-sm">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Sector Focus</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {sectors.map(s => (
+                                                    <span key={s} className="px-3 py-1 bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-wider">
+                                                        {s}
+                                                    </span>
+                                                ))}
+                                                {sectors.length === 0 && <span className="text-gray-400 text-xs font-medium">Generalist</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 5. Geography Focus */}
+                                        <div className="p-6 rounded-3xl bg-black text-white shadow-lg border border-black">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Geography Focus</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {geos.map(g => (
+                                                    <span key={g} className="px-3 py-1 bg-white/10 border border-white/20 rounded-xl text-[10px] font-black text-white uppercase tracking-wider">
+                                                        {g}
+                                                    </span>
+                                                ))}
+                                                {geos.length === 0 && <span className="text-gray-500 text-xs font-medium">Global / Pan-India</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 6. Portfolio Highlights */}
+                                        <div className="md:col-span-2 p-6 rounded-3xl bg-gray-100 border border-gray-200 shadow-sm">
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Portfolio Highlights</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {highlights.map(p => (
+                                                    <span key={p} className="px-3 py-1 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-black uppercase tracking-wider">
+                                                        {p}
+                                                    </span>
+                                                ))}
+                                                {highlights.length === 0 && <span className="text-gray-400 text-xs font-medium">Confidential</span>}
+                                            </div>
+                                        </div>
+
+                                        {/* 7. Advantages (Bullet Points) */}
+                                        {advantages.length > 0 && (
+                                            <div className="p-6 rounded-3xl bg-white border border-gray-200 shadow-sm">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Advantages & Benefits</p>
+                                                <ul className="space-y-3">
+                                                    {advantages.map((adv, idx) => (
+                                                        <li key={idx} className="flex items-start gap-3">
+                                                            <div className="h-5 w-5 rounded-full bg-black flex items-center justify-center shrink-0 mt-0.5">
+                                                                <CheckCircle2 className="h-3 w-3 text-white" />
+                                                            </div>
+                                                            <p className="text-sm font-bold text-black leading-tight">{adv}</p>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* 8. Eligibility (Bullet Points) */}
+                                        {eligibility.length > 0 && (
+                                            <div className="p-6 rounded-[2rem] bg-gray-900 text-white shadow-xl border border-gray-800">
+                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Eligibility Criteria</p>
+                                                <ul className="space-y-4">
+                                                    {eligibility.map((crit, idx) => (
+                                                        <li key={idx} className="flex items-start gap-3 text-sm text-gray-300 font-bold">
+                                                            <div className="h-2 w-2 rounded-full bg-white mt-1.5 shrink-0" />
+                                                            {crit}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+
+                                        {/* official website CTA Note */}
+                                        <div className="md:col-span-2 p-8 rounded-[2rem] bg-gray-100 text-black text-center border border-gray-200">
+                                            <ExternalLink className="h-6 w-6 text-gray-400 mx-auto mb-3" />
+                                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 italic">Institutional Support Portal</h4>
+                                            <p className="text-gray-600 text-[10px] leading-relaxed max-w-[240px] mx-auto font-bold uppercase tracking-tight">
+                                                Complete documentation and official application procedures are available via the portal below.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </>
+                            );
+                        })()}
                     </div>
                 )}
             </div>

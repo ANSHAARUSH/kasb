@@ -26,3 +26,36 @@ export function getViewableUrl(url: string | null | undefined) {
     // PDF and others can be viewed directly
     return url
 }
+
+export function ensureArray(val: any): string[] {
+    if (!val) return []
+    if (Array.isArray(val)) return val
+    if (typeof val === 'string') {
+        // Handle Postgres array string format e.g. "{item1,item2}"
+        if (val.startsWith('{') && val.endsWith('}')) {
+            return val
+                .slice(1, -1)
+                .split(',')
+                .map(s => s.trim().replace(/^"(.*)"$/, '$1'))
+                .filter(Boolean)
+        }
+        // Handle JSON array string
+        if (val.startsWith('[') && val.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(val)
+                if (Array.isArray(parsed)) return parsed
+            } catch (e) {
+                console.error("Failed to parse JSON array:", e)
+            }
+        }
+        // Handle comma or newline separated string
+        if (val.includes(',') || val.includes('\n')) {
+            return val
+                .split(/[,\n]/)
+                .map(s => s.trim().replace(/^•\s*/, ''))
+                .filter(Boolean)
+        }
+        return [val.trim()]
+    }
+    return []
+}

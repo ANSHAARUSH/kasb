@@ -48,8 +48,8 @@ export function ModerationQueue() {
             if (investorError) throw investorError
 
             const combined = [
-                ...(startups || []).map(s => ({ ...s, type: 'startup' } as ModerationItem)),
-                ...(investors || []).map(i => ({ ...i, type: 'investor' } as ModerationItem))
+                ...(startups || []).map((s: any) => ({ ...s, type: 'startup' } as ModerationItem)),
+                ...(investors || []).map((i: any) => ({ ...i, type: 'investor' } as ModerationItem))
             ]
             setQueue(combined)
         } catch (error) {

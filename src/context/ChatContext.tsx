@@ -38,7 +38,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         // ... error handling ...
 
         const uniqueUserIds = new Set<string>()
-        data?.forEach(msg => {
+        data?.forEach((msg: any) => {
             if (msg.sender_id !== user.id) uniqueUserIds.add(msg.sender_id)
             if (msg.receiver_id !== user.id) uniqueUserIds.add(msg.receiver_id)
         })
@@ -60,7 +60,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 console.warn("Could not fetch admin data:", err)
             }
 
-            const adminIds = new Set(aData?.map(a => a.id) || [])
+            const adminIds = new Set<string>((aData?.map((a: any) => a.id) || []) as string[])
 
             // Handle Admins first
             adminIds.forEach(id => {

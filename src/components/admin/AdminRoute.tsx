@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "../../context/AuthContext"
+import { LoadingScreen } from "../ui/LoadingScreen"
 
 interface AdminRouteProps {
     children: React.ReactNode
@@ -9,7 +10,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     const { user, role, loading } = useAuth()
 
     if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+        return <LoadingScreen />
     }
 
     if (!user || role !== 'admin') {

@@ -54,8 +54,13 @@ export function UpdatePassword() {
             await supabase.auth.signOut() // Force sign out to make them login with new password or just redirect
             navigate("/login")
         } catch (err) {
+            console.error("UpdatePassword Error:", err)
             if (err instanceof Error) {
-                setError(err.message)
+                if (err.message.toLowerCase().includes("failed to fetch")) {
+                    setError("Connection failed. Your database project might be paused. Please check your Supabase dashboard or internet connection.")
+                } else {
+                    setError(err.message)
+                }
             } else {
                 setError("An error occurred. Please try again.")
             }

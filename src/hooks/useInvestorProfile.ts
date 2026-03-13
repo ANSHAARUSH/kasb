@@ -110,8 +110,8 @@ export function useInvestorProfile() {
 
             if (investorRes.data) {
                 console.log('Fetched Investor Data:', investorRes.data)
-                const spent = boostRes.data?.reduce((sum, b) => sum + (b.points_awarded || 0), 0) || 0
-                const purchased = purchaseRes.data?.reduce((sum, p) => sum + (p.points || 0), 0) || 0
+                const spent = boostRes.data?.reduce((sum: number, b: any) => sum + (b.points_awarded || 0), 0) || 0
+                const purchased = purchaseRes.data?.reduce((sum: number, p: any) => sum + (p.points || 0), 0) || 0
                 console.log('Profile Budget Trace:', { purchased, spent })
                 setInvestor({
                     ...investorRes.data,

@@ -59,18 +59,18 @@ export function NotificationBell() {
 
             if (!error && recent) {
                 // Fetch sender names for the dropdown
-                const senderIds = recent.map(m => m.sender_id)
+                const senderIds = recent.map((m: any) => m.sender_id)
                 if (senderIds.length > 0) {
                     const { data: startups } = await supabase.from('startups').select('id, name').in('id', senderIds)
                     const { data: investors } = await supabase.from('investors').select('id, name').in('id', senderIds)
                     const { data: admins } = await supabase.from('admins').select('id').in('id', senderIds)
 
                     const profileMap = new Map()
-                    startups?.forEach(s => profileMap.set(s.id, s.name))
-                    investors?.forEach(i => profileMap.set(i.id, i.name))
-                    admins?.forEach(a => profileMap.set(a.id, 'Kasb.AI'))
+                    startups?.forEach((s: any) => profileMap.set(s.id, s.name))
+                    investors?.forEach((i: any) => profileMap.set(i.id, i.name))
+                    admins?.forEach((a: any) => profileMap.set(a.id, 'Kasb.AI'))
 
-                    setRecentMessages(recent.map(m => ({
+                    setRecentMessages(recent.map((m: any) => ({
                         ...m,
                         sender_name: profileMap.get(m.sender_id) || 'Unknown User'
                     })))
@@ -88,16 +88,16 @@ export function NotificationBell() {
                 .eq('status', 'pending')
 
             if (!error && data) {
-                const senderIds = data.map(c => c.sender_id)
+                const senderIds = data.map((c: any) => c.sender_id)
                 if (senderIds.length > 0) {
                     const { data: startups } = await supabase.from('startups').select('id, name, logo').in('id', senderIds)
                     const { data: investors } = await supabase.from('investors').select('id, name, avatar').in('id', senderIds)
 
                     const profileMap = new Map()
-                    startups?.forEach(s => profileMap.set(s.id, { name: s.name, avatar: s.logo }))
-                    investors?.forEach(i => profileMap.set(i.id, { name: i.name, avatar: i.avatar }))
+                    startups?.forEach((s: any) => profileMap.set(s.id, { name: s.name, avatar: s.logo }))
+                    investors?.forEach((i: any) => profileMap.set(i.id, { name: i.name, avatar: i.avatar }))
 
-                    setConnectionRequests(data.map(c => ({
+                    setConnectionRequests(data.map((c: any) => ({
                         id: c.id,
                         sender_id: c.sender_id,
                         sender_name: profileMap.get(c.sender_id)?.name || 'Someone',

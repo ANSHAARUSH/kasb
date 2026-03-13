@@ -159,7 +159,7 @@ export function AdminDashboard() {
 
             // 2. Build Subscription Map
             const subMap = new Map<string, string>()
-            subsRes.data?.forEach(s => subMap.set(s.user_id, s.tier))
+            subsRes.data?.forEach((s: any) => subMap.set(s.user_id, s.tier))
 
             // 3. Process Startups
             if (startupsRes.data) {
@@ -181,8 +181,8 @@ export function AdminDashboard() {
             const now = new Date()
             const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-            const newStartups = startupsRes.data?.filter(s => new Date((s as any).created_at) > oneWeekAgo).length || 0
-            const newInvestors = investorsRes.data?.filter(i => new Date((i as any).created_at) > oneWeekAgo).length || 0
+            const newStartups = startupsRes.data?.filter((s: any) => new Date((s as any).created_at) > oneWeekAgo).length || 0
+            const newInvestors = investorsRes.data?.filter((i: any) => new Date((i as any).created_at) > oneWeekAgo).length || 0
 
             setStats({
                 totalStartups: startupsRes.data?.length || 0,

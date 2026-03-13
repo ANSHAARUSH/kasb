@@ -25,8 +25,13 @@ export function ForgotPassword() {
             if (error) throw error
             setSubmitted(true)
         } catch (err) {
+            console.error("ForgotPassword Error:", err)
             if (err instanceof Error) {
-                setError(err.message)
+                if (err.message.toLowerCase().includes("failed to fetch")) {
+                    setError("Connection failed. Your database project might be paused. Please check your Supabase dashboard or internet connection.")
+                } else {
+                    setError(err.message)
+                }
             } else {
                 setError("An error occurred. Please try again.")
             }

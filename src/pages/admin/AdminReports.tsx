@@ -40,9 +40,9 @@ export function AdminReports() {
 
         // Fetch related data manually or via complex join
         // For simplicity, let's fetch messages and profiles in bulk
-        const messageIds = reportsData.map(r => r.reported_message_id)
+        const messageIds = reportsData.map((r: any) => r.reported_message_id)
         const userIds = new Set<string>()
-        reportsData.forEach(r => {
+        reportsData.forEach((r: any) => {
             userIds.add(r.reporter_id)
             userIds.add(r.conversation_partner_id) // This is the person who was reported? No, this is "partner". 
             // Wait, conversation_partner_id is who the reporter was talking to. So usually the reported user.
@@ -52,12 +52,12 @@ export function AdminReports() {
         const { data: startups } = await supabase.from('startups').select('id, name').in('id', Array.from(userIds))
         const { data: investors } = await supabase.from('investors').select('id, name').in('id', Array.from(userIds))
 
-        const messageMap = new Map(messages?.map(m => [m.id, m.content]))
+        const messageMap = new Map(messages?.map((m: any) => [m.id, m.content]))
         const nameMap = new Map()
-        startups?.forEach(s => nameMap.set(s.id, s.name))
-        investors?.forEach(i => nameMap.set(i.id, i.name))
+        startups?.forEach((s: any) => nameMap.set(s.id, s.name))
+        investors?.forEach((i: any) => nameMap.set(i.id, i.name))
 
-        const fullReports = reportsData.map(r => ({
+        const fullReports = reportsData.map((r: any) => ({
             ...r,
             message_content: messageMap.get(r.reported_message_id) || '[Message Deleted or Not Found]',
             reporter_name: nameMap.get(r.reporter_id) || 'Unknown User',

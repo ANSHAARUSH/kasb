@@ -11,6 +11,7 @@ import { chatWithAIStream, refineMessage } from "../../lib/ai"
 import { Wand2 } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { useNavigate } from "react-router-dom"
+import { LoadingScreen } from "../../components/ui/LoadingScreen"
 
 interface Message {
     id: string
@@ -153,7 +154,7 @@ export function MessagesPage() {
         const { data: investorData } = await supabase.from('investors').select('id, name, avatar').in('id', realUserIds)
         const { data: adminData } = await supabase.from('admins').select('id').in('id', realUserIds)
 
-        const adminIds = new Set(adminData?.map(a => a.id) || [])
+        const adminIds = new Set(adminData?.map((a: any) => a.id) || [])
 
         // Fetch connection status for these users
         const { data: connectionData } = await supabase
@@ -162,12 +163,12 @@ export function MessagesPage() {
             .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
             .eq('status', 'accepted')
 
-        const acceptedIds = new Set(connectionData?.map(c => c.sender_id === user.id ? c.receiver_id : c.sender_id))
+        const acceptedIds = new Set(connectionData?.map((c: any) => c.sender_id === user.id ? c.receiver_id : c.sender_id))
 
         const profiles = [
-            ...(startupData || []).map(s => ({ id: s.id, name: s.name || s.founder_name, avatar: s.logo })),
-            ...(investorData || []).map(i => ({ id: i.id, name: i.name, avatar: i.avatar })),
-            ...Array.from(adminIds).map(id => ({ id, name: 'Kasb.AI', avatar: `${import.meta.env.BASE_URL}logo.jpg` }))
+            ...(startupData || []).map((s: any) => ({ id: s.id, name: s.name || s.founder_name, avatar: s.logo })),
+            ...(investorData || []).map((i: any) => ({ id: i.id, name: i.name, avatar: i.avatar })),
+            ...Array.from(adminIds).map((id: any) => ({ id, name: 'Kasb.AI', avatar: `${import.meta.env.BASE_URL}logo.jpg` }))
         ]
 
         const formatted: Conversation[] = otherIds
@@ -234,7 +235,7 @@ export function MessagesPage() {
                     table: 'messages',
                     filter: `receiver_id=eq.${user.id}`,
                 },
-                (payload) => {
+                (payload: any) => {
                     const newMsg = payload.new as Message
                     setMessages(prev => [...prev, newMsg])
                     // We should also re-process conversations effectively or just append
@@ -496,7 +497,7 @@ export function MessagesPage() {
     }
 
     if (loading) {
-        return <div className="h-[calc(100vh-140px)] flex items-center justify-center text-gray-500">Loading messaging session...</div>
+        return <LoadingScreen />
     }
 
     return (

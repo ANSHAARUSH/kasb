@@ -14,6 +14,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { refineProblemStatement } from "../../lib/ai"
 import { getGlobalConfig, getUserSetting } from "../../lib/supabase"
+import { LoadingScreen } from "../../components/ui/LoadingScreen"
 
 export function Onboarding() {
     const { user, loading: authLoading, refreshUser } = useAuth()
@@ -176,7 +177,7 @@ export function Onboarding() {
         }
     }
 
-    if (authLoading) return <div className="flex h-screen items-center justify-center">Loading...</div>
+    if (authLoading) return <LoadingScreen />
 
     return (
         <div className="min-h-screen bg-gray-50/50 flex flex-col items-center justify-center p-4 md:p-8">
