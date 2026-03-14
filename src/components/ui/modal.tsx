@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import type { ReactNode } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { Button } from "./button";
 
@@ -14,7 +16,15 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
-    return (
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) return null;
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -23,9 +33,9 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/50 z-[9999] backdrop-blur-sm"
                     />
-                    <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-4">
+                    <div className="fixed inset-0 flex items-center justify-center z-[10000] pointer-events-none p-4">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -45,6 +55,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
                     </div>
                 </>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 }

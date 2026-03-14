@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Investor } from "../../data/mockData"
-import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink } from "lucide-react"
+import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
-import { getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import { checkEligibility, type EligibilityResult } from "../../lib/ai"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -12,6 +13,7 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { VerificationBadge } from "../ui/VerificationBadge"
 import { ensureArray } from "../../lib/utils"
+import { Modal } from "../ui/modal"
 
 export type PanelSize = 'default' | 'full' | 'minimized'
 
@@ -24,13 +26,42 @@ interface InvestorDetailProps {
 }
 
 export function InvestorDetail({ investor, onClose, onDisconnect, onResize, currentSize = 'default' }: InvestorDetailProps) {
-    const { user } = useAuth()
+    const { user, role } = useAuth()
     const navigate = useNavigate()
     const { toast } = useToast()
     const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
     const [isDisconnecting, setIsDisconnecting] = useState(false)
     const [isConnecting, setIsConnecting] = useState(false)
     const [isProcessing, setIsProcessing] = useState(false)
+
+    // Eligibility AI State
+    const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
+    const [eligibilityResult, setEligibilityResult] = useState<EligibilityResult | null>(null)
+    const [isEligibilityModalOpen, setIsEligibilityModalOpen] = useState(false)
+    const [eligibilityModalMode, setEligibilityModalMode] = useState<'mcq' | 'loading' | 'result'>('result')
+    const [mcqAnswers, setMcqAnswers] = useState<Record<string, string>>({})
+    const [pendingStartupData, setPendingStartupData] = useState<any>(null)
+    const [pendingCriteria, setPendingCriteria] = useState<string[]>([])
+    const [missingFields, setMissingFields] = useState<string[]>([])
+
+    const [improvementAnswers, setImprovementAnswers] = useState<Record<string, string>>({})
+    const [showImprovementMCQ, setShowImprovementMCQ] = useState(false)
+
+    // All possible MCQ fields
+    const MCQ_QUESTIONS: { field: string; label: string; options: string[] }[] = [
+        { field: 'industry', label: 'What is your startup\'s industry?', options: ['FinTech', 'EdTech', 'HealthTech', 'E-Commerce', 'SaaS / B2B Software', 'AgriTech', 'Manufacturing', 'Logistics', 'Consumer / D2C', 'Other'] },
+        { field: 'stage', label: 'What is your current stage?', options: ['Idea / Concept', 'Pre-Seed', 'Seed', 'Series A', 'Series B+', 'Revenue Generating'] },
+        { field: 'traction', label: 'What is your traction so far?', options: ['No users yet', '1–100 users', '100–1,000 users', '1,000–10,000 users', '10,000+ users', 'Paying customers'] },
+        { field: 'valuation', label: 'What is your estimated valuation?', options: ['Not evaluated yet', 'Under ₹1 Cr', '₹1–5 Cr', '₹5–20 Cr', '₹20–100 Cr', '₹100 Cr+'] },
+        { field: 'problem_solving', label: 'What problem does your startup solve?', options: ['Healthcare access / affordability', 'Financial inclusion', 'Education quality / access', 'Supply chain / logistics', 'Business productivity / SaaS', 'Consumer convenience', 'Environmental / sustainability', 'Other'] },
+        // Extended fields for government / formal investors
+        { field: 'dpiit_recognition', label: 'Is your startup DPIIT recognized?', options: ['Yes, DPIIT recognized', 'Applied, awaiting approval', 'Not yet applied', 'Not applicable'] },
+        { field: 'incorporation_year', label: 'When was your startup incorporated?', options: ['Not yet incorporated', '2024–2025', '2022–2023', '2020–2021', '2017–2019', 'Before 2017'] },
+        { field: 'annual_revenue', label: 'What is your annual revenue?', options: ['Pre-revenue', 'Under ₹10 L', '₹10 L – ₹1 Cr', '₹1 Cr – ₹10 Cr', '₹10 Cr – ₹100 Cr', 'Above ₹100 Cr'] },
+        { field: 'shareholding', label: 'What is the Indian promoter shareholding?', options: ['100% Indian', '75–99% Indian', '51–74% Indian', 'Below 51% Indian', 'Not sure'] },
+        { field: 'headcount', label: 'How many full-time employees do you have?', options: ['Just the founders (1–2)', '3–10', '11–50', '51–200', '200+'] },
+        { field: 'ip_patents', label: 'Do you have any IP / patents?', options: ['Filed patent(s)', 'Granted patent(s)', 'Trade secret / proprietary tech', 'No IP yet'] },
+    ]
 
     // Ensure we access the details safely
     const details = investor?.profile_details || {}
@@ -126,6 +157,93 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
             toast(`Failed to disconnect: ${error.message || 'Unknown error'}`, "error")
         } finally {
             setIsDisconnecting(false)
+        }
+    }
+
+    const getMissingFields = (data: any): string[] => {
+        const missing: string[] = []
+        if (!data?.industry?.trim()) missing.push('industry')
+        if (!data?.stage?.trim()) missing.push('stage')
+        if (!data?.traction?.trim()) missing.push('traction')
+        if (!data?.valuation?.trim()) missing.push('valuation')
+        if (!data?.problem_solving?.trim()) missing.push('problem_solving')
+        return missing
+    }
+
+
+    const handleCheckEligibility = async (criteria: string[]) => {
+        if (!user || role !== 'startup') {
+            toast("Only startups can check eligibility. Please log in as a startup.", "error")
+            return
+        }
+
+        setIsCheckingEligibility(true)
+        try {
+            const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
+
+            const missing = getMissingFields(startupData)
+            if (missing.length > 0) {
+                // Open MCQ modal only for missing fields
+                setMissingFields(missing)
+                setPendingStartupData(startupData)
+                setPendingCriteria(criteria)
+                setMcqAnswers({})
+                setEligibilityModalMode('mcq')
+                setIsEligibilityModalOpen(true)
+                setIsCheckingEligibility(false)
+                return
+            }
+
+            // Enough data — run AI directly
+            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const res = await checkEligibility(startupData, criteria, envKey, baseUrl)
+            setEligibilityResult(res)
+            setEligibilityModalMode('result')
+            setIsEligibilityModalOpen(true)
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to check eligibility: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsCheckingEligibility(false)
+        }
+    }
+
+    const handleMcqSubmit = async () => {
+        setEligibilityModalMode('loading')
+        try {
+            // Merge MCQ answers into startup data
+            const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers }
+            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
+            setEligibilityResult(res)
+            setEligibilityModalMode('result')
+            setShowImprovementMCQ(false)
+            setImprovementAnswers({})
+        } catch (error: any) {
+            console.error(error)
+            toast(`AI check failed: ${error.message || 'Unknown error'}`, "error")
+            setEligibilityModalMode('mcq')
+        }
+    }
+
+    const handleReanalyze = async () => {
+        setEligibilityModalMode('loading')
+        setShowImprovementMCQ(false)
+        try {
+            // Merge everything: original DB data + initial mcq answers + improvement answers
+            const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers, ...improvementAnswers }
+            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
+            setEligibilityResult(res)
+            setEligibilityModalMode('result')
+            setImprovementAnswers({})
+        } catch (error: any) {
+            console.error(error)
+            toast(`AI check failed: ${error.message || 'Unknown error'}`, "error")
+            setEligibilityModalMode('result')
         }
     }
 
@@ -521,8 +639,10 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                         {/* 8. Eligibility (Bullet Points) */}
                                         {eligibility.length > 0 && (
                                             <div className="p-6 rounded-[2rem] bg-gray-900 text-white shadow-xl border border-gray-800">
-                                                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Eligibility Criteria</p>
-                                                <ul className="space-y-4">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest m-0">Eligibility Criteria</p>
+                                                </div>
+                                                <ul className="space-y-4 mb-6">
                                                     {eligibility.map((crit, idx) => (
                                                         <li key={idx} className="flex items-start gap-3 text-sm text-gray-300 font-bold">
                                                             <div className="h-2 w-2 rounded-full bg-white mt-1.5 shrink-0" />
@@ -532,6 +652,164 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                 </ul>
                                             </div>
                                         )}
+
+                                        {/* 9. AI Eligibility Check */}
+                                        {eligibility.length > 0 && (
+                                            <div className="md:col-span-2 p-6 rounded-[2rem] bg-black text-white shadow-xl border border-gray-800">
+                                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                                    <div>
+                                                        <h4 className="text-lg font-black flex items-center gap-2 mb-1">
+                                                            <Zap className="h-5 w-5 text-yellow-400" />
+                                                            AI Eligibility Check
+                                                        </h4>
+                                                        <p className="text-xs text-gray-400 font-medium">Instantly analyze your startup profile against this investor's requirements.</p>
+                                                    </div>
+                                                    <Button 
+                                                        onClick={() => handleCheckEligibility(eligibility)}
+                                                        disabled={isCheckingEligibility}
+                                                        className="w-full md:w-auto shrink-0 bg-white hover:bg-gray-200 text-black rounded-xl h-12 flex items-center justify-center gap-2 font-bold px-6 border-none shadow-lg"
+                                                    >
+                                                        {isCheckingEligibility ? (
+                                                            <>
+                                                                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                                                Checking Match...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                Check Eligibility Match
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* Eligibility Result Modal */}
+                                        <Modal
+                                            isOpen={isEligibilityModalOpen}
+                                            onClose={() => setIsEligibilityModalOpen(false)}
+                                            title={eligibilityModalMode === 'mcq' ? "Quick Info Check" : eligibilityModalMode === 'loading' ? "Analyzing..." : "AI Eligibility Match"}
+                                        >
+                                            {/* MCQ Mode */}
+                                            {eligibilityModalMode === 'mcq' && (
+                                                <div className="space-y-5">
+                                                    <p className="text-sm text-gray-500 -mt-2">Your profile is missing some details. Please answer the following to get an accurate match:</p>
+                                                    {MCQ_QUESTIONS.filter(q => missingFields.includes(q.field)).map((q) => (
+                                                        <div key={q.field} className="space-y-2">
+                                                            <p className="text-sm font-bold text-gray-800">{q.label}</p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {q.options.map((opt) => (
+                                                                    <button
+                                                                        key={opt}
+                                                                        onClick={() => setMcqAnswers(prev => ({ ...prev, [q.field]: opt }))}
+                                                                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all duration-150 ${
+                                                                            mcqAnswers[q.field] === opt
+                                                                                ? 'bg-black text-white border-black shadow-md scale-[1.03]'
+                                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+                                                                        }`}
+                                                                    >
+                                                                        {opt}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <Button
+                                                        onClick={handleMcqSubmit}
+                                                        disabled={MCQ_QUESTIONS.filter(q => missingFields.includes(q.field)).some(q => !mcqAnswers[q.field])}
+                                                        className="w-full mt-2 rounded-xl h-12"
+                                                    >
+                                                        Analyze My Eligibility
+                                                    </Button>
+                                                </div>
+                                            )}
+
+                                            {/* Loading Mode */}
+                                            {eligibilityModalMode === 'loading' && (
+                                                <div className="flex flex-col items-center justify-center py-8 gap-4">
+                                                    <Loader2 className="h-10 w-10 animate-spin text-gray-400" />
+                                                    <p className="text-sm font-semibold text-gray-500">AI is reviewing your profile...</p>
+                                                </div>
+                                            )}
+
+                                            {/* Result Mode */}
+                                            {eligibilityModalMode === 'result' && eligibilityResult && (
+                                                <div className="flex flex-col items-center justify-center p-4">
+                                                    <div className="relative mb-6">
+                                                        {eligibilityResult.percentage > 0 ? (
+                                                            <div className={`flex items-center justify-center h-24 w-24 shrink-0 rounded-full font-black text-3xl shadow-lg ring-4 ring-offset-4 ${eligibilityResult.percentage >= 75 ? 'bg-green-500/10 text-green-500 ring-green-100' : eligibilityResult.percentage >= 40 ? 'bg-yellow-500/10 text-yellow-500 ring-yellow-100' : 'bg-red-500/10 text-red-500 ring-red-100'}`}>
+                                                                {eligibilityResult.percentage}%
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center justify-center h-24 w-24 shrink-0 rounded-full bg-gray-100 text-gray-400 font-black text-xl ring-4 ring-gray-50 ring-offset-4 shadow-sm">
+                                                                ?
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-center w-full max-w-sm">
+                                                        <h3 className="text-lg font-bold mb-2 text-gray-900">Analysis Complete</h3>
+                                                        <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-600 leading-relaxed shadow-inner">
+                                                            {eligibilityResult.reasoning}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <Button
+                                                        variant="ghost"
+                                                        onClick={() => setShowImprovementMCQ(!showImprovementMCQ)}
+                                                        className="w-full mt-4 flex items-center justify-between px-4 py-3 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 rounded-xl"
+                                                    >
+                                                        <span className="text-sm font-bold">Improve Match Percentage</span>
+                                                        {showImprovementMCQ ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                    </Button>
+
+                                                    {showImprovementMCQ && (
+                                                        <div className="w-full mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                            <p className="text-xs text-indigo-600 font-medium">Provide more details to help AI refine your eligibility score:</p>
+                                                            {MCQ_QUESTIONS.filter(q => 
+                                                                !missingFields.includes(q.field) && // Was not in the initial missing fields (or was, but we want to show all extended ones now)
+                                                                !['industry', 'stage', 'traction', 'valuation', 'problem_solving'].includes(q.field) &&
+                                                                !improvementAnswers[q.field]
+                                                            ).map((q) => (
+                                                                <div key={q.field} className="space-y-2">
+                                                                    <p className="text-xs font-bold text-gray-700">{q.label}</p>
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {q.options.map((opt) => (
+                                                                            <button
+                                                                                key={opt}
+                                                                                onClick={() => setImprovementAnswers(prev => ({ ...prev, [q.field]: opt }))}
+                                                                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all duration-150 ${
+                                                                                    improvementAnswers[q.field] === opt
+                                                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                                                                                }`}
+                                                                            >
+                                                                                {opt}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+
+                                                            {Object.keys(improvementAnswers).length > 0 && (
+                                                                <Button
+                                                                    onClick={handleReanalyze}
+                                                                    className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 text-xs font-bold"
+                                                                >
+                                                                    Update Analysis
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                    
+                                                    <Button
+                                                        onClick={() => setIsEligibilityModalOpen(false)}
+                                                        className="w-full mt-6 rounded-xl h-12"
+                                                    >
+                                                        Got it
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </Modal>
 
                                         {/* official website CTA Note */}
                                         <div className="md:col-span-2 p-8 rounded-[2rem] bg-gray-100 text-black text-center border border-gray-200">

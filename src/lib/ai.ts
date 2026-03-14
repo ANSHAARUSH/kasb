@@ -316,6 +316,79 @@ export async function compareInvestors(investor1: any, investor2: any, apiKey: s
     }
 }
 
+export interface EligibilityResult {
+    percentage: number;
+    reasoning: string;
+}
+
+export async function checkEligibility(
+    startup: any,
+    criteria: string[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<EligibilityResult> {
+    if (!apiKey) {
+        throw new Error("API Key is missing for eligibility check.");
+    }
+
+    // Supabase 'startups' table uses flat columns: traction, problem_solving, stage, valuation, industry
+    const hasMeaningfulData = startup && (
+        (startup.name && startup.name.trim() !== '') ||
+        (startup.industry && startup.industry.trim() !== '') ||
+        (startup.traction && startup.traction.trim() !== '') ||
+        (startup.problem_solving && startup.problem_solving.trim() !== '') ||
+        (startup.stage && startup.stage.trim() !== '') ||
+        (startup.valuation && startup.valuation.trim() !== '') ||
+        (startup.description && startup.description.trim() !== '') ||
+        (startup.dpiit_recognition && startup.dpiit_recognition.trim() !== '') ||
+        (startup.incorporation_year && startup.incorporation_year.trim() !== '') ||
+        (startup.annual_revenue && startup.annual_revenue.trim() !== '') ||
+        (startup.shareholding && startup.shareholding.trim() !== '')
+    );
+
+    if (!hasMeaningfulData) {
+        return { percentage: 0, reasoning: "Your profile is missing core details like industry, stage, and traction. Please fill these in to get an accurate AI match." };
+    }
+
+    const prompt = `
+    Analyze how well the following startup meets the investor's eligibility criteria.
+
+    Startup Profile:
+    Name: ${startup.name || "N/A"}
+    Industry: ${startup.industry || "N/A"}
+    Stage: ${startup.stage || "N/A"}
+    Traction: ${startup.traction || "N/A"}
+    Valuation: ${startup.valuation || "N/A"}
+    Problem Being Solved: ${startup.problem_solving || startup.description || "N/A"}
+    DPIIT Recognized: ${startup.dpiit_recognition || "N/A"}
+    Incorporation Year: ${startup.incorporation_year || "N/A"}
+    Annual Revenue: ${startup.annual_revenue || "N/A"}
+    Promoter Shareholding: ${startup.shareholding || "N/A"}
+    Employee Count: ${startup.headcount || "N/A"}
+    IP/Patents: ${startup.ip_patents || "N/A"}
+    Founder: ${startup.founder_name || "N/A"}
+    Location: ${startup.location || "N/A"}
+    Tags: ${Array.isArray(startup.tags) ? startup.tags.join(', ') : (startup.tags || "N/A")}
+
+    Investor Eligibility Criteria:
+    ${criteria.map(c => `- ${c}`).join('\n')}
+
+    Provide the output in valid JSON format ONLY, with this structure:
+    {
+        "percentage": <number between 0 and 100 representing the match percentage>,
+        "reasoning": "<A brief, 1-2 sentence explanation of why this percentage was given, highlighting key matches or mismatches.>"
+    }
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        return extractJSON<EligibilityResult>(text);
+    } catch (error: unknown) {
+        console.error("AI Eligibility Check Error:", error);
+        throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to check eligibility"}`);
+    }
+}
+
 export async function getIndustryInsights(industry: string, apiKey: string, baseUrl?: string): Promise<IndustryInsight> {
     if (!apiKey) {
         throw new Error("AI Comparison not available. API Key is required.");
