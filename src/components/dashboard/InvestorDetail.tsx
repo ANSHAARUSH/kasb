@@ -162,11 +162,11 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
 
     const getMissingFields = (data: any): string[] => {
         const missing: string[] = []
-        if (!data?.industry?.trim()) missing.push('industry')
-        if (!data?.stage?.trim()) missing.push('stage')
-        if (!data?.traction?.trim()) missing.push('traction')
-        if (!data?.valuation?.trim()) missing.push('valuation')
-        if (!data?.problem_solving?.trim()) missing.push('problem_solving')
+        MCQ_QUESTIONS.forEach(q => {
+            if (!data?.[q.field]?.trim()) {
+                missing.push(q.field)
+            }
+        })
         return missing
     }
 
@@ -766,8 +766,6 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                         <div className="w-full mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                                             <p className="text-xs text-indigo-600 font-medium">Provide more details to help AI refine your eligibility score:</p>
                                                             {MCQ_QUESTIONS.filter(q => 
-                                                                !missingFields.includes(q.field) && // Was not in the initial missing fields (or was, but we want to show all extended ones now)
-                                                                !['industry', 'stage', 'traction', 'valuation', 'problem_solving'].includes(q.field) &&
                                                                 !improvementAnswers[q.field]
                                                             ).map((q) => (
                                                                 <div key={q.field} className="space-y-2">
