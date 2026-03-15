@@ -1,7 +1,7 @@
 import type { Investor } from "../../data/mockData"
 import { Card, CardContent } from "../ui/card"
 import { cn } from "../../lib/utils"
-import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle, Sparkles, Landmark } from "lucide-react"
+import { MessageSquare, BookmarkPlus, UserPlus, Clock, CheckCircle, Sparkles } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../context/AuthContext"
@@ -188,18 +188,6 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                         "{investor.bio}"
                     </p>
 
-                    {investor.investor_type === 'grant' && investor.grant_scheme && (
-                        <div className="w-full mt-2 p-3 rounded-2xl bg-blue-50/50 border border-blue-100/50 space-y-3">
-                            <div className="flex items-center gap-2">
-                                <div className="p-1.5 rounded-lg bg-blue-100 text-blue-600">
-                                    <Landmark className="h-3 w-3" />
-                                </div>
-                                <div className="text-[11px] font-black text-blue-900 uppercase tracking-tight">
-                                    {investor.grant_scheme}
-                                </div>
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* Bottom Row: Completion % and CTAs */}

@@ -280,7 +280,7 @@ export function HistoryPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.2 }}
-                    className="grid gap-4 md:grid-cols-2 pb-24"
+                    className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-24 max-w-[1400px] mx-auto px-4"
                 >
                     {loading && <div className="col-span-full text-center text-gray-400">Loading...</div>}
 

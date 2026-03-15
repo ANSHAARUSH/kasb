@@ -817,6 +817,13 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                 Complete documentation and official application procedures are available via the portal below.
                                             </p>
                                         </div>
+                                        
+                                        {/* Disclaimer */}
+                                        <div className="md:col-span-2 px-8 pb-4 text-center">
+                                            <p className="text-[8px] text-gray-400 italic leading-relaxed">
+                                                *Kasb.AI is a discovery and matchmaking platform designed to help startups find investors, grants, and accelerator opportunities. While we strive to provide accurate information, Kasb.AI does not guarantee funding, selection, or outcomes. Users should conduct their own due diligence before applying or entering into any agreements.*
+                                            </p>
+                                        </div>
                                     </div>
                                 </>
                             );
