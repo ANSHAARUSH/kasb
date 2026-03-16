@@ -125,20 +125,26 @@ function extractJSON<T>(text: string): T {
         // Try direct parsing first
         return JSON.parse(text.trim()) as T;
     } catch (e) {
-        // Find the first '{' and the last '}'
-        const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
+        // Find boundaries for both objects {} and arrays []
+        const braceStart = text.indexOf('{');
+        const braceEnd = text.lastIndexOf('}');
+        const bracketStart = text.indexOf('[');
+        const bracketEnd = text.lastIndexOf(']');
+
+        // Use the first occurring start and last occurring end among both types
+        const start = (braceStart !== -1 && bracketStart !== -1) 
+            ? Math.min(braceStart, bracketStart) 
+            : (braceStart !== -1 ? braceStart : bracketStart);
+            
+        const end = (braceEnd !== -1 && bracketEnd !== -1) 
+            ? Math.max(braceEnd, bracketEnd) 
+            : (braceEnd !== -1 ? braceEnd : bracketEnd);
 
         if (start !== -1 && end !== -1 && end > start) {
-            const jsonStr = text.substring(start, end + 1);
-            try {
-                return JSON.parse(jsonStr) as T;
-            } catch (innerError) {
-                console.error("Failed to parse extracted JSON segment:", jsonStr);
-                throw new Error("AI returned invalid JSON structure");
-            }
+            const json = text.substring(start, end + 1);
+            return JSON.parse(json) as T;
         }
-        throw new Error("No JSON object found in AI response");
+        throw new Error("No JSON object or array found in AI response");
     }
 }
 
@@ -321,6 +327,103 @@ export interface EligibilityResult {
     reasoning: string;
 }
 
+export interface MissingField {
+    field: string;
+    label: string;
+    options: string[];
+}
+
+export async function identifyMissingEligibilityData(
+    startup: any,
+    criteria: string[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<MissingField[]> {
+    if (!apiKey) {
+        throw new Error("API Key is missing for missing data identification.");
+    }
+
+    // Safety check for null startup data
+    if (!startup) {
+        console.warn("identifyMissingEligibilityData: startup data is null or undefined.");
+        return [
+            {
+                "field": "general_description",
+                "label": "Can you provide a brief overview of your startup's current focus and traction?",
+                "options": ["Just starting out", "MVP ready", "Generating revenue", "Scaling rapidly"]
+            }
+        ];
+    }
+
+    const profileSummary = Object.entries(startup)
+        .filter(([key, _]) => {
+            if (['id', 'created_at', 'user_id', 'logo', 'avatar', 'logo_url'].includes(key)) return false;
+            return true;
+        })
+        .map(([key, val]) => {
+            if (val === null || val === undefined || val === '') return `${key}: Unknown/Missing`;
+            if (Array.isArray(val)) return `${key}: ${val.length > 0 ? val.join(', ') : 'Unknown/Empty'}`;
+            if (typeof val === 'object') return null;
+            return `${key}: ${val}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+
+    const prompt = `
+    You are an AI specialized in venture capital and startup eligibility. 
+
+    TASK:
+    Identify what missing information is REQUIRED to determine if the startup matches the provided Investor Eligibility Criteria.
+
+    STARTUP PROFILE (Known Data):
+    ${profileSummary || "No detailed profile data available."}
+
+    INVESTOR ELIGIBILITY CRITERIA:
+    ${criteria.length > 0 ? criteria.map(c => `- ${c}`).join('\n') : "Match against any high-potential startup criteria."}
+
+    INSTRUCTIONS:
+    1. Scan the INVESTOR ELIGIBILITY CRITERIA.
+    2. Check the STARTUP PROFILE. Any field marked "Unknown/Missing" MUST be addressed if it relates to a criterion.
+    3. MANDATORY: If there are ANY criteria provided, you MUST generate 2-4 Multiple Choice Questions (MCQs) for the missing info. 
+    4. Do NOT return an empty array if you see "Unknown/Missing" in the profile summary.
+    5. ONLY ask questions relevant to the criteria. 
+    6. Provide 4-6 realistic and distinct options for each MCQ.
+
+    OUTPUT FORMAT:
+    You MUST return ONLY a JSON array. No conversational text.
+    [
+        {
+            "field": "key",
+            "label": "Question?",
+            "options": ["A", "B", "C", "D"]
+        }
+    ]
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        
+        if (!text || !text.includes('[')) {
+            console.warn("AI Discovery: No array structure found in response.");
+            return [];
+        }
+
+        const start = text.indexOf('[');
+        const end = text.lastIndexOf(']');
+        const jsonStr = text.substring(start, end + 1);
+        
+        const result = JSON.parse(jsonStr);
+        if (Array.isArray(result)) return result;
+        if (result && typeof result === 'object' && Array.isArray((result as any).questions)) return (result as any).questions;
+        if (result && typeof result === 'object' && Array.isArray((result as any).missing)) return (result as any).missing;
+
+        return [];
+    } catch (error: any) {
+        console.error("AI Discovery Error:", error.message);
+        return [];
+    }
+}
+
 export async function checkEligibility(
     startup: any,
     criteria: string[],
@@ -346,8 +449,8 @@ export async function checkEligibility(
         (startup.shareholding && startup.shareholding.trim() !== '')
     );
 
-    if (!hasMeaningfulData) {
-        return { percentage: 0, reasoning: "Your profile is missing core details like industry, stage, and traction. Please fill these in to get an accurate AI match." };
+    if (!hasMeaningfulData && criteria.length > 0) {
+        return { percentage: 0, reasoning: "Your profile matches none of the core data points required. Please provide more details about your startup." };
     }
 
     const prompt = `

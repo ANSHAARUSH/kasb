@@ -4,7 +4,7 @@ import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Awar
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
-import { checkEligibility, type EligibilityResult } from "../../lib/ai"
+import { checkEligibility, identifyMissingEligibilityData, type EligibilityResult, type MissingField } from "../../lib/ai"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -42,26 +42,11 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
     const [mcqAnswers, setMcqAnswers] = useState<Record<string, string>>({})
     const [pendingStartupData, setPendingStartupData] = useState<any>(null)
     const [pendingCriteria, setPendingCriteria] = useState<string[]>([])
-    const [missingFields, setMissingFields] = useState<string[]>([])
+    const [dynamicQuestions, setDynamicQuestions] = useState<MissingField[]>([])
 
     const [improvementAnswers, setImprovementAnswers] = useState<Record<string, string>>({})
     const [showImprovementMCQ, setShowImprovementMCQ] = useState(false)
 
-    // All possible MCQ fields
-    const MCQ_QUESTIONS: { field: string; label: string; options: string[] }[] = [
-        { field: 'industry', label: 'What is your startup\'s industry?', options: ['FinTech', 'EdTech', 'HealthTech', 'E-Commerce', 'SaaS / B2B Software', 'AgriTech', 'Manufacturing', 'Logistics', 'Consumer / D2C', 'Other'] },
-        { field: 'stage', label: 'What is your current stage?', options: ['Idea / Concept', 'Pre-Seed', 'Seed', 'Series A', 'Series B+', 'Revenue Generating'] },
-        { field: 'traction', label: 'What is your traction so far?', options: ['No users yet', '1–100 users', '100–1,000 users', '1,000–10,000 users', '10,000+ users', 'Paying customers'] },
-        { field: 'valuation', label: 'What is your estimated valuation?', options: ['Not evaluated yet', 'Under ₹1 Cr', '₹1–5 Cr', '₹5–20 Cr', '₹20–100 Cr', '₹100 Cr+'] },
-        { field: 'problem_solving', label: 'What problem does your startup solve?', options: ['Healthcare access / affordability', 'Financial inclusion', 'Education quality / access', 'Supply chain / logistics', 'Business productivity / SaaS', 'Consumer convenience', 'Environmental / sustainability', 'Other'] },
-        // Extended fields for government / formal investors
-        { field: 'dpiit_recognition', label: 'Is your startup DPIIT recognized?', options: ['Yes, DPIIT recognized', 'Applied, awaiting approval', 'Not yet applied', 'Not applicable'] },
-        { field: 'incorporation_year', label: 'When was your startup incorporated?', options: ['Not yet incorporated', '2024–2025', '2022–2023', '2020–2021', '2017–2019', 'Before 2017'] },
-        { field: 'annual_revenue', label: 'What is your annual revenue?', options: ['Pre-revenue', 'Under ₹10 L', '₹10 L – ₹1 Cr', '₹1 Cr – ₹10 Cr', '₹10 Cr – ₹100 Cr', 'Above ₹100 Cr'] },
-        { field: 'shareholding', label: 'What is the Indian promoter shareholding?', options: ['100% Indian', '75–99% Indian', '51–74% Indian', 'Below 51% Indian', 'Not sure'] },
-        { field: 'headcount', label: 'How many full-time employees do you have?', options: ['Just the founders (1–2)', '3–10', '11–50', '51–200', '200+'] },
-        { field: 'ip_patents', label: 'Do you have any IP / patents?', options: ['Filed patent(s)', 'Granted patent(s)', 'Trade secret / proprietary tech', 'No IP yet'] },
-    ]
 
     // Ensure we access the details safely
     const details = investor?.profile_details || {}
@@ -160,15 +145,6 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         }
     }
 
-    const getMissingFields = (data: any): string[] => {
-        const missing: string[] = []
-        MCQ_QUESTIONS.forEach(q => {
-            if (!data?.[q.field]?.trim()) {
-                missing.push(q.field)
-            }
-        })
-        return missing
-    }
 
 
     const handleCheckEligibility = async (criteria: string[]) => {
@@ -180,27 +156,39 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         setIsCheckingEligibility(true)
         try {
             const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
+            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
+            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
 
-            const missing = getMissingFields(startupData)
-            if (missing.length > 0) {
-                // Open MCQ modal only for missing fields
-                setMissingFields(missing)
+            // Step 0: Ensure criteria is NOT empty
+            const finalCriteria = criteria && criteria.length > 0 
+                ? criteria 
+                : ["Technology sector startup", "Early or growth stage", "Scalable business model"]
+
+            console.log("--- AI Discovery Start ---");
+            console.log("Investor Criteria used for Discovery:", finalCriteria);
+
+            // Step 1: Discover missing info dynamically
+            const missing = await identifyMissingEligibilityData(startupData, finalCriteria, envKey, baseUrl)
+
+            if (missing && missing.length > 0) {
+                console.log("Found missing fields:", missing.length);
+                setDynamicQuestions(missing)
                 setPendingStartupData(startupData)
                 setPendingCriteria(criteria)
                 setMcqAnswers({})
                 setEligibilityModalMode('mcq')
                 setIsEligibilityModalOpen(true)
-                setIsCheckingEligibility(false)
                 return
             }
 
+            console.log("No missing data discovered, running final check directly.");
+            
             // Enough data — run AI directly
-            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
-            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
-            const res = await checkEligibility(startupData, criteria, envKey, baseUrl)
+            const res = await checkEligibility(startupData, finalCriteria, envKey, baseUrl)
             setEligibilityResult(res)
             setEligibilityModalMode('result')
             setIsEligibilityModalOpen(true)
+
         } catch (error: any) {
             console.error(error)
             toast(`Failed to check eligibility: ${error.message || 'Unknown error'}`, "error")
@@ -541,7 +529,17 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                             const geos = ensureArray(investor.geography_focus || (investor as any).profile_details?.geography_focus);
                             const highlights = ensureArray(investor.portfolio_highlights || (investor as any).profile_details?.portfolio_highlights);
                             const advantages = ensureArray(investor.grant_advantages || (investor as any).profile_details?.grant_advantages);
-                            const eligibility = ensureArray(investor.grant_eligibility || (investor as any).profile_details?.grant_eligibility);
+                            
+                            // Combine all available criteria for AI matching
+                            const baseEligibility = ensureArray(investor.grant_eligibility || (investor as any).profile_details?.grant_eligibility);
+                            const eligibility = [
+                                ...baseEligibility,
+                                ...(stages.length > 0 ? [`Must be in one of the following stages: ${stages.join(', ')}`] : []),
+                                ...(sectors.length > 0 ? [`Must operate in one of the following sectors: ${sectors.join(', ')}`] : []),
+                                ...(geos.length > 0 ? [`Must be located in: ${geos.join(', ')}`] : []),
+                                ...(investor.check_size_range ? [`Investment range: ${investor.check_size_range}`] : [])
+                            ];
+
                             const scheme = investor.grant_scheme || (investor as any).profile_details?.grant_scheme;
 
                             return (
@@ -693,12 +691,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                             {/* MCQ Mode */}
                                             {eligibilityModalMode === 'mcq' && (
                                                 <div className="space-y-5">
-                                                    <p className="text-sm text-gray-500 -mt-2">Your profile is missing some details. Please answer the following to get an accurate match:</p>
-                                                    {MCQ_QUESTIONS.filter(q => missingFields.includes(q.field)).map((q) => (
+                                                    <p className="text-sm text-gray-500 -mt-2">To give you an accurate match, please provide some additional details specifically for this investor's criteria:</p>
+                                                    {dynamicQuestions.map((q) => (
                                                         <div key={q.field} className="space-y-2">
                                                             <p className="text-sm font-bold text-gray-800">{q.label}</p>
                                                             <div className="flex flex-wrap gap-2">
-                                                                {q.options.map((opt) => (
+                                                                 {q.options.map((opt) => (
                                                                     <button
                                                                         key={opt}
                                                                         onClick={() => setMcqAnswers(prev => ({ ...prev, [q.field]: opt }))}
@@ -716,7 +714,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                     ))}
                                                     <Button
                                                         onClick={handleMcqSubmit}
-                                                        disabled={MCQ_QUESTIONS.filter(q => missingFields.includes(q.field)).some(q => !mcqAnswers[q.field])}
+                                                        disabled={dynamicQuestions.some(q => !mcqAnswers[q.field])}
                                                         className="w-full mt-2 rounded-xl h-12"
                                                     >
                                                         Analyze My Eligibility
@@ -765,7 +763,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                     {showImprovementMCQ && (
                                                         <div className="w-full mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                                             <p className="text-xs text-indigo-600 font-medium">Provide more details to help AI refine your eligibility score:</p>
-                                                            {MCQ_QUESTIONS.filter(q => 
+                                                            {dynamicQuestions.filter(q => 
                                                                 !improvementAnswers[q.field]
                                                             ).map((q) => (
                                                                 <div key={q.field} className="space-y-2">

@@ -145,9 +145,9 @@ export function HistoryPage() {
         const query = debouncedSearchQuery.toLowerCase()
         return (
             startup.name.toLowerCase().includes(query) ||
-            startup.description.toLowerCase().includes(query) ||
+            startup.description?.toLowerCase().includes(query) ||
             startup.industry?.toLowerCase().includes(query) ||
-            startup.tags.some(t => t.toLowerCase().includes(query))
+            startup.tags?.some(t => t.toLowerCase().includes(query))
         )
     })
 

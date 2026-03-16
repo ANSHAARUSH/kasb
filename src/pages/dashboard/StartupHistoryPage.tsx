@@ -229,8 +229,8 @@ export function StartupHistoryPage() {
       const query = debouncedSearchQuery.toLowerCase()
       return (
          investor.name.toLowerCase().includes(query) ||
-         investor.bio.toLowerCase().includes(query) ||
-         investor.expertise.some(e => e.toLowerCase().includes(query))
+         investor.bio?.toLowerCase().includes(query) ||
+         investor.expertise?.some(e => e.toLowerCase().includes(query))
       )
    })
 
