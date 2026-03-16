@@ -1094,4 +1094,62 @@ export async function refineMessage(
     }
 }
 
+export interface ExtractedStartupInfo {
+    name: string;
+    industry: string;
+    stage: string;
+    problem_solving: string;
+    team_size: string;
+    description: string;
+}
+
+export async function extractStartupInfoFromPitchDeck(
+    file: File,
+    apiKey: string,
+    baseUrl?: string
+): Promise<ExtractedStartupInfo> {
+    if (!apiKey) throw new Error("API Key is required for pitch deck extraction");
+
+    try {
+        // 1. Extract content (text or image) from the file
+        const { type, content } = await extractDocumentContent(file);
+
+        const prompt = `
+        Analyze the provided ${type} content from a startup's pitch deck. 
+        Extract the following information:
+        1. Company Name
+        2. Industry (Choose one from: SaaS, FinTech, EdTech, HealthTech, E-commerce, AI/ML, CleanTech, AgriTech, Logistics, Others)
+        3. Current Stage (Choose one from: Ideation, Pre-seed, Seed, Series A+)
+        4. Problem Statement (A concise sentence: "We help [who] achieve [outcome] by [method]")
+        5. Team Size (A single number)
+        6. Brief Description (1-2 sentences)
+
+        Return ONLY a JSON object with these keys: 
+        {
+            "name": "string",
+            "industry": "string",
+            "stage": "string",
+            "problem_solving": "string",
+            "team_size": "string",
+            "description": "string"
+        }
+        
+        If a piece of information is missing, use an empty string.
+        Result:
+        `;
+
+        let text: string;
+        if (type === 'image') {
+            text = await runInference(apiKey, prompt, { vision: true, file: content as File, baseUrl });
+        } else {
+            text = await runInference(apiKey, `${prompt}\n\nPITCH DECK CONTENT:\n${content as string}`, { baseUrl });
+        }
+
+        return extractJSON<ExtractedStartupInfo>(text);
+    } catch (error: unknown) {
+        console.error("Pitch Deck Extraction Error:", error);
+        throw new Error(`Failed to extract info from pitch deck: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+}
+
 
