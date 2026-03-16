@@ -1,5 +1,12 @@
-import { X, Loader2 } from "lucide-react"
-import { useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import {
+    Sparkles, FileText, Calculator, BarChart3,
+    Lightbulb, Gavel, ArrowRight, CheckCircle2,
+    X, Loader2, Briefcase, Rocket
+} from "lucide-react"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "../../components/ui/button"
 import { getInvestorsByType } from "../../lib/supabase"
 import type { Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
@@ -139,6 +146,8 @@ const FOUNDER_TOPICS = [
     }
 ] as const
 
+type Topic = typeof FOUNDER_TOPICS[number]
+
 export function StartupCheatSheetPage() {
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
     const [resourceInvestors, setResourceInvestors] = useState<Investor[]>([])
@@ -171,7 +180,7 @@ export function StartupCheatSheetPage() {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {FOUNDER_TOPICS.map((topic, i) => (
+                {FOUNDER_TOPICS.map((topic: Topic, i: number) => (
                     <motion.div
                         key={topic.title}
                         initial={{ opacity: 0, y: 20 }}
@@ -245,7 +254,7 @@ export function StartupCheatSheetPage() {
                                     </h3>
                                     <Card className="border-0 bg-gray-50 rounded-[2rem]">
                                         <CardContent className="p-8 space-y-4">
-                                            {selectedTopic.details.tips.map((tip, i) => (
+                                            {selectedTopic.details.tips.map((tip: string, i: number) => (
                                                 <div key={i} className="flex gap-4">
                                                     <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-xs font-black shadow-sm">
                                                         {i + 1}
@@ -265,7 +274,7 @@ export function StartupCheatSheetPage() {
                                         The Checklist
                                     </h3>
                                     <div className="grid gap-3">
-                                        {selectedTopic.details.checklist.map((item) => (
+                                        {selectedTopic.details.checklist.map((item: string) => (
                                             <div
                                                 key={item}
                                                 className="flex items-center gap-3 p-4 rounded-2xl bg-white ring-1 ring-gray-100 shadow-sm"
@@ -292,7 +301,7 @@ export function StartupCheatSheetPage() {
                                                 </div>
                                             ) : resourceInvestors.length > 0 ? (
                                                 <div className="grid gap-4">
-                                                    {resourceInvestors.map((investor) => (
+                                                    {resourceInvestors.map((investor: Investor) => (
                                                         <InvestorCard 
                                                             key={investor.id} 
                                                             investor={investor}
