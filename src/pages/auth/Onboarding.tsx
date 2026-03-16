@@ -12,18 +12,21 @@ import { InvestorFields } from "./signup/InvestorFields"
 import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
-import { refineProblemStatement } from "../../lib/ai"
+import { refineProblemStatement, extractStartupInfoFromPitchDeck } from "../../lib/ai"
 import { getGlobalConfig, getUserSetting } from "../../lib/supabase"
 import { LoadingScreen } from "../../components/ui/LoadingScreen"
+import { FileUp, Sparkles, User, HelpCircle } from "lucide-react"
 
 export function Onboarding() {
     const { user, loading: authLoading, refreshUser } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
 
-    const [step, setStep] = useState(1) // 1: Role Selection, 2: Identity, 3: Traction/Expertise
+    const [step, setStep] = useState(1) // 1: Role, 2: Identity/Method, 3: Details
     const [role, setRole] = useState<'investor' | 'startup' | null>(null)
+    const [onboardingMethod, setOnboardingMethod] = useState<'ai' | 'manual' | null>(null)
     const [loading, setLoading] = useState(false)
+    const [isExtracting, setIsExtracting] = useState(false)
 
     // Shared Fields
     const [name, setName] = useState("")
@@ -57,11 +60,14 @@ export function Onboarding() {
     const isStepValid = () => {
         if (step === 1) return role !== null
         if (step === 2) {
-            if (!name.trim()) return false
             if (role === 'startup') {
-                return companyName.trim() !== '' && selectedIndustry !== ''
+                if (!onboardingMethod) return false
+                if (onboardingMethod === 'manual') {
+                    return name.trim() !== '' && companyName.trim() !== '' && selectedIndustry !== ''
+                }
+                return name.trim() !== '' // AI method only needs name (or we get it from deck)
             } else {
-                return investorType !== '' && investmentRange.trim() !== ''
+                return name.trim() !== '' && investorType !== '' && investmentRange.trim() !== ''
             }
         }
         if (step === 3) {
@@ -78,6 +84,45 @@ export function Onboarding() {
     const nextStep = () => {
         if (isStepValid()) setStep(prev => prev + 1)
         else toast("Please fill in all required fields", "error")
+    }
+
+    const handlePitchDeckUpload = async (file: File) => {
+        if (!file || !user) return
+        setIsExtracting(true)
+        try {
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI services not configured. Please enter details manually.", "error")
+                setOnboardingMethod('manual')
+                return
+            }
+
+            const info = await extractStartupInfoFromPitchDeck(file, apiKey)
+            
+            if (info.name) setCompanyName(info.name)
+            if (info.industry) {
+                const match = INDUSTRIES.find(i => i.toLowerCase() === info.industry.toLowerCase())
+                if (match) setSelectedIndustry(match)
+                else {
+                    setSelectedIndustry('Others')
+                    setCustomIndustry(info.industry)
+                }
+            }
+            if (info.stage) setStage(info.stage)
+            if (info.problem_solving) setProblemSolving(info.problem_solving)
+            if (info.team_size) setTeamSize(info.team_size.replace(/[^\d]/g, ''))
+            
+            toast("Pitch deck analyzed! Review your details in the next step.", "success")
+            setStep(3)
+        } catch (err: any) {
+            toast(`Extraction failed: ${err.message}. Switching to manual.`, "error")
+            setOnboardingMethod('manual')
+        } finally {
+            setIsExtracting(false)
+        }
     }
 
     const handleRefineProblem = async () => {
@@ -295,47 +340,120 @@ export function Onboarding() {
                                                     />
                                                 </div>
                                                 {role === 'startup' ? (
-                                                    <div className="space-y-4">
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-medium text-gray-700">Company Name</label>
-                                                            <Input
-                                                                required
-                                                                placeholder="Enter your startup name"
-                                                                value={companyName}
-                                                                onChange={(e) => setCompanyName(e.target.value)}
-                                                                className="h-12 rounded-xl focus:ring-black"
-                                                            />
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-medium text-gray-700">Industry</label>
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                {INDUSTRIES.map((ind) => (
-                                                                    <button
-                                                                        key={ind}
-                                                                        type="button"
-                                                                        onClick={() => setSelectedIndustry(ind)}
-                                                                        className={cn(
-                                                                            "px-3 py-2 rounded-xl text-sm font-medium border transition-all",
-                                                                            selectedIndustry === ind
-                                                                                ? 'bg-black text-white border-black shadow-lg scale-[1.02]'
-                                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
-                                                                        )}
-                                                                    >
-                                                                        {ind}
-                                                                    </button>
-                                                                ))}
+                                                    <div className="space-y-6">
+                                                        {!onboardingMethod ? (
+                                                            <div className="grid grid-cols-1 gap-4">
+                                                                <button
+                                                                    onClick={() => setOnboardingMethod('ai')}
+                                                                    className="group p-6 rounded-3xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all text-left"
+                                                                >
+                                                                    <div className="flex items-center gap-4 mb-3">
+                                                                        <div className="h-10 w-10 bg-black rounded-xl flex items-center justify-center text-white">
+                                                                            <Sparkles className="h-5 w-5" />
+                                                                        </div>
+                                                                        <h4 className="font-bold text-lg">AI-Powered Setup</h4>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-500 font-medium">Upload your pitch deck and let AI pre-fill your profile in seconds.</p>
+                                                                </button>
+
+                                                                <button
+                                                                    onClick={() => setOnboardingMethod('manual')}
+                                                                    className="group p-6 rounded-3xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-black hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all text-left"
+                                                                >
+                                                                    <div className="flex items-center gap-4 mb-3">
+                                                                        <div className="h-10 w-10 bg-black rounded-xl flex items-center justify-center text-white">
+                                                                            <User className="h-5 w-5" />
+                                                                        </div>
+                                                                        <h4 className="font-bold text-lg">Manual Entry</h4>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-500 font-medium">Prefer to enter your details yourself? Choose this for a step-by-step setup.</p>
+                                                                </button>
                                                             </div>
-                                                            {selectedIndustry === 'Others' && (
-                                                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-2">
+                                                        ) : onboardingMethod === 'ai' ? (
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <h4 className="font-bold text-lg">Upload Pitch Deck</h4>
+                                                                    <button onClick={() => setOnboardingMethod(null)} className="text-xs font-bold text-gray-400 hover:text-black">Change Method</button>
+                                                                </div>
+                                                                
+                                                                <div className="relative group">
+                                                                    <input
+                                                                        type="file"
+                                                                        accept=".pdf,.pptx,image/*"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0]
+                                                                            if (file) handlePitchDeckUpload(file)
+                                                                        }}
+                                                                        disabled={isExtracting}
+                                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 disabled:cursor-not-allowed"
+                                                                    />
+                                                                    <div className={cn(
+                                                                        "p-10 border-2 border-dashed rounded-[2.5rem] text-center transition-all",
+                                                                        isExtracting ? "border-black bg-gray-50 animate-pulse" : "border-gray-200 group-hover:border-black group-hover:bg-gray-50"
+                                                                    )}>
+                                                                        <div className="h-16 w-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                                                                            <FileUp className="h-8 w-8 text-white" />
+                                                                        </div>
+                                                                        <h5 className="font-bold mb-1">{isExtracting ? "Analyzing Deck..." : "Drop your deck here"}</h5>
+                                                                        <p className="text-sm text-gray-500 font-medium">Supports PDF, PPTX, or Images</p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="p-4 bg-blue-50 rounded-2xl flex gap-3">
+                                                                    <HelpCircle className="h-5 w-5 text-blue-500 shrink-0" />
+                                                                    <p className="text-xs text-blue-700 font-medium leading-relaxed">
+                                                                        Our AI extracts company name, industry, stage, and problem statement to save you time.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <h4 className="font-bold text-lg">Step-by-step Setup</h4>
+                                                                    <button onClick={() => setOnboardingMethod(null)} className="text-xs font-bold text-gray-400 hover:text-black">Change Method</button>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-sm font-medium text-gray-700">Company Name</label>
                                                                     <Input
-                                                                        placeholder="Specify your industry"
-                                                                        value={customIndustry}
-                                                                        onChange={(e) => setCustomIndustry(e.target.value)}
+                                                                        required
+                                                                        placeholder="Enter your startup name"
+                                                                        value={companyName}
+                                                                        onChange={(e) => setCompanyName(e.target.value)}
                                                                         className="h-12 rounded-xl focus:ring-black"
                                                                     />
-                                                                </motion.div>
-                                                            )}
-                                                        </div>
+                                                                </div>
+                                                                <div className="space-y-2">
+                                                                    <label className="text-sm font-medium text-gray-700">Industry</label>
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        {INDUSTRIES.map((ind) => (
+                                                                            <button
+                                                                                key={ind}
+                                                                                type="button"
+                                                                                onClick={() => setSelectedIndustry(ind)}
+                                                                                className={cn(
+                                                                                    "px-3 py-2 rounded-xl text-sm font-medium border transition-all",
+                                                                                    selectedIndustry === ind
+                                                                                        ? 'bg-black text-white border-black shadow-lg scale-[1.02]'
+                                                                                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                                                                                )}
+                                                                            >
+                                                                                {ind}
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                    {selectedIndustry === 'Others' && (
+                                                                        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-2">
+                                                                            <Input
+                                                                                placeholder="Specify your industry"
+                                                                                value={customIndustry}
+                                                                                onChange={(e) => setCustomIndustry(e.target.value)}
+                                                                                className="h-12 rounded-xl focus:ring-black"
+                                                                            />
+                                                                        </motion.div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ) : (
                                                     <div className="grid grid-cols-2 gap-4">
@@ -418,35 +536,41 @@ export function Onboarding() {
                                         )}
                                     </div>
 
-                                    <div className="flex gap-4 pt-4 border-t border-gray-50">
-                                        <Button
-                                            variant="outline"
-                                            onClick={() => setStep(prev => prev - 1)}
-                                            className="h-14 rounded-2xl px-6 font-bold"
-                                        >
-                                            <ArrowLeft className="h-5 w-5 mr-2" />
-                                            Back
-                                        </Button>
-                                        {step === 3 ? (
+                                    <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">
+                                        {step > 1 && (
                                             <Button
-                                                onClick={handleSubmit}
-                                                disabled={loading || !isStepValid()}
-                                                className="flex-1 bg-black text-white hover:bg-gray-800 rounded-2xl h-14 text-base font-bold shadow-xl transition-all active:scale-[0.98] group"
+                                                variant="ghost"
+                                                onClick={() => {
+                                                    if (step === 2 && role === 'startup' && onboardingMethod) {
+                                                        setOnboardingMethod(null)
+                                                    } else {
+                                                        setStep(prev => prev - 1)
+                                                    }
+                                                }}
+                                                className="px-6 h-12 rounded-xl font-bold text-gray-500 hover:text-black hover:bg-gray-100"
                                             >
-                                                {loading ? "Finalizing..." : (
-                                                    <span className="flex items-center justify-center gap-2">
-                                                        Complete Setup
-                                                        <CheckCircle2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                                                    </span>
-                                                )}
+                                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                                Back
                                             </Button>
-                                        ) : (
+                                        )}
+                                        <div className="flex-1" />
+                                        {step < 3 && (role !== 'startup' || (step === 2 && onboardingMethod === 'manual') || (step === 1)) && (
                                             <Button
                                                 onClick={nextStep}
                                                 disabled={!isStepValid()}
-                                                className="flex-1 bg-black text-white hover:bg-gray-800 rounded-2xl h-14 text-base font-bold shadow-xl transition-all active:scale-[0.98]"
+                                                className="px-10 h-14 rounded-[1.5rem] bg-black text-white hover:bg-black/90 font-bold text-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
                                             >
-                                                Continue
+                                                Next Step
+                                            </Button>
+                                        )}
+                                        {step === 3 && (
+                                            <Button
+                                                onClick={handleSubmit}
+                                                disabled={loading || !isStepValid()}
+                                                className="px-12 h-14 rounded-[1.5rem] bg-black text-white hover:bg-black/90 font-bold text-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all"
+                                            >
+                                                {loading ? "Creating Profile..." : "Complete Setup"}
+                                                <CheckCircle2 className="h-5 w-5 ml-2" />
                                             </Button>
                                         )}
                                     </div>
