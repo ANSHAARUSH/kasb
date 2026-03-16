@@ -13,6 +13,8 @@ import { compareStartups, type ComparisonResult } from "../../lib/ai"
 import { Button } from "../../components/ui/button"
 import { Sparkles, Lock, X } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
+import { SearchInput } from "../../components/dashboard/SearchInput"
+import { useDebounce } from "../../hooks/useDebounce"
 
 export function HistoryPage() {
     const { user } = useAuth()
@@ -27,6 +29,8 @@ export function HistoryPage() {
     const [isComparing, setIsComparing] = useState(false)
     const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
     const [detailStartup, setDetailStartup] = useState<Startup | null>(null)
+    const [searchQuery, setSearchQuery] = useState("")
+    const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
     useEffect(() => {
         if (!user || activeTab !== 'future') return
@@ -135,7 +139,19 @@ export function HistoryPage() {
         fetchClosedDeals()
     }, [user, activeTab])
 
-    const displayedStartups = activeTab === 'history' ? historyStartups : futureStartups
+    const baseStartups = activeTab === 'history' ? historyStartups : futureStartups
+
+    const filteredStartups = baseStartups.filter(startup => {
+        const query = debouncedSearchQuery.toLowerCase()
+        return (
+            startup.name.toLowerCase().includes(query) ||
+            startup.description.toLowerCase().includes(query) ||
+            startup.industry?.toLowerCase().includes(query) ||
+            startup.tags.some(t => t.toLowerCase().includes(query))
+        )
+    })
+
+    const displayedStartups = filteredStartups
 
     const handleSelect = (id: string) => {
         // Selection allowed in both tabs
@@ -280,24 +296,28 @@ export function HistoryPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.2 }}
-                    className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-24 max-w-[1400px] mx-auto px-4"
+                    className="flex flex-col gap-4 pb-24 max-w-2xl mx-auto px-4 w-full"
                 >
-                    {loading && <div className="col-span-full text-center text-gray-400">Loading...</div>}
+                    {loading && <div className="text-center text-gray-400">Loading...</div>}
 
                     {!loading && displayedStartups.map(startup => (
-                        <StartupCard
+                        <div
                             key={startup.id}
-                            startup={startup}
-                            isSelected={selectedIds.includes(startup.id)}
-                            isSaved={true}
-                            onClick={() => handleSelect(startup.id)}
-                            onDoubleClick={() => setDetailStartup(startup)}
-                            onToggleSave={handleRemove}
-                        />
+                            className="transform transition-all duration-200 hover:scale-[1.01]"
+                        >
+                            <StartupCard
+                                startup={startup}
+                                isSelected={selectedIds.includes(startup.id)}
+                                isSaved={true}
+                                onClick={() => handleSelect(startup.id)}
+                                onDoubleClick={() => setDetailStartup(startup)}
+                                onToggleSave={handleRemove}
+                            />
+                        </div>
                     ))}
 
                     {!loading && displayedStartups.length === 0 && (
-                        <div className="col-span-full py-12 text-center text-gray-500">
+                        <div className="py-12 text-center text-gray-500">
                             {activeTab === 'history'
                                 ? "No viewing history yet."
                                 : "No future plans added yet. Add them from the Home feed!"
@@ -384,6 +404,17 @@ export function HistoryPage() {
                     </div>
                 )}
             </AnimatePresence>
+            {/* Fixed Bottom Search Bar */}
+            <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 transition-all duration-300 pointer-events-none">
+                <div className="max-w-2xl mx-auto pointer-events-auto">
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder={`Search ${activeTab === 'history' ? 'history' : 'future plans'}...`}
+                        className="w-full !relative !bottom-0 !px-0 !pb-0"
+                    />
+                </div>
+            </div>
         </div>
     )
 }

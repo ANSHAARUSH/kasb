@@ -14,6 +14,8 @@ import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { ensureArray } from "../../lib/utils"
+import { SearchInput } from "../../components/dashboard/SearchInput"
+import { useDebounce } from "../../hooks/useDebounce"
 
 
 export function StartupHistoryPage() {
@@ -29,6 +31,8 @@ export function StartupHistoryPage() {
    const [isComparing, setIsComparing] = useState(false)
    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
+   const [searchQuery, setSearchQuery] = useState("")
+   const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
    useEffect(() => {
       if (!user || activeTab !== 'future') return
@@ -219,7 +223,18 @@ export function StartupHistoryPage() {
       }
    }
 
-   const displayedInvestors = activeTab === 'history' ? historyInvestors : savedInvestors
+   const baseInvestors = activeTab === 'history' ? historyInvestors : savedInvestors
+
+   const filteredInvestors = baseInvestors.filter(investor => {
+      const query = debouncedSearchQuery.toLowerCase()
+      return (
+         investor.name.toLowerCase().includes(query) ||
+         investor.bio.toLowerCase().includes(query) ||
+         investor.expertise.some(e => e.toLowerCase().includes(query))
+      )
+   })
+
+   const displayedInvestors = filteredInvestors
 
    return (
       <div className="flex flex-col gap-6 relative min-h-[50vh] px-6 pt-6 md:px-0 md:pt-0">
@@ -263,24 +278,28 @@ export function StartupHistoryPage() {
                animate={{ opacity: 1, y: 0 }}
                exit={{ opacity: 0, y: -20 }}
                transition={{ duration: 0.2 }}
-               className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-24 max-w-[1400px] mx-auto px-4"
+               className="flex flex-col gap-4 pb-24 max-w-2xl mx-auto px-4 w-full"
             >
-               {loading && <div className="col-span-full text-center text-gray-400">Loading...</div>}
+               {loading && <div className="text-center text-gray-400">Loading...</div>}
 
                {!loading && displayedInvestors.map(investor => (
-                  <InvestorCard
+                  <div
                      key={investor.id}
-                     investor={investor}
-                     isSelected={selectedIds.includes(investor.id)}
-                     isSaved={true}
-                     onClick={() => handleSelect(investor.id)}
-                     onDoubleClick={() => setDetailInvestor(investor)}
-                     onToggleSave={handleRemove}
-                  />
+                     className="transform transition-all duration-200 hover:scale-[1.01]"
+                  >
+                     <InvestorCard
+                        investor={investor}
+                        isSelected={selectedIds.includes(investor.id)}
+                        isSaved={true}
+                        onClick={() => handleSelect(investor.id)}
+                        onDoubleClick={() => setDetailInvestor(investor)}
+                        onToggleSave={handleRemove}
+                     />
+                  </div>
                ))}
 
                {!loading && displayedInvestors.length === 0 && (
-                  <div className="col-span-full py-12 text-center text-gray-500">
+                  <div className="py-12 text-center text-gray-500">
                      {activeTab === 'history'
                         ? "No viewing history yet."
                         : "No future plans added yet. Go to Home to add investors!"
@@ -358,6 +377,17 @@ export function StartupHistoryPage() {
                </div>
             )}
          </AnimatePresence>
+         {/* Fixed Bottom Search Bar */}
+         <div className="fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 transition-all duration-300 pointer-events-none">
+            <div className="max-w-2xl mx-auto pointer-events-auto">
+               <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder={`Search ${activeTab === 'history' ? 'history' : 'future plans'}...`}
+                  className="w-full !relative !bottom-0 !px-0 !pb-0"
+               />
+            </div>
+         </div>
       </div>
    )
 }
