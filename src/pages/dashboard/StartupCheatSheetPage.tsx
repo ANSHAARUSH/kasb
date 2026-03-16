@@ -1,12 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
-import {
-    Sparkles, FileText, Calculator, BarChart3,
-    Lightbulb, Gavel, ArrowRight, CheckCircle2
-} from "lucide-react"
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "../../components/ui/button"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
+import { useEffect } from "react"
+import { getInvestorsByType } from "../../lib/supabase"
+import type { Investor } from "../../data/mockData"
+import { InvestorCard } from "../../components/dashboard/InvestorCard"
 
 const FOUNDER_TOPICS = [
     {
@@ -92,11 +88,80 @@ const FOUNDER_TOPICS = [
             ],
             checklist: ["Incorporation Docs", "IP Assignment", "Cap Table Management", "Bylaws"]
         }
+    },
+    {
+        title: "Government Grant",
+        icon: Gavel,
+        desc: "Explore non-dilutive funding options from government schemes and grants.",
+        color: "bg-blue-50 text-blue-600",
+        type: 'resource',
+        investorType: 'grant',
+        details: {
+            tips: [
+                "Check eligibility criteria strictly before applying.",
+                "Maintain accurate documentation for recurring audits.",
+                "Grants often focus on specific sectors like AgriTech or DeepTech."
+            ],
+            checklist: ["DPIIT Recognition", "Utilization Certificate", "Project Report", "Tax Clearance"]
+        }
+    },
+    {
+        title: "VC Firms",
+        icon: Briefcase,
+        desc: "Identify venture capital partners that specialize in your industry and stage.",
+        color: "bg-purple-50 text-purple-600",
+        type: 'resource',
+        investorType: 'vc',
+        details: {
+            tips: [
+                "Research the partner's previous investments.",
+                "Warm introductions are always better than cold emails.",
+                "Understand the VC's investment thesis and fund lifecycle."
+            ],
+            checklist: ["Pitch Deck", "Financial Model", "Founder References", "Data Room"]
+        }
+    },
+    {
+        title: "Accelerator",
+        icon: Rocket,
+        desc: "Find global and local acceleration programs to fast-track your growth.",
+        color: "bg-orange-50 text-orange-600",
+        type: 'resource',
+        investorType: 'accelerator',
+        details: {
+            tips: [
+                "Look for mentors specifically relevant to your bottlenecks.",
+                "Compare equity requirements vs. value provided.",
+                "Alumni networks are often the biggest value of an accelerator."
+            ],
+            checklist: ["Application Form", "MVP Demo", "Team Bio", "Equity Terms"]
+        }
     }
 ] as const
 
 export function StartupCheatSheetPage() {
-    const [selectedTopic, setSelectedTopic] = useState<typeof FOUNDER_TOPICS[number] | null>(null)
+    const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
+    const [resourceInvestors, setResourceInvestors] = useState<Investor[]>([])
+    const [isLoadingResources, setIsLoadingResources] = useState(false)
+
+    useEffect(() => {
+        if (selectedTopic && 'type' in selectedTopic && selectedTopic.type === 'resource') {
+            const fetchResources = async () => {
+                setIsLoadingResources(true)
+                try {
+                   const investors = await getInvestorsByType(selectedTopic.investorType)
+                   setResourceInvestors(investors)
+                } catch (err) {
+                    console.error("Failed to fetch resources:", err)
+                } finally {
+                    setIsLoadingResources(false)
+                }
+            }
+            fetchResources()
+        } else {
+            setResourceInvestors([])
+        }
+    }, [selectedTopic])
 
     return (
         <div className="space-y-6 pb-20 px-6 pt-6 md:px-0 md:pt-0">
@@ -213,12 +278,42 @@ export function StartupCheatSheetPage() {
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-100">
-                                    <Button
-                                        onClick={() => setSelectedTopic(null)}
-                                        className="w-full h-14 rounded-2xl bg-black text-white font-bold text-lg hover:scale-[1.01] transition-transform shadow-xl"
-                                    >
-                                        Got it, thanks!
-                                    </Button>
+                                    {selectedTopic && 'type' in selectedTopic && selectedTopic.type === 'resource' ? (
+                                        <div className="space-y-6">
+                                            <h3 className="text-xl font-bold flex items-center gap-2">
+                                                <Sparkles className="h-5 w-5 text-indigo-500" />
+                                                Recommended {selectedTopic.title}
+                                            </h3>
+                                            
+                                            {isLoadingResources ? (
+                                                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                                    <Loader2 className="h-8 w-8 animate-spin mb-2" />
+                                                    <p className="text-sm font-medium">Finding the best matches...</p>
+                                                </div>
+                                            ) : resourceInvestors.length > 0 ? (
+                                                <div className="grid gap-4">
+                                                    {resourceInvestors.map((investor) => (
+                                                        <InvestorCard 
+                                                            key={investor.id} 
+                                                            investor={investor}
+                                                            onClick={() => {}} // Optional: navigate to profile
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="p-8 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-200 text-center">
+                                                    <p className="text-gray-500 font-medium">No {selectedTopic.title.toLowerCase()} listings found in your region yet.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            onClick={() => setSelectedTopic(null)}
+                                            className="w-full h-14 rounded-2xl bg-black text-white font-bold text-lg hover:scale-[1.01] transition-transform shadow-xl"
+                                        >
+                                            Got it, thanks!
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
                         </motion.div>

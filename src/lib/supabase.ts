@@ -451,3 +451,18 @@ export async function purchaseImpactPoints(investorId: string, points: number, p
 
     if (error) throw error
 }
+
+export async function getInvestorsByType(type: string): Promise<Investor[]> {
+    const { data, error } = await supabase
+        .from('investors')
+        .select('*')
+        .eq('investor_type', type)
+        .order('created_at', { ascending: false })
+
+    if (error) {
+        console.error('Error fetching investors by type:', error)
+        return []
+    }
+
+    return (data || []) as Investor[]
+}
