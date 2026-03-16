@@ -24,7 +24,7 @@ interface AdminModalsProps {
         tags: string
         industry: string
     }
-    setNewStartup: React.Dispatch<React.SetStateAction<AdminModalsProps['newStartup']>>
+    setNewStartup: (startup: any) => void
     handleAddStartup: () => Promise<void>
     isInvestorModalOpen: boolean
     setIsInvestorModalOpen: (open: boolean) => void
@@ -32,7 +32,6 @@ interface AdminModalsProps {
         name: string
         avatar: string
         funds_available: string
-        investments_count: number
         bio?: string
         website?: string
         investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
@@ -43,8 +42,6 @@ interface AdminModalsProps {
         target_stages?: string
         sector_focus?: string
         geography_focus?: string
-        portfolio_highlights?: string
-        investment_philosophy?: string
         is_lead_investor?: boolean
         equity_taken?: string
         batch_dates?: string
@@ -52,7 +49,7 @@ interface AdminModalsProps {
         cohort_size?: number
         has_demo_day?: boolean
     }
-    setNewInvestor: React.Dispatch<React.SetStateAction<AdminModalsProps['newInvestor']>>
+    setNewInvestor: (investor: any) => void
     handleAddInvestor: () => Promise<void>
 }
 
@@ -298,15 +295,6 @@ export function AdminModals({
                                 )}
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Investments Count</label>
-                                    <Input
-                                        type="number"
-                                        value={newInvestor.investments_count}
-                                        onChange={e => setNewInvestor({ ...newInvestor, investments_count: parseInt(e.target.value) || 0 })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
                                     <label className="text-sm font-medium">Check Size / Investment Range</label>
                                     <Input
                                         value={newInvestor.check_size_range}
@@ -339,85 +327,6 @@ export function AdminModals({
                                         value={newInvestor.geography_focus}
                                         onChange={e => setNewInvestor({ ...newInvestor, geography_focus: e.target.value })}
                                         placeholder="e.g. India, SE Asia (comma-separated)"
-                                    />
-                                </div>
-
-                                {newInvestor.investor_type === 'accelerator' && (
-                                    <>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Equity Taken (%)</label>
-                                                <Input
-                                                    value={newInvestor.equity_taken}
-                                                    onChange={e => setNewInvestor({ ...newInvestor, equity_taken: e.target.value })}
-                                                    placeholder="e.g. 7%"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-sm font-medium">Cohort Size</label>
-                                                <Input
-                                                    type="number"
-                                                    value={newInvestor.cohort_size}
-                                                    onChange={e => setNewInvestor({ ...newInvestor, cohort_size: parseInt(e.target.value) || 0 })}
-                                                    placeholder="e.g. 50"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Batch Dates</label>
-                                            <Input
-                                                value={newInvestor.batch_dates}
-                                                onChange={e => setNewInvestor({ ...newInvestor, batch_dates: e.target.value })}
-                                                placeholder="e.g. Jan 2025 - Jun 2025"
-                                            />
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-medium">Location Type</label>
-                                            <select
-                                                className="w-full rounded-md border border-gray-200 p-2 text-sm"
-                                                value={newInvestor.location_type}
-                                                onChange={e => setNewInvestor({ ...newInvestor, location_type: e.target.value })}
-                                            >
-                                                <option value="remote">Remote</option>
-                                                <option value="onsite">Onsite</option>
-                                                <option value="hybrid">Hybrid</option>
-                                            </select>
-                                        </div>
-
-                                        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <input
-                                                type="checkbox"
-                                                id="has_demo_day"
-                                                className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
-                                                checked={newInvestor.has_demo_day || false}
-                                                onChange={e => setNewInvestor({ ...newInvestor, has_demo_day: e.target.checked })}
-                                            />
-                                            <label htmlFor="has_demo_day" className="text-sm font-medium text-gray-700">
-                                                Includes Demo Day
-                                            </label>
-                                        </div>
-                                    </>
-                                )}
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Portfolio Highlights</label>
-                                    <textarea
-                                        className="w-full min-h-[80px] rounded-xl border border-gray-200 p-3 text-sm focus:ring-2 ring-black/5"
-                                        value={newInvestor.portfolio_highlights}
-                                        onChange={e => setNewInvestor({ ...newInvestor, portfolio_highlights: e.target.value })}
-                                        placeholder="e.g. Razorpay, Swiggy (comma-separated)"
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium">Investment Philosophy (Optional)</label>
-                                    <textarea
-                                        className="w-full min-h-[80px] rounded-xl border border-gray-200 p-3 text-sm focus:ring-2 ring-black/5"
-                                        value={newInvestor.investment_philosophy}
-                                        onChange={e => setNewInvestor({ ...newInvestor, investment_philosophy: e.target.value })}
-                                        placeholder="What kind of founders/problems do you back?"
                                     />
                                 </div>
 

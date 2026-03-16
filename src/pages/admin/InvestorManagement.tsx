@@ -9,7 +9,6 @@ interface Investor {
     name: string
     avatar: string
     funds_available: string
-    investments_count: number
     email_verified: boolean
     show_in_feed: boolean
     adhaar_number?: string
@@ -23,6 +22,16 @@ interface Investor {
     grant_scheme?: string
     grant_advantages?: string
     grant_eligibility?: string
+    check_size_range?: string
+    target_stages?: string
+    sector_focus?: string
+    geography_focus?: string
+    is_lead_investor?: boolean
+    equity_taken?: string
+    batch_dates?: string
+    location_type?: string
+    cohort_size?: number
+    has_demo_day?: boolean
 }
 
 interface InvestorManagementProps {

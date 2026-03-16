@@ -48,7 +48,6 @@ interface Investor {
     name: string
     avatar: string
     funds_available: string
-    investments_count: number
     email_verified: boolean
     show_in_feed: boolean
     adhaar_number?: string
@@ -62,6 +61,16 @@ interface Investor {
     grant_scheme?: string
     grant_advantages?: string
     grant_eligibility?: string
+    check_size_range?: string
+    target_stages?: string
+    sector_focus?: string
+    geography_focus?: string
+    is_lead_investor?: boolean
+    equity_taken?: string
+    batch_dates?: string
+    location_type?: string
+    cohort_size?: number
+    has_demo_day?: boolean
 }
 
 export function AdminDashboard() {
@@ -97,7 +106,6 @@ export function AdminDashboard() {
         name: string
         avatar: string
         funds_available: string
-        investments_count: number
         bio?: string
         website?: string
         investor_type?: 'direct' | 'vc' | 'grant' | 'accelerator'
@@ -108,8 +116,6 @@ export function AdminDashboard() {
         target_stages?: string
         sector_focus?: string
         geography_focus?: string
-        portfolio_highlights?: string
-        investment_philosophy?: string
         is_lead_investor?: boolean
         equity_taken?: string
         batch_dates?: string
@@ -120,7 +126,6 @@ export function AdminDashboard() {
         name: '',
         avatar: '',
         funds_available: '',
-        investments_count: 0,
         bio: '',
         website: '',
         investor_type: 'direct',
@@ -131,8 +136,6 @@ export function AdminDashboard() {
         target_stages: '',
         sector_focus: '',
         geography_focus: '',
-        portfolio_highlights: '',
-        investment_philosophy: '',
         is_lead_investor: false,
         equity_taken: '',
         batch_dates: '',
@@ -245,7 +248,6 @@ export function AdminDashboard() {
                 target_stages: newInvestor.target_stages?.split(',').map(s => s.trim()).filter(Boolean) || [],
                 sector_focus: newInvestor.sector_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
                 geography_focus: newInvestor.geography_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
-                portfolio_highlights: newInvestor.portfolio_highlights?.split(',').map(s => s.trim()).filter(Boolean) || [],
                 email_verified: true,
                 show_in_feed: true,
                 verification_level: 'verified'
@@ -264,7 +266,6 @@ export function AdminDashboard() {
                 name: '',
                 avatar: '',
                 funds_available: '',
-                investments_count: 0,
                 bio: '',
                 website: '',
                 investor_type: 'direct',
@@ -275,8 +276,6 @@ export function AdminDashboard() {
                 target_stages: '',
                 sector_focus: '',
                 geography_focus: '',
-                portfolio_highlights: '',
-                investment_philosophy: '',
                 is_lead_investor: false,
                 equity_taken: '',
                 batch_dates: '',
