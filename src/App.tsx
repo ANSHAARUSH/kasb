@@ -105,7 +105,7 @@ function App() {
 
 
                   {/* Admin Route (Standalone) - Protected */}
-                  <Route path="/admin" element={
+                  <Route path="/admin-portal-v3x8z1" element={
                     <AdminRoute>
                       <AdminDashboard />
                     </AdminRoute>

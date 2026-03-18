@@ -1,4 +1,4 @@
-import { Trash2, Award } from "lucide-react"
+import { Trash2, Award, Pencil } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { VerificationBadge } from "../../components/ui/VerificationBadge"
 import { cn } from "../../lib/utils"
@@ -32,6 +32,34 @@ interface Investor {
     location_type?: string
     cohort_size?: number
     has_demo_day?: boolean
+    is_admin_added?: boolean
+    // Accelerator specific fields
+    accelerator_type?: string
+    cash_investment?: string
+    applications_status?: string
+    application_deadline?: string
+    program_location?: string
+    first_cheque_friendly?: string
+    investor_intros_strength?: string
+    founder_fit_score?: string
+    best_for?: string
+    program_duration?: string
+    cohorts_per_year?: string
+    relocation_required?: string
+    follow_on_funding?: string
+    non_dilutive_support?: string
+    eligibility_requirements?: string
+    application_difficulty?: string
+    acceptance_rate?: string
+    application_requirements?: string
+    selection_process?: string
+    decision_time?: string
+    mentorship_access?: string
+    investor_access?: string
+    post_program_support?: string
+    startup_perks?: string
+    core_support?: string
+    founder_community?: string
 }
 
 interface InvestorManagementProps {
@@ -41,6 +69,7 @@ interface InvestorManagementProps {
     grantTrusted: (table: 'startups' | 'investors', id: string) => void
     promptDelete: (table: 'startups' | 'investors', id: string) => void
     onAddClick: () => void
+    onEditClick: (investor: Investor) => void
     updateTier: (table: 'startups' | 'investors', id: string, tier: string) => void
 }
 
@@ -51,6 +80,7 @@ export function InvestorManagement({
     grantTrusted,
     promptDelete,
     onAddClick,
+    onEditClick,
     updateTier
 }: InvestorManagementProps) {
     if (loading) {
@@ -123,6 +153,18 @@ export function InvestorManagement({
                             >
                                 {investor.verification_level === 'basic' ? "Verify Adhaar" : "Toggle Verified"}
                             </Button>
+
+                            {investor.is_admin_added && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="rounded-full text-xs border-blue-200 text-blue-600 hover:bg-blue-50"
+                                    onClick={() => onEditClick(investor)}
+                                >
+                                    <Pencil className="h-3 w-3 mr-1" />
+                                    Edit
+                                </Button>
+                            )}
 
                             {investor.verification_level !== 'basic' && investor.verification_level !== 'trusted' && (
                                 <Button

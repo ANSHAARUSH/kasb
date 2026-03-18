@@ -315,23 +315,22 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
                                     </Button>
                                 </div>
 
-                                {loading ? (
+                                 {loading ? (
                                     <div className="grid grid-cols-2 gap-4">
                                         {[1, 2].map(i => (
                                             <div key={i} className="h-48 rounded-[2rem] bg-gray-50 animate-pulse" />
                                         ))}
                                     </div>
-                                ) : startups.length > 0 ? (
+                                 ) : startups.length > 0 ? (
                                     <div className="grid grid-cols-2 gap-4">
                                         {startups.map(startup => (
-                                            <div key={startup.id} className="scale-90 origin-top-left -mb-10">
-                                                <StartupCard
-                                                    startup={startup}
-                                                    onClick={() => { }}
-                                                    onDoubleClick={() => { }}
-                                                    isSelected={false}
-                                                />
-                                            </div>
+                                            <StartupCard
+                                                key={startup.id}
+                                                startup={startup}
+                                                onClick={() => { }}
+                                                onDoubleClick={() => { }}
+                                                isSelected={false}
+                                            />
                                         ))}
                                     </div>
                                 ) : (

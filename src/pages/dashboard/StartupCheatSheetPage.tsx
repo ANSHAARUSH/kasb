@@ -300,7 +300,7 @@ export function StartupCheatSheetPage() {
                                                     <p className="text-sm font-medium">Finding the best matches...</p>
                                                 </div>
                                             ) : resourceInvestors.length > 0 ? (
-                                                <div className="grid gap-4">
+                                                <div className="grid grid-cols-2 gap-4">
                                                     {resourceInvestors.map((investor: Investor) => (
                                                         <InvestorCard 
                                                             key={investor.id} 

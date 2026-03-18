@@ -29,6 +29,7 @@ export interface InvestorProfileData {
     grant_scheme?: string
     grant_advantages?: string | string[]
     grant_eligibility?: string | string[]
+    is_admin_added?: boolean
 }
 
 export interface InvestorProfileDetails {

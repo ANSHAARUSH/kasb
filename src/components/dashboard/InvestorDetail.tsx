@@ -520,6 +520,17 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                 </CardContent>
                             </Card>
                         </div>
+
+                        {/* Admin-Added Disclaimer for Standard Profiles */}
+                        {/* Admin-Added Disclaimer for Standard Profiles */}
+                        {investor.is_admin_added && (
+                            <div className="pt-8 border-t border-gray-100 pb-4 text-center">
+                                <p className="text-[10px] text-gray-400 italic leading-relaxed max-w-lg mx-auto">
+                                    Kasb.AI is an independent discovery platform. All trademarks, logos, and brand names belong to their respective owners. 
+                                    Listings are for informational purposes only and do not imply affiliation, partnership, or endorsement unless explicitly stated.
+                                </p>
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -817,10 +828,16 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                         </div>
                                         
                                         {/* Disclaimer */}
-                                        <div className="md:col-span-2 px-8 pb-4 text-center">
+                                        <div className="md:col-span-2 px-8 pb-4 text-center space-y-1">
                                             <p className="text-[8px] text-gray-400 italic leading-relaxed">
                                                 *Kasb.AI is a discovery and matchmaking platform designed to help startups find investors, grants, and accelerator opportunities. While we strive to provide accurate information, Kasb.AI does not guarantee funding, selection, or outcomes. Users should conduct their own due diligence before applying or entering into any agreements.*
                                             </p>
+                                            {investor.is_admin_added && (
+                                                <p className="text-[8px] text-gray-400 italic leading-relaxed">
+                                                    Kasb.AI is an independent discovery platform. All trademarks, logos, and brand names belong to their respective owners. 
+                                                    Listings are for informational purposes only and do not imply affiliation, partnership, or endorsement unless explicitly stated.
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </>

@@ -24,7 +24,7 @@ export function BottomNav() {
         { icon: MessageSquare, label: "Chat", href: messagesRoute },
         { icon: FileText, label: "Cheat", href: cheatSheetRoute },
         ...(isStartupDashboard ? [{ icon: BarChart3, label: "Data", href: analyticsRoute }] : []),
-        ...(role === 'admin' ? [{ icon: Shield, label: "Admin", href: "/admin" }] : []),
+        ...(role === 'admin' ? [{ icon: Shield, label: "Admin", href: "/admin-portal-v3x8z1" }] : []),
         { icon: User, label: "Profile", href: profileRoute },
     ]
 

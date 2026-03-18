@@ -71,6 +71,34 @@ interface Investor {
     location_type?: string
     cohort_size?: number
     has_demo_day?: boolean
+    is_admin_added?: boolean
+    // Accelerator specific fields
+    accelerator_type?: string
+    cash_investment?: string
+    applications_status?: string
+    application_deadline?: string
+    program_location?: string
+    first_cheque_friendly?: string
+    investor_intros_strength?: string
+    founder_fit_score?: string
+    best_for?: string
+    program_duration?: string
+    cohorts_per_year?: string
+    relocation_required?: string
+    follow_on_funding?: string
+    non_dilutive_support?: string
+    eligibility_requirements?: string
+    application_difficulty?: string
+    acceptance_rate?: string
+    application_requirements?: string
+    selection_process?: string
+    decision_time?: string
+    mentorship_access?: string
+    investor_access?: string
+    post_program_support?: string
+    startup_perks?: string
+    core_support?: string
+    founder_community?: string
 }
 
 export function AdminDashboard() {
@@ -122,6 +150,33 @@ export function AdminDashboard() {
         location_type?: string
         cohort_size?: number
         has_demo_day?: boolean
+        is_admin_added?: boolean
+        accelerator_type?: string
+        cash_investment?: string
+        applications_status?: string
+        application_deadline?: string
+        program_location?: string
+        first_cheque_friendly?: string
+        investor_intros_strength?: string
+        founder_fit_score?: string
+        best_for?: string
+        program_duration?: string
+        cohorts_per_year?: string
+        relocation_required?: string
+        follow_on_funding?: string
+        non_dilutive_support?: string
+        eligibility_requirements?: string
+        application_difficulty?: string
+        acceptance_rate?: string
+        application_requirements?: string
+        selection_process?: string
+        decision_time?: string
+        mentorship_access?: string
+        investor_access?: string
+        post_program_support?: string
+        startup_perks?: string
+        core_support?: string
+        founder_community?: string
     }>({
         name: '',
         avatar: '',
@@ -141,8 +196,37 @@ export function AdminDashboard() {
         batch_dates: '',
         location_type: 'remote',
         cohort_size: 0,
-        has_demo_day: false
+        has_demo_day: false,
+        is_admin_added: true,
+        // Accelerator fields
+        accelerator_type: '',
+        cash_investment: '',
+        applications_status: '',
+        application_deadline: '',
+        program_location: '',
+        first_cheque_friendly: '',
+        investor_intros_strength: '',
+        founder_fit_score: '',
+        best_for: '',
+        program_duration: '',
+        cohorts_per_year: '',
+        relocation_required: '',
+        follow_on_funding: '',
+        non_dilutive_support: '',
+        eligibility_requirements: '',
+        application_difficulty: '',
+        acceptance_rate: '',
+        application_requirements: '',
+        selection_process: '',
+        decision_time: '',
+        mentorship_access: '',
+        investor_access: '',
+        post_program_support: '',
+        startup_perks: '',
+        core_support: '',
+        founder_community: ''
     })
+    const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null)
 
     const fetchData = useCallback(async () => {
         try {
@@ -237,25 +321,29 @@ export function AdminDashboard() {
                 })
             }
 
-            const id = generateUUID()
-            console.log('Generated ID (V5):', id)
+            const id = editingInvestor ? editingInvestor.id : generateUUID()
+            console.log(editingInvestor ? 'Updating Investor:' : 'Generated ID (V5):', id)
 
-            const { error } = await supabase.from('investors').insert([{
-                id,
+            const investorData = {
                 ...newInvestor,
-                grant_advantages: newInvestor.grant_advantages?.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) || [],
-                grant_eligibility: newInvestor.grant_eligibility?.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) || [],
-                target_stages: newInvestor.target_stages?.split(',').map(s => s.trim()).filter(Boolean) || [],
-                sector_focus: newInvestor.sector_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
-                geography_focus: newInvestor.geography_focus?.split(',').map(s => s.trim()).filter(Boolean) || [],
+                grant_advantages: typeof newInvestor.grant_advantages === 'string' ? newInvestor.grant_advantages.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) : newInvestor.grant_advantages,
+                grant_eligibility: typeof newInvestor.grant_eligibility === 'string' ? newInvestor.grant_eligibility.split('\n').map(s => s.trim().replace(/^•\s*/, '')).filter(Boolean) : newInvestor.grant_eligibility,
+                target_stages: typeof newInvestor.target_stages === 'string' ? newInvestor.target_stages.split(',').map(s => s.trim()).filter(Boolean) : newInvestor.target_stages,
+                sector_focus: typeof newInvestor.sector_focus === 'string' ? newInvestor.sector_focus.split(',').map(s => s.trim()).filter(Boolean) : newInvestor.sector_focus,
+                geography_focus: typeof newInvestor.geography_focus === 'string' ? newInvestor.geography_focus.split(',').map(s => s.trim()).filter(Boolean) : newInvestor.geography_focus,
                 email_verified: true,
                 show_in_feed: true,
-                verification_level: 'verified'
-            }])
+                verification_level: editingInvestor ? editingInvestor.verification_level : 'verified',
+                is_admin_added: true
+            }
+
+            const { error } = editingInvestor 
+                ? await supabase.from('investors').update(investorData).eq('id', id)
+                : await supabase.from('investors').insert([{ id, ...investorData }])
 
             if (error) {
                 console.error('Supabase error:', error)
-                alert('Error adding investor: ' + error.message)
+                alert(`Error ${editingInvestor ? 'updating' : 'adding'} investor: ` + error.message)
                 return
             }
 
@@ -281,7 +369,33 @@ export function AdminDashboard() {
                 batch_dates: '',
                 location_type: 'remote',
                 cohort_size: 0,
-                has_demo_day: false
+                has_demo_day: false,
+                accelerator_type: '',
+                cash_investment: '',
+                applications_status: '',
+                application_deadline: '',
+                program_location: '',
+                first_cheque_friendly: '',
+                investor_intros_strength: '',
+                founder_fit_score: '',
+                best_for: '',
+                program_duration: '',
+                cohorts_per_year: '',
+                relocation_required: '',
+                follow_on_funding: '',
+                non_dilutive_support: '',
+                eligibility_requirements: '',
+                application_difficulty: '',
+                acceptance_rate: '',
+                application_requirements: '',
+                selection_process: '',
+                decision_time: '',
+                mentorship_access: '',
+                investor_access: '',
+                post_program_support: '',
+                startup_perks: '',
+                core_support: '',
+                founder_community: ''
             })
         } catch (err) {
             console.error('Unexpected error:', err)
@@ -407,7 +521,14 @@ export function AdminDashboard() {
                                     toggleVerifyInvestor={toggleVerifyInvestor}
                                     grantTrusted={grantTrusted}
                                     promptDelete={promptDelete}
-                                    onAddClick={() => setIsInvestorModalOpen(true)}
+                                    onAddClick={() => {
+                                        setEditingInvestor(null)
+                                        setIsInvestorModalOpen(true)
+                                    }}
+                                    onEditClick={(investor) => {
+                                        setEditingInvestor(investor)
+                                        setIsInvestorModalOpen(true)
+                                    }}
                                     updateTier={updateUserTier}
                                 />
                             )}
@@ -435,6 +556,8 @@ export function AdminDashboard() {
                 setIsInvestorModalOpen={setIsInvestorModalOpen}
                 newInvestor={newInvestor}
                 setNewInvestor={setNewInvestor}
+                editingInvestor={editingInvestor}
+                setEditingInvestor={setEditingInvestor}
                 handleAddInvestor={handleAddInvestor}
             />
 

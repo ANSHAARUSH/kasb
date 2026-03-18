@@ -16,11 +16,9 @@ export function useInvestors() {
             try {
                 const { data: investorData, error: investorError } = await supabase
                     .from('investors')
-                    .select('*')
+                    .select('*, is_admin_added')
 
                 if (investorError) throw investorError;
-
-                if (investorError) throw investorError
 
                 if (investorData && investorData.length > 0) {
                     const userIds = investorData.map((i: any) => i.id)
@@ -76,7 +74,8 @@ export function useInvestors() {
                                 batch_dates: i.batch_dates,
                                 location_type: i.location_type,
                                 cohort_size: i.cohort_size,
-                                has_demo_day: i.has_demo_day
+                                has_demo_day: i.has_demo_day,
+                                is_admin_added: i.is_admin_added
                             };
                             const scoreResult = calculateImpactScore(baseInvestor);
                             const completionPercentage = calculateInvestorProgress(i);

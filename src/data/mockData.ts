@@ -1477,6 +1477,7 @@ export interface Investor {
     location_type?: string
     cohort_size?: number
     has_demo_day?: boolean
+    is_admin_added?: boolean
 }
 
 export const MOCK_INVESTORS: Investor[] = [
@@ -1490,7 +1491,8 @@ export const MOCK_INVESTORS: Investor[] = [
         "expertise": [
             "CleanTech",
             "PropTech"
-        ]
+        ],
+        "is_admin_added": true
     },
     {
         "id": "i2",
@@ -1503,7 +1505,8 @@ export const MOCK_INVESTORS: Investor[] = [
             "FinTech",
             "EdTech"
         ],
-        "last_active_at": new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString()
+        "last_active_at": new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
+        "is_admin_added": true
     },
     {
         "id": "i3",

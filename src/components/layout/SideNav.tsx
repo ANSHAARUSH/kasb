@@ -27,7 +27,7 @@ export function SideNav() {
         { icon: FileText, label: "Cheat Sheet", href: cheatSheetRoute },
         { icon: User, label: "Profile", href: profileRoute },
         ...(isStartupDashboard ? [{ icon: BarChart3, label: "Analytics", href: analyticsRoute }] : []),
-        ...(role === 'admin' ? [{ icon: Shield, label: "Admin Panel", href: "/admin" }] : []),
+        ...(role === 'admin' ? [{ icon: Shield, label: "Admin Panel", href: "/admin-portal-v3x8z1" }] : []),
     ]
 
     return (

@@ -48,8 +48,36 @@ interface AdminModalsProps {
         location_type?: string
         cohort_size?: number
         has_demo_day?: boolean
+        accelerator_type?: string
+        cash_investment?: string
+        applications_status?: string
+        application_deadline?: string
+        program_location?: string
+        first_cheque_friendly?: string
+        investor_intros_strength?: string
+        founder_fit_score?: string
+        best_for?: string
+        program_duration?: string
+        cohorts_per_year?: string
+        relocation_required?: string
+        follow_on_funding?: string
+        non_dilutive_support?: string
+        eligibility_requirements?: string
+        application_difficulty?: string
+        acceptance_rate?: string
+        application_requirements?: string
+        selection_process?: string
+        decision_time?: string
+        mentorship_access?: string
+        investor_access?: string
+        post_program_support?: string
+        startup_perks?: string
+        core_support?: string
+        founder_community?: string
     }
     setNewInvestor: (investor: any) => void
+    editingInvestor: any | null
+    setEditingInvestor: (investor: any | null) => void
     handleAddInvestor: () => Promise<void>
 }
 
@@ -63,6 +91,8 @@ export function AdminModals({
     setIsInvestorModalOpen,
     newInvestor,
     setNewInvestor,
+    editingInvestor,
+    setEditingInvestor,
     handleAddInvestor
 }: AdminModalsProps) {
     const [selectionStep, setSelectionStep] = useState<'selection' | 'form'>('selection')
@@ -71,8 +101,20 @@ export function AdminModals({
     useEffect(() => {
         if (!isInvestorModalOpen) {
             setSelectionStep('selection')
+            setEditingInvestor(null)
+        } else if (editingInvestor) {
+            // Pre-fill form for editing
+            setNewInvestor({
+                ...editingInvestor,
+                grant_advantages: Array.isArray(editingInvestor.grant_advantages) ? editingInvestor.grant_advantages.map((s: string) => `• ${s}`).join('\n') : editingInvestor.grant_advantages,
+                grant_eligibility: Array.isArray(editingInvestor.grant_eligibility) ? editingInvestor.grant_eligibility.map((s: string) => `• ${s}`).join('\n') : editingInvestor.grant_eligibility,
+                target_stages: Array.isArray(editingInvestor.target_stages) ? editingInvestor.target_stages.join(', ') : editingInvestor.target_stages,
+                sector_focus: Array.isArray(editingInvestor.sector_focus) ? editingInvestor.sector_focus.join(', ') : editingInvestor.sector_focus,
+                geography_focus: Array.isArray(editingInvestor.geography_focus) ? editingInvestor.geography_focus.join(', ') : editingInvestor.geography_focus,
+            })
+            setSelectionStep('form')
         }
-    }, [isInvestorModalOpen])
+    }, [isInvestorModalOpen, editingInvestor])
 
     const handleTypeSelect = (type: 'grant' | 'vc' | 'accelerator') => {
         setNewInvestor({ ...newInvestor, investor_type: type })
@@ -160,8 +202,8 @@ export function AdminModals({
                 </div>
             </Modal>
 
-            {/* Add Investor Modal */}
-            <Modal isOpen={isInvestorModalOpen} onClose={() => setIsInvestorModalOpen(false)} title={selectionStep === 'selection' ? "Select Investor Type" : "Add New Investor"}>
+            {/* Add/Edit Investor Modal */}
+            <Modal isOpen={isInvestorModalOpen} onClose={() => setIsInvestorModalOpen(false)} title={editingInvestor ? "Edit Investor" : (selectionStep === 'selection' ? "Select Investor Type" : "Add New Investor")}>
                 {selectionStep === 'selection' ? (
                     <div className="grid gap-4 pt-6 pb-2">
                         <button
@@ -342,11 +384,177 @@ export function AdminModals({
                                         We lead investment rounds
                                     </label>
                                 </div>
+
+                                {newInvestor.investor_type === 'accelerator' && (
+                                    <>
+                                        {/* Outside Card View Additions */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Program Type</label>
+                                                <Input value={newInvestor.accelerator_type} onChange={e => setNewInvestor({ ...newInvestor, accelerator_type: e.target.value })} placeholder="e.g. Equity Accelerator" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Cash Investment</label>
+                                                <Input value={newInvestor.cash_investment} onChange={e => setNewInvestor({ ...newInvestor, cash_investment: e.target.value })} placeholder="e.g. $500k" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Applications Status</label>
+                                                <Input value={newInvestor.applications_status} onChange={e => setNewInvestor({ ...newInvestor, applications_status: e.target.value })} placeholder="e.g. Open / Rolling" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Next Deadline</label>
+                                                <Input value={newInvestor.application_deadline} onChange={e => setNewInvestor({ ...newInvestor, application_deadline: e.target.value })} placeholder="e.g. May 15, 2026" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Program Location</label>
+                                                <Input value={newInvestor.program_location} onChange={e => setNewInvestor({ ...newInvestor, program_location: e.target.value })} placeholder="e.g. San Francisco, USA" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">First-Cheque Friendly</label>
+                                                <Input value={newInvestor.first_cheque_friendly} onChange={e => setNewInvestor({ ...newInvestor, first_cheque_friendly: e.target.value })} placeholder="e.g. Yes / Sometimes" />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Investor Intros Strength</label>
+                                                <Input value={newInvestor.investor_intros_strength} onChange={e => setNewInvestor({ ...newInvestor, investor_intros_strength: e.target.value })} placeholder="e.g. Strong" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium">Founder Fit Score</label>
+                                                <Input value={newInvestor.founder_fit_score} onChange={e => setNewInvestor({ ...newInvestor, founder_fit_score: e.target.value })} placeholder="e.g. 9.4/10" />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-medium">Best For</label>
+                                            <Input value={newInvestor.best_for} onChange={e => setNewInvestor({ ...newInvestor, best_for: e.target.value })} placeholder="e.g. Best for high-growth startups..." />
+                                        </div>
+
+                                        {/* Inside Card View Sections */}
+                                        <div className="pt-4 border-t">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-tighter">Core Program Details</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Duration</label>
+                                                    <Input value={newInvestor.program_duration} onChange={e => setNewInvestor({ ...newInvestor, program_duration: e.target.value })} placeholder="e.g. 3 months" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Cohorts Per Year</label>
+                                                    <Input value={newInvestor.cohorts_per_year} onChange={e => setNewInvestor({ ...newInvestor, cohorts_per_year: e.target.value })} placeholder="e.g. 2" />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Relocation Required</label>
+                                                    <Input value={newInvestor.relocation_required} onChange={e => setNewInvestor({ ...newInvestor, relocation_required: e.target.value })} placeholder="e.g. Yes / No" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-tighter">Funding & Economics</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Follow-on Funding</label>
+                                                    <Input value={newInvestor.follow_on_funding} onChange={e => setNewInvestor({ ...newInvestor, follow_on_funding: e.target.value })} placeholder="e.g. Yes, up to $500k" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Non-Dilutive Support</label>
+                                                    <Input value={newInvestor.non_dilutive_support} onChange={e => setNewInvestor({ ...newInvestor, non_dilutive_support: e.target.value })} placeholder="e.g. Cloud credits..." />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-tighter">Startup Fit / Eligibility</h4>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Eligibility Requirements</label>
+                                                    <textarea
+                                                        className="w-full min-h-[80px] rounded-xl border border-gray-200 p-3 text-sm focus:ring-2 ring-black/5"
+                                                        value={newInvestor.eligibility_requirements}
+                                                        onChange={e => setNewInvestor({ ...newInvestor, eligibility_requirements: e.target.value })}
+                                                        placeholder="Must have MVP, tech-enabled startup..."
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Application Difficulty</label>
+                                                        <Input value={newInvestor.application_difficulty} onChange={e => setNewInvestor({ ...newInvestor, application_difficulty: e.target.value })} placeholder="e.g. Competitive" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium">Acceptance Rate</label>
+                                                        <Input value={newInvestor.acceptance_rate} onChange={e => setNewInvestor({ ...newInvestor, acceptance_rate: e.target.value })} placeholder="e.g. ~2%" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-tighter">Application Process</h4>
+                                            <div className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">What You Need to Apply</label>
+                                                    <Input value={newInvestor.application_requirements} onChange={e => setNewInvestor({ ...newInvestor, application_requirements: e.target.value })} placeholder="e.g. Pitch deck, product demo..." />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Selection Process</label>
+                                                    <Input value={newInvestor.selection_process} onChange={e => setNewInvestor({ ...newInvestor, selection_process: e.target.value })} placeholder="e.g. Application -> Screening -> Interview" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Decision Time</label>
+                                                    <Input value={newInvestor.decision_time} onChange={e => setNewInvestor({ ...newInvestor, decision_time: e.target.value })} placeholder="e.g. 2-6 weeks" />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <h4 className="font-bold text-sm text-gray-900 mb-4 uppercase tracking-tighter">Founder Value / Support</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Mentorship Access</label>
+                                                    <Input value={newInvestor.mentorship_access} onChange={e => setNewInvestor({ ...newInvestor, mentorship_access: e.target.value })} placeholder="e.g. Dedicated mentors" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Investor Access / Demo Day</label>
+                                                    <Input value={newInvestor.investor_access} onChange={e => setNewInvestor({ ...newInvestor, investor_access: e.target.value })} placeholder="e.g. Strong demo day" />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Post-Program Support</label>
+                                                    <Input value={newInvestor.post_program_support} onChange={e => setNewInvestor({ ...newInvestor, post_program_support: e.target.value })} placeholder="e.g. Warm intros" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Startup Perks</label>
+                                                    <Input value={newInvestor.startup_perks} onChange={e => setNewInvestor({ ...newInvestor, startup_perks: e.target.value })} placeholder="e.g. AWS credits" />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4 mt-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Core Support</label>
+                                                    <Input value={newInvestor.core_support} onChange={e => setNewInvestor({ ...newInvestor, core_support: e.target.value })} placeholder="e.g. GTM, Fundraising" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium">Founder Community</label>
+                                                    <Input value={newInvestor.founder_community} onChange={e => setNewInvestor({ ...newInvestor, founder_community: e.target.value })} placeholder="e.g. Strong alumni" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         <Button onClick={handleAddInvestor} className="w-full bg-black text-white hover:bg-gray-800 rounded-xl py-6 mt-4 sticky bottom-0 active:scale-[0.98] transition-transform shadow-lg">
-                            Add Investor Entry
+                            {editingInvestor ? "Update Investor Details" : "Add Investor Entry"}
                         </Button>
                     </div>
                 )}

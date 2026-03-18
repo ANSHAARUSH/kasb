@@ -23,7 +23,7 @@ export function Login() {
     useEffect(() => {
         if (!authLoading && user) {
             console.log("[Login] User authenticated, moving to dashboard")
-            if (role === 'admin') navigate("/admin", { replace: true })
+            if (role === 'admin') navigate("/admin-portal-v3x8z1", { replace: true })
             else if (role === 'startup') navigate("/dashboard/startup", { replace: true })
             else if (role === 'investor') navigate("/dashboard/investor", { replace: true })
             else navigate("/dashboard", { replace: true })

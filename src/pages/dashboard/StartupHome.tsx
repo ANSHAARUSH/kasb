@@ -53,8 +53,11 @@ export function StartupHome() {
 
     // Panel State
     const [selectedId, setSelectedId] = useState<string | null>(null)
-    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
+
+    const detailInvestor = useMemo(() => 
+        investors.find(i => i.id === selectedId) || null,
+    [investors, selectedId])
 
     // Track impact points for notifications
     const trackerEntity = useMemo(() => profileStartup ? ({
@@ -278,11 +281,11 @@ export function StartupHome() {
                                             showImpactPoints={false}
                                             onDoubleClick={() => {
                                                 if (window.innerWidth >= 1024) {
-                                                    setDetailInvestor(investor)
+                                                    setSelectedId(investor.id)
                                                     if (panelSize === 'minimized') setPanelSize('default')
                                                 } else {
                                                     // Mobile: Open modal
-                                                    setDetailInvestor(investor)
+                                                    setSelectedId(investor.id)
                                                 }
                                             }}
                                         />
@@ -331,7 +334,6 @@ export function StartupHome() {
                         }
                     }}
                     onClose={() => {
-                        setDetailInvestor(null)
                         setSelectedId(null)
                         setPanelSize('default')
                     }}
@@ -343,7 +345,7 @@ export function StartupHome() {
             <div className="lg:hidden">
                 <InvestorDetailModal
                     investor={detailInvestor}
-                    onClose={() => setDetailInvestor(null)}
+                    onClose={() => setSelectedId(null)}
                 />
             </div>
         </div>

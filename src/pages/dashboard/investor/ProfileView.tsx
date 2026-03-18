@@ -503,6 +503,16 @@ export function ProfileView({ investor, onRequestReview, readOnly = false, id }:
                     </div>
                 )}
             </div>
+
+            {/* Admin-Added Disclaimer */}
+            {investor.is_admin_added && (
+                <div className="mt-12 pt-8 border-t border-gray-100 pb-8 px-4">
+                    <p className="text-[11px] sm:text-xs text-gray-400 text-center leading-relaxed font-medium max-w-2xl mx-auto italic">
+                        Kasb.AI is an independent discovery platform. All trademarks, logos, and brand names belong to their respective owners. 
+                        Listings are for informational purposes only and do not imply affiliation, partnership, or endorsement unless explicitly stated.
+                    </p>
+                </div>
+            )}
         </div>
     )
 }
