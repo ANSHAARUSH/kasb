@@ -1433,6 +1433,43 @@ export interface InvestorProfileDetails {
         investor_type: string
         references: string[]
     }
+    // Shared with top-level for flexibility
+    grant_scheme?: string
+    grant_advantages?: string[]
+    grant_eligibility?: string[]
+    check_size_range?: string
+    target_stages?: string[]
+    sector_focus?: string[]
+    geography_focus?: string[]
+    portfolio_highlights?: string[]
+    accelerator_type?: string
+    cash_investment?: string
+    applications_status?: string
+    application_deadline?: string
+    program_location?: string
+    first_cheque_friendly?: string
+    investor_intros_strength?: string
+    founder_fit_score?: string
+    best_for?: string
+    program_duration?: string
+    cohorts_per_year?: string
+    relocation_required?: string
+    follow_on_funding?: string
+    non_dilutive_support?: string
+    application_difficulty?: string
+    acceptance_rate?: string
+    application_requirements?: string
+    selection_process?: string
+    decision_time?: string
+    mentorship_access?: string
+    investor_access?: string
+    post_program_support?: string
+    startup_perks?: string
+    core_support?: string
+    founder_community?: string
+    eligibility_requirements?: string
+    equity_taken?: string
+    has_demo_day?: boolean
 }
 
 export interface Investor {
@@ -1478,6 +1515,33 @@ export interface Investor {
     cohort_size?: number
     has_demo_day?: boolean
     is_admin_added?: boolean
+    // New Accelerator and Grant fields
+    accelerator_type?: string
+    cash_investment?: string
+    applications_status?: string
+    application_deadline?: string
+    program_location?: string
+    first_cheque_friendly?: string
+    investor_intros_strength?: string
+    founder_fit_score?: string
+    best_for?: string
+    program_duration?: string
+    cohorts_per_year?: string
+    relocation_required?: string
+    follow_on_funding?: string
+    non_dilutive_support?: string
+    application_difficulty?: string
+    acceptance_rate?: string
+    application_requirements?: string
+    selection_process?: string
+    decision_time?: string
+    mentorship_access?: string
+    investor_access?: string
+    post_program_support?: string
+    startup_perks?: string
+    core_support?: string
+    founder_community?: string
+    eligibility_requirements?: string
 }
 
 export const MOCK_INVESTORS: Investor[] = [

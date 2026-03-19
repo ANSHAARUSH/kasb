@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion"
 import type { Investor } from "../../data/mockData"
-import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink, Loader2, ChevronDown, ChevronUp } from "lucide-react"
+import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink, Loader2, ChevronDown, ChevronUp, Landmark } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
 import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
@@ -509,14 +509,20 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                 ) : (
                     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                         {(() => {
-                            const stages = ensureArray(investor.target_stages || (investor as any).profile_details?.target_stages);
-                            const sectors = ensureArray(investor.sector_focus || (investor as any).profile_details?.sector_focus);
-                            const geos = ensureArray(investor.geography_focus || (investor as any).profile_details?.geography_focus);
-                            const highlights = ensureArray(investor.portfolio_highlights || (investor as any).profile_details?.portfolio_highlights);
-                            const advantages = ensureArray(investor.grant_advantages || (investor as any).profile_details?.grant_advantages);
+                            const scheme = investor.grant_scheme || investor.profile_details?.grant_scheme;
+
+                            // Ensure arrays for mapped fields
+                            const stages = ensureArray(investor.target_stages || investor.profile_details?.target_stages);
+                            const sectors = ensureArray(investor.sector_focus || investor.profile_details?.sector_focus);
+                            const geos = ensureArray(investor.geography_focus || investor.profile_details?.geography_focus);
+                            const highlights = ensureArray(investor.portfolio_highlights || investor.profile_details?.portfolio_highlights);
+                            const advantages = ensureArray(investor.grant_advantages || investor.profile_details?.grant_advantages);
                             
                             // Combine all available criteria for AI matching
-                            const baseEligibility = ensureArray(investor.grant_eligibility || (investor as any).profile_details?.grant_eligibility);
+                            const baseEligibility = [
+                                ...ensureArray(investor.grant_eligibility || investor.profile_details?.grant_eligibility),
+                                ...ensureArray(investor.eligibility_requirements || investor.profile_details?.eligibility_requirements)
+                            ];
                             const eligibility = [
                                 ...baseEligibility,
                                 ...(stages.length > 0 ? [`Must be in one of the following stages: ${stages.join(', ')}`] : []),
@@ -525,7 +531,34 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                 ...(investor.check_size_range ? [`Investment range: ${investor.check_size_range}`] : [])
                             ];
 
-                            const scheme = investor.grant_scheme || (investor as any).profile_details?.grant_scheme;
+                            // Accelerator specific fields
+                            const accType = investor.accelerator_type || investor.profile_details?.accelerator_type;
+                            const cashInv = investor.cash_investment || investor.profile_details?.cash_investment;
+                            const appStatus = investor.applications_status || investor.profile_details?.applications_status;
+                            const appDeadline = investor.application_deadline || investor.profile_details?.application_deadline;
+                            const progLoc = investor.program_location || investor.profile_details?.program_location;
+                            const firstCheque = investor.first_cheque_friendly || investor.profile_details?.first_cheque_friendly;
+                            const introStrength = investor.investor_intros_strength || investor.profile_details?.investor_intros_strength;
+                            const fitScore = investor.founder_fit_score || investor.profile_details?.founder_fit_score;
+                            const bestFor = investor.best_for || investor.profile_details?.best_for;
+                            const duration = investor.program_duration || investor.profile_details?.program_duration;
+                            const cohorts = investor.cohorts_per_year || investor.profile_details?.cohorts_per_year;
+                            const relocation = investor.relocation_required || investor.profile_details?.relocation_required;
+                            const followOn = investor.follow_on_funding || investor.profile_details?.follow_on_funding;
+                            const nonDilutive = investor.non_dilutive_support || investor.profile_details?.non_dilutive_support;
+                            const appDifficulty = investor.application_difficulty || investor.profile_details?.application_difficulty;
+                            const acceptance = investor.acceptance_rate || investor.profile_details?.acceptance_rate;
+                            const appReqs = investor.application_requirements || investor.profile_details?.application_requirements;
+                            const process = investor.selection_process || investor.profile_details?.selection_process;
+                            const decisionTime = investor.decision_time || investor.profile_details?.decision_time;
+                            const mentorship = investor.mentorship_access || investor.profile_details?.mentorship_access;
+                            const invAccess = investor.investor_access || investor.profile_details?.investor_access;
+                            const postProg = investor.post_program_support || investor.profile_details?.post_program_support;
+                            const perks = investor.startup_perks || investor.profile_details?.startup_perks;
+                            const coreSupport = investor.core_support || investor.profile_details?.core_support;
+                            const community = investor.founder_community || investor.profile_details?.founder_community;
+                            const equity = investor.equity_taken || investor.profile_details?.equity_taken;
+                            const hasDemoDay = investor.has_demo_day || investor.profile_details?.has_demo_day;
 
                             return (
                                 <>
@@ -597,10 +630,160 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                     <span key={p} className="px-3 py-1 bg-white border border-gray-200 rounded-xl text-[10px] font-black text-black uppercase tracking-wider">
                                                         {p}
                                                     </span>
-                                                ))}
-                                                {highlights.length === 0 && <span className="text-gray-400 text-xs font-medium">Confidential</span>}
-                                            </div>
-                                        </div>
+                                                 ))}
+                                                 {highlights.length === 0 && <span className="text-gray-400 text-xs font-medium">Confidential</span>}
+                                             </div>
+                                         </div>
+
+                                         {/* Accelerator Specific: Program Overview */}
+                                         {investor.investor_type === 'accelerator' && (
+                                             <div className="md:col-span-2 p-6 rounded-3xl bg-white border border-gray-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Program Overview</p>
+                                                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Type</p>
+                                                         <p className="text-sm font-black text-black">{accType || 'Standard'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Duration</p>
+                                                         <p className="text-sm font-black text-black">{duration || 'Not specified'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Location</p>
+                                                         <p className="text-sm font-black text-black">{progLoc || 'Remote/Hybrid'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Relocation</p>
+                                                         <p className="text-sm font-black text-black">{relocation || 'No'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Cohorts/Year</p>
+                                                         <p className="text-sm font-black text-black">{cohorts || '1-2'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Demo Day</p>
+                                                         <p className="text-sm font-black text-black">{hasDemoDay ? 'Yes' : 'Varies'}</p>
+                                                     </div>
+                                                     <div className="space-y-1">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Status</p>
+                                                         <p className={`text-sm font-black uppercase tracking-tight ${appStatus?.toLowerCase().includes('open') ? 'text-green-600' : 'text-gray-600'}`}>
+                                                             {appStatus || 'Rolling'}
+                                                         </p>
+                                                     </div>
+                                                     <div className="space-y-1 col-span-2">
+                                                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Next Deadline</p>
+                                                         <p className="text-sm font-black text-black">{appDeadline || 'Inquire for dates'}</p>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
+
+                                         {/* Accelerator Specific: Economics & Fit */}
+                                         {investor.investor_type === 'accelerator' && (
+                                             <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                 <div className="p-6 rounded-3xl bg-black text-white shadow-xl border border-black group overflow-hidden">
+                                                     <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+                                                         <Landmark className="h-16 w-16" />
+                                                     </div>
+                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Funding & Economics</p>
+                                                     <div className="grid grid-cols-2 gap-y-4">
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Cash Investment</p>
+                                                             <p className="text-lg font-black text-white">{cashInv || 'Varies'}</p>
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Equity Taken</p>
+                                                             <p className="text-lg font-black text-white">{equity || 'None/Varies'}</p>
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Follow-on</p>
+                                                             <p className="text-sm font-bold text-white">{followOn || 'Not guaranteed'}</p>
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Non-Dilutive</p>
+                                                             <p className="text-sm font-bold text-white">{nonDilutive || 'N/A'}</p>
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">First Cheque Friendly</p>
+                                                             <p className="text-sm font-bold text-white">{firstCheque || 'Yes'}</p>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+
+                                                 <div className="p-6 rounded-3xl bg-white border border-gray-200 shadow-sm relative overflow-hidden group">
+                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Quality & Ratings</p>
+                                                     <div className="grid grid-cols-2 gap-y-4">
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Founder Fit</p>
+                                                             <p className="text-2xl font-black text-black">{fitScore || '9.0/10'}</p>
+                                                         </div>
+                                                         <div>
+                                                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Intro Strength</p>
+                                                             <p className="text-lg font-black text-black">{introStrength || 'Strong'}</p>
+                                                         </div>
+                                                         <div className="col-span-2">
+                                                             <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Best For</p>
+                                                             <p className="text-xs font-bold text-gray-700 leading-tight">{bestFor || 'Scalable technology startups looking for mentorship and growth.'}</p>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
+
+                                         {/* Accelerator Specific: Admissions & Value */}
+                                         {investor.investor_type === 'accelerator' && (
+                                             <div className="md:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                 <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 shadow-sm">
+                                                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">Admissions & Process</p>
+                                                     <div className="space-y-4">
+                                                         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Acceptance Rate</span>
+                                                             <span className="text-sm font-black text-black">{acceptance || 'Competitive'}</span>
+                                                         </div>
+                                                         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Difficulty</span>
+                                                             <span className="text-sm font-black text-black">{appDifficulty || 'Standard'}</span>
+                                                         </div>
+                                                         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Decision Time</span>
+                                                             <span className="text-sm font-black text-black">{decisionTime || '2-4 weeks'}</span>
+                                                         </div>
+                                                         <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Process</span>
+                                                             <span className="text-xs font-bold text-black">{process || 'Application -> Interview -> Cohort'}</span>
+                                                         </div>
+                                                         <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                                                             <span className="text-[10px] font-bold text-gray-400 uppercase">Requirements</span>
+                                                             <span className="text-xs font-bold text-black">{appReqs || 'Deck, MVP, Tech-focus'}</span>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+
+                                                 <div className="p-6 rounded-3xl bg-black text-white shadow-xl border border-black">
+                                                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">Founder Support</p>
+                                                     <div className="space-y-4">
+                                                         <div className="flex flex-wrap gap-2">
+                                                             {[
+                                                                 mentorship && 'Mentorship',
+                                                                 invAccess && 'Investor Access',
+                                                                 postProg && 'Post-Prog Support',
+                                                                 coreSupport && 'Core Support',
+                                                                 community && 'Community',
+                                                                 perks && 'Perks'
+                                                             ].filter(Boolean).map(tag => (
+                                                                 <span key={tag} className="px-2 py-0.5 bg-white/10 border border-white/20 rounded text-[9px] font-bold uppercase tracking-widest">
+                                                                     {tag}
+                                                                 </span>
+                                                             ))}
+                                                             {(!mentorship && !invAccess && !postProg) && <span className="text-gray-500 text-xs">Full ecosystem support</span>}
+                                                         </div>
+                                                         <p className="text-[10px] text-gray-400 font-bold italic leading-tight">
+                                                             "Our program offers deep-dive mentorship, warm introductions to top-tier VCs, and a lifelong founder community."
+                                                         </p>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         )}
 
                                         {/* 7. Advantages (Bullet Points) */}
                                         {advantages.length > 0 && (
