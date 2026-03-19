@@ -44,7 +44,6 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
     const [pendingCriteria, setPendingCriteria] = useState<string[]>([])
     const [dynamicQuestions, setDynamicQuestions] = useState<MissingField[]>([])
 
-    const [improvementAnswers, setImprovementAnswers] = useState<Record<string, string>>({})
     const [showImprovementMCQ, setShowImprovementMCQ] = useState(false)
 
 
@@ -154,44 +153,36 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         }
 
         setIsCheckingEligibility(true)
+        setIsEligibilityModalOpen(true)
+        setEligibilityModalMode('loading')
+
         try {
             const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
             const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
             const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
 
-            // Step 0: Ensure criteria is NOT empty
             const finalCriteria = criteria && criteria.length > 0 
                 ? criteria 
                 : ["Technology sector startup", "Early or growth stage", "Scalable business model"]
 
-            console.log("--- AI Discovery Start ---");
-            console.log("Investor Criteria used for Discovery:", finalCriteria);
-
-            // Step 1: Discover missing info dynamically
-            const missing = await identifyMissingEligibilityData(startupData, finalCriteria, envKey, baseUrl)
-
-            if (missing && missing.length > 0) {
-                console.log("Found missing fields:", missing.length);
-                setDynamicQuestions(missing)
-                setPendingStartupData(startupData)
-                setPendingCriteria(criteria)
-                setMcqAnswers({})
-                setEligibilityModalMode('mcq')
-                setIsEligibilityModalOpen(true)
-                return
-            }
-
-            console.log("No missing data discovered, running final check directly.");
+            // 1. Get Preliminary Match Score first
+            const prelimResult = await checkEligibility(startupData, finalCriteria, envKey, baseUrl)
             
-            // Enough data — run AI directly
-            const res = await checkEligibility(startupData, finalCriteria, envKey, baseUrl)
-            setEligibilityResult(res)
+            // 2. Use reasoning to discover missing info more accurately
+            const missing = await identifyMissingEligibilityData(startupData, finalCriteria, envKey, baseUrl, prelimResult.reasoning)
+
+            setEligibilityResult(prelimResult)
+            setDynamicQuestions(missing || [])
+            setPendingStartupData(startupData)
+            setPendingCriteria(finalCriteria)
+            setMcqAnswers({})
             setEligibilityModalMode('result')
-            setIsEligibilityModalOpen(true)
+            setShowImprovementMCQ(false)
 
         } catch (error: any) {
             console.error(error)
             toast(`Failed to check eligibility: ${error.message || 'Unknown error'}`, "error")
+            setIsEligibilityModalOpen(false)
         } finally {
             setIsCheckingEligibility(false)
         }
@@ -205,35 +196,18 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
             const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
             const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
             const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
+            
             setEligibilityResult(res)
             setEligibilityModalMode('result')
             setShowImprovementMCQ(false)
-            setImprovementAnswers({})
+            toast("Match score updated with new information!", "success")
         } catch (error: any) {
             console.error(error)
-            toast(`AI check failed: ${error.message || 'Unknown error'}`, "error")
-            setEligibilityModalMode('mcq')
+            toast(`AI refinement failed: ${error.message || 'Unknown error'}`, "error")
+            setEligibilityModalMode('result')
         }
     }
 
-    const handleReanalyze = async () => {
-        setEligibilityModalMode('loading')
-        setShowImprovementMCQ(false)
-        try {
-            // Merge everything: original DB data + initial mcq answers + improvement answers
-            const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers, ...improvementAnswers }
-            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
-            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
-            const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
-            setEligibilityResult(res)
-            setEligibilityModalMode('result')
-            setImprovementAnswers({})
-        } catch (error: any) {
-            console.error(error)
-            toast(`AI check failed: ${error.message || 'Unknown error'}`, "error")
-            setEligibilityModalMode('result')
-        }
-    }
 
     if (!investor) return null
 
@@ -746,73 +720,87 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                                                 <div className="flex flex-col items-center justify-center p-4">
                                                     <div className="relative mb-6">
                                                         {eligibilityResult.percentage > 0 ? (
-                                                            <div className={`flex items-center justify-center h-24 w-24 shrink-0 rounded-full font-black text-3xl shadow-lg ring-4 ring-offset-4 ${eligibilityResult.percentage >= 75 ? 'bg-green-500/10 text-green-500 ring-green-100' : eligibilityResult.percentage >= 40 ? 'bg-yellow-500/10 text-yellow-500 ring-yellow-100' : 'bg-red-500/10 text-red-500 ring-red-100'}`}>
+                                                            <div className={`flex items-center justify-center h-28 w-28 shrink-0 rounded-full font-black text-4xl shadow-xl ring-8 ring-offset-4 animate-in zoom-in duration-500 ${eligibilityResult.percentage >= 75 ? 'bg-green-500/10 text-green-500 ring-green-50/50' : eligibilityResult.percentage >= 40 ? 'bg-yellow-500/10 text-yellow-500 ring-yellow-50/50' : 'bg-red-500/10 text-red-500 ring-red-50/50'}`}>
                                                                 {eligibilityResult.percentage}%
                                                             </div>
                                                         ) : (
-                                                            <div className="flex items-center justify-center h-24 w-24 shrink-0 rounded-full bg-gray-100 text-gray-400 font-black text-xl ring-4 ring-gray-50 ring-offset-4 shadow-sm">
+                                                            <div className="flex items-center justify-center h-28 w-28 shrink-0 rounded-full bg-gray-100 text-gray-400 font-black text-2xl ring-8 ring-gray-50 ring-offset-4 shadow-sm">
                                                                 ?
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="text-center w-full max-w-sm">
-                                                        <h3 className="text-lg font-bold mb-2 text-gray-900">Analysis Complete</h3>
-                                                        <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-600 leading-relaxed shadow-inner">
-                                                            {eligibilityResult.reasoning}
+                                                    <div className="text-center w-full max-w-sm mb-6">
+                                                        <h3 className="text-xl font-black text-gray-900 mb-2 uppercase tracking-tight">
+                                                            {Object.keys(mcqAnswers).length > 0 ? "Refined Match Score" : "Preliminary Match Score"}
+                                                        </h3>
+                                                        <div className="p-5 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-medium text-gray-600 leading-relaxed shadow-inner italic">
+                                                            "{eligibilityResult.reasoning}"
                                                         </div>
                                                     </div>
                                                     
-                                                    <Button
-                                                        variant="ghost"
-                                                        onClick={() => setShowImprovementMCQ(!showImprovementMCQ)}
-                                                        className="w-full mt-4 flex items-center justify-between px-4 py-3 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-700 rounded-xl"
-                                                    >
-                                                        <span className="text-sm font-bold">Improve Match Percentage</span>
-                                                        {showImprovementMCQ ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                                    </Button>
-
-                                                    {showImprovementMCQ && (
-                                                        <div className="w-full mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                            <p className="text-xs text-indigo-600 font-medium">Provide more details to help AI refine your eligibility score:</p>
-                                                            {dynamicQuestions.filter(q => 
-                                                                !improvementAnswers[q.field]
-                                                            ).map((q) => (
-                                                                <div key={q.field} className="space-y-2">
-                                                                    <p className="text-xs font-bold text-gray-700">{q.label}</p>
-                                                                    <div className="flex flex-wrap gap-1.5">
-                                                                        {q.options.map((opt) => (
-                                                                            <button
-                                                                                key={opt}
-                                                                                onClick={() => setImprovementAnswers(prev => ({ ...prev, [q.field]: opt }))}
-                                                                                className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all duration-150 ${
-                                                                                    improvementAnswers[q.field] === opt
-                                                                                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                                                                                        : 'bg-white text-gray-500 border-gray-100 hover:border-gray-300 hover:bg-gray-50'
-                                                                                }`}
-                                                                            >
-                                                                                {opt}
-                                                                            </button>
-                                                                        ))}
+                                                    {dynamicQuestions.length > 0 ? (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                onClick={() => setShowImprovementMCQ(!showImprovementMCQ)}
+                                                                className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl transition-all duration-300 ${showImprovementMCQ ? 'bg-black text-white shadow-lg' : 'bg-gray-50 text-gray-900 border border-gray-100 hover:bg-gray-100'}`}
+                                                            >
+                                                                <div className="flex items-center gap-2 text-left">
+                                                                    <Zap className={`h-4 w-4 ${showImprovementMCQ ? 'text-yellow-400' : 'text-gray-400'}`} />
+                                                                    <div>
+                                                                        <p className="text-sm font-black uppercase tracking-tight">Refine Your Score</p>
+                                                                        {!showImprovementMCQ && <p className="text-[10px] opacity-60">Answer {dynamicQuestions.length} questions to improve accuracy</p>}
                                                                     </div>
                                                                 </div>
-                                                            ))}
+                                                                {showImprovementMCQ ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                                                            </Button>
 
-                                                            {Object.keys(improvementAnswers).length > 0 && (
-                                                                <Button
-                                                                    onClick={handleReanalyze}
-                                                                    className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 text-xs font-bold"
-                                                                >
-                                                                    Update Analysis
-                                                                </Button>
+                                                            {showImprovementMCQ && (
+                                                                <div className="w-full mt-4 p-5 rounded-2xl bg-gray-50/50 border border-gray-100 space-y-6 animate-in slide-in-from-top-4 duration-300">
+                                                                    {dynamicQuestions.map((q) => (
+                                                                        <div key={q.field} className="space-y-3">
+                                                                            <p className="text-xs font-black text-black uppercase tracking-wide">{q.label}</p>
+                                                                            <div className="flex flex-wrap gap-2">
+                                                                                {q.options.map((opt) => (
+                                                                                    <button
+                                                                                        key={opt}
+                                                                                        onClick={() => setMcqAnswers(prev => ({ ...prev, [q.field]: opt }))}
+                                                                                        className={`px-3 py-2 rounded-xl text-[11px] font-bold border transition-all duration-200 ${
+                                                                                            mcqAnswers[q.field] === opt
+                                                                                                ? 'bg-black text-white border-black shadow-md scale-[1.05]'
+                                                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-black hover:text-black'
+                                                                                        }`}
+                                                                                    >
+                                                                                        {opt}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+
+                                                                    <Button
+                                                                        onClick={handleMcqSubmit}
+                                                                        disabled={dynamicQuestions.some(q => !mcqAnswers[q.field])}
+                                                                        className="w-full bg-black hover:bg-gray-900 text-white rounded-xl h-12 font-black uppercase tracking-widest text-xs shadow-xl disabled:opacity-30"
+                                                                    >
+                                                                        Recalculate Accurate Match
+                                                                    </Button>
+                                                                </div>
                                                             )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-center">
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Profile Analysis Definitive</p>
+                                                            <p className="text-[10px] text-gray-400 font-medium">Your current profile provides enough information for this match score.</p>
                                                         </div>
                                                     )}
                                                     
                                                     <Button
+                                                        variant="ghost"
                                                         onClick={() => setIsEligibilityModalOpen(false)}
-                                                        className="w-full mt-6 rounded-xl h-12"
+                                                        className="w-full mt-4 text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest"
                                                     >
-                                                        Got it
+                                                        Close Analysis
                                                     </Button>
                                                 </div>
                                             )}

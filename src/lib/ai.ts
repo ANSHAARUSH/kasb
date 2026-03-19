@@ -1,5 +1,32 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Initial Persistence Load
+const loadCache = (key: string) => {
+    try {
+        const saved = localStorage.getItem(key);
+        return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+};
+
+const saveCache = (key: string, data: any) => {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) { console.error("Cache save failed", e); }
+};
+
+// Result Caching for consistency
+const eligibilityCache: Record<string, any> = loadCache('eligibility_cache_v5');
+const discoveryCache: Record<string, any> = loadCache('discovery_cache_v5');
+
+function generateCacheKey(data: any, criteria: string[], reasoning?: string): string {
+    const version = "v5_truncated"; // Increment this when prompts change significantly
+    const str = JSON.stringify({ data, criteria: criteria.sort(), version, reasoning });
+    // UTF-8 safe base64 encoding
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => 
+        String.fromCharCode(parseInt(p1, 16))
+    ));
+}
 import type { Startup } from "../data/mockData";
 import { extractDocumentContent } from "./documentExtraction";
 import type { AnalysisResult } from "./documentIntelligence";
@@ -337,7 +364,8 @@ export async function identifyMissingEligibilityData(
     startup: any,
     criteria: string[],
     apiKey: string,
-    baseUrl?: string
+    baseUrl?: string,
+    preliminaryReasoning?: string
 ): Promise<MissingField[]> {
     if (!apiKey) {
         throw new Error("API Key is missing for missing data identification.");
@@ -355,6 +383,12 @@ export async function identifyMissingEligibilityData(
         ];
     }
 
+    const cacheKey = generateCacheKey(startup, criteria, preliminaryReasoning);
+    if (discoveryCache[cacheKey]) {
+        console.log("Returning cached discovery result");
+        return discoveryCache[cacheKey];
+    }
+
     const profileSummary = Object.entries(startup)
         .filter(([key, _]) => {
             if (['id', 'created_at', 'user_id', 'logo', 'avatar', 'logo_url'].includes(key)) return false;
@@ -364,40 +398,38 @@ export async function identifyMissingEligibilityData(
             if (val === null || val === undefined || val === '') return `${key}: Unknown/Missing`;
             if (Array.isArray(val)) return `${key}: ${val.length > 0 ? val.join(', ') : 'Unknown/Empty'}`;
             if (typeof val === 'object') return null;
-            return `${key}: ${val}`;
+            
+            // Truncate long values to prevent token limit errors
+            const stringVal = String(val);
+            const truncatedVal = stringVal.length > 300 ? stringVal.substring(0, 300) + '...' : stringVal;
+            return `${key}: ${truncatedVal}`;
         })
         .filter(Boolean)
         .join('\n');
 
     const prompt = `
-    You are an AI specialized in venture capital and startup eligibility. 
+    You are a Senior Venture Capital Associate specialized in startup due diligence. 
 
     TASK:
-    Identify what missing information is REQUIRED to determine if the startup matches the provided Investor Eligibility Criteria.
+    Identify specific, MEANINGFUL data points marked "Unknown/Missing" that are required to refine the match score for this investor's mandate.
 
-    STARTUP PROFILE (Known Data):
-    ${profileSummary || "No detailed profile data available."}
+    STARTUP PROFILE:
+    ${profileSummary || "No initial profile data provided."}
 
-    INVESTOR ELIGIBILITY CRITERIA:
-    ${criteria.length > 0 ? criteria.map(c => `- ${c}`).join('\n') : "Match against any high-potential startup criteria."}
+    INVESTOR MANDATE:
+    ${criteria.length > 0 ? criteria.map(c => `- ${c}`).join('\n') : "Standard high-growth venture criteria."}
 
     INSTRUCTIONS:
-    1. Scan the INVESTOR ELIGIBILITY CRITERIA.
-    2. Check the STARTUP PROFILE. Any field marked "Unknown/Missing" MUST be addressed if it relates to a criterion.
-    3. MANDATORY: If there are ANY criteria provided, you MUST generate 2-4 Multiple Choice Questions (MCQs) for the missing info. 
-    4. Do NOT return an empty array if you see "Unknown/Missing" in the profile summary.
-    5. ONLY ask questions relevant to the criteria. 
-    6. Provide 4-6 realistic and distinct options for each MCQ.
+    1. ANALYZE GAPS: Cross-reference the profile with the mandate.
+    2. REASONING CONTEXT: ${preliminaryReasoning ? `The preliminary analysis mentioned: "${preliminaryReasoning}". Address these specific gaps.` : 'Identify core gaps.'}
+    3. MANDATORY MCQ: If the match is not perfect, you MUST identify at least 2 "Unknown/Missing" fields (e.g., Traction, Revenue, Stage, or Location) and generate MCQs for them.
+    4. NO "DEFINITIVE" SKIP: Even if the current score seems justified, do NOT return an empty array if there are any gaps that could refine the accuracy or improve the score.
+    5. MCQ FORMAT: Generate 2-4 professional MCQs.
+    5. No duplicates: Do NOT ask for info already provided in the profile.
 
     OUTPUT FORMAT:
-    You MUST return ONLY a JSON array. No conversational text.
-    [
-        {
-            "field": "key",
-            "label": "Question?",
-            "options": ["A", "B", "C", "D"]
-        }
-    ]
+    Return ONLY a JSON array of objects. No intro/outro.
+    [{"field": "standard_key", "label": "Professional Question", "options": ["Op1", "Op2", ...]}]
     `;
 
     try {
@@ -413,11 +445,14 @@ export async function identifyMissingEligibilityData(
         const jsonStr = text.substring(start, end + 1);
         
         const result = JSON.parse(jsonStr);
-        if (Array.isArray(result)) return result;
-        if (result && typeof result === 'object' && Array.isArray((result as any).questions)) return (result as any).questions;
-        if (result && typeof result === 'object' && Array.isArray((result as any).missing)) return (result as any).missing;
+        let questions = [];
+        if (Array.isArray(result)) questions = result;
+        else if (result && typeof result === 'object' && Array.isArray((result as any).questions)) questions = (result as any).questions;
+        else if (result && typeof result === 'object' && Array.isArray((result as any).missing)) questions = (result as any).missing;
 
-        return [];
+        discoveryCache[cacheKey] = questions;
+        saveCache('discovery_cache_v5', discoveryCache);
+        return questions;
     } catch (error: any) {
         console.error("AI Discovery Error:", error.message);
         return [];
@@ -453,39 +488,55 @@ export async function checkEligibility(
         return { percentage: 0, reasoning: "Your profile matches none of the core data points required. Please provide more details about your startup." };
     }
 
-    const prompt = `
-    Analyze how well the following startup meets the investor's eligibility criteria.
+    const cacheKey = generateCacheKey(startup, criteria);
+    if (eligibilityCache[cacheKey]) {
+        console.log("Returning cached eligibility result");
+        return eligibilityCache[cacheKey];
+    }
 
-    Startup Profile:
-    Name: ${startup.name || "N/A"}
-    Industry: ${startup.industry || "N/A"}
-    Stage: ${startup.stage || "N/A"}
-    Traction: ${startup.traction || "N/A"}
-    Valuation: ${startup.valuation || "N/A"}
-    Problem Being Solved: ${startup.problem_solving || startup.description || "N/A"}
-    DPIIT Recognized: ${startup.dpiit_recognition || "N/A"}
-    Incorporation Year: ${startup.incorporation_year || "N/A"}
-    Annual Revenue: ${startup.annual_revenue || "N/A"}
-    Promoter Shareholding: ${startup.shareholding || "N/A"}
-    Employee Count: ${startup.headcount || "N/A"}
-    IP/Patents: ${startup.ip_patents || "N/A"}
-    Founder: ${startup.founder_name || "N/A"}
-    Location: ${startup.location || "N/A"}
-    Tags: ${Array.isArray(startup.tags) ? startup.tags.join(', ') : (startup.tags || "N/A")}
+    // Helper function to truncate large fields
+    const truncate = (val: string | null | undefined, max: number = 300) => {
+        if (!val) return "N/A";
+        return val.length > max ? val.substring(0, max) + "..." : val;
+    };
+
+    const prompt = `
+    You are an AI Investment Analyst. Analyze the following startup profile against the specific investor eligibility criteria to provide a "Data-Driven Match Score".
+
+    Startup Profile Highlights:
+    - Name: ${startup.name || "N/A"}
+    - Industry: ${startup.industry || "N/A"}
+    - Stage: ${startup.stage || "N/A"}
+    - Traction: ${truncate(startup.traction)}
+    - Valuation: ${startup.valuation || "N/A"}
+    - Problem/Solution: ${truncate(startup.problem_solving || startup.description)}
+    - Metrics: Revenue(${startup.annual_revenue || "N/A"}), Headcount(${startup.headcount || "N/A"}), Location(${startup.location || "N/A"})
+    - Recognition: DPIIT(${startup.dpiit_recognition || "N/A"}), IP/Patents(${startup.ip_patents || "N/A"})
 
     Investor Eligibility Criteria:
     ${criteria.map(c => `- ${c}`).join('\n')}
 
-    Provide the output in valid JSON format ONLY, with this structure:
+    SCORING GUIDELINES (MANDATORY):
+    1. Use a **Weighted Matrix Calculation**. Assign points for Industry Fit (40pts), Stage (30pts), Geography (20pts), and Traction/Problem (10pts).
+    2. BE PRECISE: Calculate the exact sum based on available data. 
+    3. NO ROUNDING: **NEVER return a multiple of 5** (e.g., do not return 50, 65, 80). Use "ugly", precise numbers like 47, 62, 71, or 84 to reflect data-driven accuracy.
+    4. DATA GAPS: If critical data is missing, penalize the score but provide a "best estimate" based on other factors.
+
+    OUTPUT STRUCTURE (Strictly JSON):
     {
-        "percentage": <number between 0 and 100 representing the match percentage>,
-        "reasoning": "<A brief, 1-2 sentence explanation of why this percentage was given, highlighting key matches or mismatches.>"
+        "percentage": <number 0-100, NOT a multiple of 5>,
+        "reasoning": "<A detailed, professional executive summary (3-4 sentences). Explicitly state the positive match factors and the specific gaps that reduced the score. Mention the weighted contribution of each factor (Industry, Stage, Geography, Traction).>"
     }
     `;
 
     try {
         const text = await runInference(apiKey, prompt, { baseUrl });
-        return extractJSON<EligibilityResult>(text);
+        const result = extractJSON<EligibilityResult>(text);
+        
+        // Cache the result
+        eligibilityCache[cacheKey] = result;
+        saveCache('eligibility_cache_v5', eligibilityCache);
+        return result;
     } catch (error: unknown) {
         console.error("AI Eligibility Check Error:", error);
         throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to check eligibility"}`);
