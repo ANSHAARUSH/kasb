@@ -20,35 +20,44 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
         return { type: 'image', content: file };
     }
 
-    // 2. PDF — extract full text using pdfjs text layer (much better than vision-only)
+    // 2. PDF — for pitch decks, always try to render as image first (they're visual)
+    // Fall back to text extraction only if image rendering fails
     if (mimeType === 'application/pdf' || fileType === 'pdf') {
+        // Step 1: Try image conversion (best for visual pitch decks)
+        try {
+            console.log('[DocExtract] Attempting PDF → image conversion...');
+            const imageFile = await convertPdfPageToImage(file, 1);
+            console.log('[DocExtract] PDF image conversion succeeded');
+            return { type: 'image', content: imageFile };
+        } catch (imgErr) {
+            console.warn('[DocExtract] PDF image conversion failed, falling back to text extraction:', imgErr);
+        }
+
+        // Step 2: Fall back to text extraction
         try {
             const arrayBuffer = await file.arrayBuffer();
-            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
             const pdf = await loadingTask.promise;
             let fullText = '';
 
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 10); pageNum++) {
                 const page = await pdf.getPage(pageNum);
                 const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
+                const pageText = (textContent.items as any[])
+                    .map((item) => item.str)
                     .join(' ');
                 fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
             }
 
-            // Need at least 1500 meaningful chars — real text decks have much more
-            // Anything less is likely image-heavy and should use vision mode
-            if (fullText.trim().length > 1500) {
-                console.log(`PDF text extracted: ${fullText.length} chars from ${pdf.numPages} pages`);
+            if (fullText.trim().length > 100) {
+                console.log(`[DocExtract] PDF text fallback: ${fullText.length} chars`);
                 return { type: 'text', content: fullText };
             }
-            // If text is too sparse (image-heavy deck), fall back to image mode
-            console.warn(`PDF text only ${fullText.trim().length} chars — image-heavy deck detected. Falling back to image mode.`);
-            const imageFile = await convertPdfPageToImage(file, 1);
-            return { type: 'image', content: imageFile };
-        } catch (err) {
-            console.error("PDF extraction failed", err);
+            
+            console.error('[DocExtract] Both image and text extraction failed or returned empty content');
+            return { type: 'unsupported', content: `PDF: ${file.name} — no readable content found` };
+        } catch (textErr) {
+            console.error('[DocExtract] PDF text extraction also failed:', textErr);
             return { type: 'unsupported', content: `PDF: ${file.name} (extraction failed)` };
         }
     }
