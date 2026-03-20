@@ -103,6 +103,15 @@ export function Onboarding() {
             const info = await extractStartupInfoFromPitchDeck(file, apiKey)
             console.log("AI Extracted Info:", info)
             
+            // Check if AI returned any meaningful data at all
+            const meaningfulFields = [info.name, info.founder_name, info.industry, info.stage, info.problem_solving, info.description].filter(v => v && v.trim() !== '')
+            
+            if (meaningfulFields.length === 0) {
+                toast("Couldn't extract details from this deck. It may be image-only or have minimal text. Please fill in manually.", "error")
+                setOnboardingMethod('manual')
+                return
+            }
+
             if (info.name) setCompanyName(info.name)
             if (info.founder_name) setName(info.founder_name)
             
@@ -137,8 +146,9 @@ export function Onboarding() {
             }
             if (info.location?.city) setCity(info.location.city)
             
-            toast("Pitch deck analyzed! Review your details in the next step.", "success")
-            setTimeout(() => setStep(3), 500) // Small delay to ensure state propagates
+            const filledCount = meaningfulFields.length
+            toast(`Pitch deck analyzed! ${filledCount} field${filledCount > 1 ? 's' : ''} pre-filled. Review your details.`, "success")
+            setTimeout(() => setStep(3), 500)
         } catch (err: any) {
             toast(`Extraction failed: ${err.message}. Switching to manual.`, "error")
             setOnboardingMethod('manual')
