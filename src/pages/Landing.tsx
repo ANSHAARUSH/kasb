@@ -60,7 +60,7 @@ export function Landing() {
             </script>
 
             {/* Hero Section */}
-            <section id="hero" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20" aria-labelledby="hero-title">
+            <section id="hero" className="relative flex min-h-[90vh] lg:min-h-screen flex-col items-center justify-start lg:justify-center px-4 pt-28 lg:pt-20" aria-labelledby="hero-title">
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 -z-10 bg-white">
                     <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-indigo-50/50 blur-[120px]"></div>
@@ -73,28 +73,28 @@ export function Landing() {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="max-w-4xl space-y-8 text-center"
+                    className="max-w-4xl space-y-6 text-center"
                 >
-                    <div className="inline-flex items-center rounded-full border border-gray-100 bg-white/50 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-gray-600 shadow-sm">
+                    <div className="inline-flex items-center rounded-full border border-gray-100 bg-white/50 backdrop-blur-sm px-4 py-1.5 text-xs sm:text-sm font-medium text-gray-600 shadow-sm">
                         <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
                         Vetted Network of High-Impact Founders & Investors
                     </div>
 
-                    <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-tight">
+                    <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-[1.1]">
                         AI-Powered <span className="text-gray-400 font-light">Investor Matchmaking</span> <br />
                         <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">& Startup Fundraising Platform</span>
                     </h1>
 
-                    <p className="mx-auto max-w-2xl text-lg text-gray-500 sm:text-2xl leading-relaxed">
+                    <p className="mx-auto max-w-2xl text-base text-gray-500 sm:text-xl leading-relaxed">
                         The premium platform connecting visionary capital with extraordinary innovation. 
                         Empowering startups to raise capital and providing investors with curated deal flow.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
-                        <Button size="lg" className="h-16 w-full sm:w-auto rounded-full px-10 text-lg font-bold shadow-2xl shadow-indigo-200 hover:scale-105 transition-transform" asChild>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                        <Button size="lg" className="h-14 sm:h-16 w-full sm:w-auto rounded-full px-10 text-lg font-bold shadow-2xl shadow-indigo-200 hover:scale-105 transition-transform" asChild>
                             <Link to="/signup">Start Fundraising</Link>
                         </Button>
-                        <Button size="lg" variant="outline" className="h-16 w-full sm:w-auto rounded-full px-10 text-lg font-bold border-2 hover:bg-gray-50 transition-all" asChild>
+                        <Button size="lg" variant="outline" className="h-14 sm:h-16 w-full sm:w-auto rounded-full px-10 text-lg font-bold border-2 hover:bg-gray-50 transition-all" asChild>
                             <Link to="/signup?role=investor">Find Startups</Link>
                         </Button>
                     </div>
