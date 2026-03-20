@@ -61,7 +61,7 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
         if (options.vision && options.file) {
             const base64 = await fileToBase64(options.file);
             const response = await openai.chat.completions.create({
-                model: options.model || "llama-3.2-11b-vision-preview",
+                model: options.model || "llama-3.2-90b-vision-preview",
                 messages: [
                     {
                         role: "user",
@@ -1233,33 +1233,27 @@ export async function extractStartupInfoFromPitchDeck(
         }
 
         const prompt = `
-        You are analyzing a startup's pitch deck. Extract detailed company information.
+        You are analyzing a real startup's pitch deck. Extract ONLY actual information found in the content.
 
-        IMPORTANT: Return ONLY a valid JSON object with NO markdown, NO extra text or explanations.
+        STRICT RULES:
+        - Return ONLY a valid JSON object. No markdown, no explanations, no code blocks.
+        - NEVER use placeholder, generic, or example values (e.g. do NOT write "We help companies achieve goals", "sample company", "10", etc.)
+        - If a field cannot be found in the actual content, use an empty string "".
+        - All values must come DIRECTLY from the pitch deck content.
 
-        Extract these fields:
-        1. name: Company name
-        2. industry: MUST exactly match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
-        3. stage: MUST exactly match one of: Ideation, Pre-seed, Seed, Series A+
-        4. problem_solving: One sentence: "We help [who] achieve [outcome] by [method]"
-        5. team_size: A single number (digits only)
-        6. description: 1-2 professional sentences about the company
-        7. founder_name: Look for CEO, Founder, Co-founder names
-        8. location: { "city": "...", "state": "..." } - the company's city and state/region
-        9. valuation: Valuation or funding amount if mentioned, otherwise "Not Disclosed"
+        Extract ONLY what is explicitly present:
+        1. name: The exact startup/company name (look for branding, logos, headers)
+        2. industry: Must match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
+        3. stage: Must match one of: Ideation, Pre-seed, Seed, Series A+ (or empty if not stated)
+        4. problem_solving: Direct quote or close paraphrase of the problem statement from the deck
+        5. team_size: Number of team members if explicitly stated (digits only), else ""
+        6. description: 1-2 sentences about what the company does, based on the deck
+        7. founder_name: Name of founder/CEO/co-founder if shown
+        8. location: city and state/region if mentioned
+        9. valuation: Funding ask or valuation if stated, else ""
 
-        JSON format (return exactly this, with real values):
-        {
-            "name": "",
-            "industry": "",
-            "stage": "",
-            "problem_solving": "",
-            "team_size": "",
-            "description": "",
-            "founder_name": "",
-            "location": { "city": "", "state": "" },
-            "valuation": ""
-        }
+        Return ONLY this JSON (fill with actual values or empty strings):
+        {"name":"","industry":"","stage":"","problem_solving":"","team_size":"","description":"","founder_name":"","location":{"city":"","state":""},"valuation":""}
         `;
 
         let rawText: string;
