@@ -1,30 +1,53 @@
-import { convertPdfToImage } from "./pdfConverter";
 import * as mammoth from "mammoth";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 /**
  * Enhanced extraction utility that handles multiple file types.
- * Converts complex formats (PDF) to images for AI vision processing.
- * Extracts text from Office formats (DOCX, XLSX, PPTX) for LLM analysis.
+ * Extracts text content from PDFs, DOCX, XLSX, PPTX.
+ * Falls back to image for unsupported text-only formats.
  */
 export async function extractDocumentContent(file: File): Promise<{ type: 'image' | 'text' | 'unsupported', content: File | string }> {
     const fileType = file.name.split('.').pop()?.toLowerCase();
     const mimeType = file.type;
 
-    // 1. Image formats
+    // 1. Image formats — use as-is for vision
     if (mimeType.startsWith('image/')) {
         return { type: 'image', content: file };
     }
 
-    // 2. PDF format
+    // 2. PDF — extract full text using pdfjs text layer (much better than vision-only)
     if (mimeType === 'application/pdf' || fileType === 'pdf') {
         try {
-            const imageFile = await convertPdfToImage(file);
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+            const pdf = await loadingTask.promise;
+            let fullText = '';
+
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                    .map((item: any) => item.str)
+                    .join(' ');
+                fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
+            }
+
+            if (fullText.trim().length > 50) {
+                console.log(`PDF text extracted: ${fullText.length} chars from ${pdf.numPages} pages`);
+                return { type: 'text', content: fullText };
+            }
+            // If text is too sparse (e.g. scanned PDF), fall back to image
+            console.warn("PDF text extraction yielded sparse results, falling back to first-page image");
+            const imageFile = await convertPdfPageToImage(file, 1);
             return { type: 'image', content: imageFile };
         } catch (err) {
-            console.error("PDF extraction failed, falling back to basic info", err);
-            return { type: 'unsupported', content: `PDF: ${file.name}` };
+            console.error("PDF extraction failed", err);
+            return { type: 'unsupported', content: `PDF: ${file.name} (extraction failed)` };
         }
     }
 
@@ -65,15 +88,13 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
             const zip = await JSZip.loadAsync(arrayBuffer);
             let pptxText = "";
 
-            // PPTX text is stored in ppt/slides/slideN.xml
-            const slideFiles = Object.keys(zip.files).filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'));
-
-            // Sort slides numerically
-            slideFiles.sort((a, b) => {
-                const numA = parseInt(a.replace(/[^\d]/g, ''));
-                const numB = parseInt(b.replace(/[^\d]/g, ''));
-                return numA - numB;
-            });
+            const slideFiles = Object.keys(zip.files)
+                .filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'))
+                .sort((a, b) => {
+                    const numA = parseInt(a.replace(/[^\d]/g, ''));
+                    const numB = parseInt(b.replace(/[^\d]/g, ''));
+                    return numA - numB;
+                });
 
             for (const slidePath of slideFiles) {
                 const xmlText = await zip.files[slidePath].async("text");
@@ -95,4 +116,35 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
     }
 
     return { type: 'unsupported', content: file.name };
+}
+
+/**
+ * Converts a single page of a PDF to an image File (fallback for scanned PDFs).
+ */
+async function convertPdfPageToImage(pdfFile: File, pageNum: number = 1): Promise<File> {
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 2.0 });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error("Could not create canvas context");
+
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({ canvasContext: context, viewport }).promise;
+
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const imageFile = new File([blob], pdfFile.name.replace(/\.pdf$/i, '.png'), { type: 'image/png' });
+                resolve(imageFile);
+            } else {
+                reject(new Error("Failed to convert PDF page to image blob"));
+            }
+        }, 'image/png');
+    });
 }

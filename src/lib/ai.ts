@@ -1226,47 +1226,60 @@ export async function extractStartupInfoFromPitchDeck(
     try {
         // 1. Extract content (text or image) from the file
         const { type, content } = await extractDocumentContent(file);
+        console.log(`[PitchDeck] Extraction type: ${type}, content length: ${typeof content === 'string' ? content.length : 'image'}`);
+
+        if (type === 'unsupported') {
+            throw new Error(`Unsupported file type: ${file.name}. Please upload a PDF, PPTX, or image.`);
+        }
 
         const prompt = `
-        Analyze the provided ${type} content from a startup's pitch deck. 
-        Extract the following information as accurately as possible for an onboarding form:
-        1. Company Name
-        2. Industry (MUST EXACTLY match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others)
-        3. Current Stage (MUST EXACTLY match one of: Ideation, Pre-seed, Seed, Series A+)
-        4. Problem Statement (A concise sentence: "We help [who] achieve [outcome] by [method]")
-        5. Team Size (A single integer number)
-        6. Brief Description (1-2 professional sentences)
-        7. Founder Name (Look for CEO, Founder, or contact name)
-        8. Location (City and State/Country if found)
-        9. Valuation (If mentioned, otherwise "Not Disclosed")
+        You are analyzing a startup's pitch deck. Extract detailed company information.
 
-        Return ONLY a JSON object with these keys: 
+        IMPORTANT: Return ONLY a valid JSON object with NO markdown, NO extra text or explanations.
+
+        Extract these fields:
+        1. name: Company name
+        2. industry: MUST exactly match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
+        3. stage: MUST exactly match one of: Ideation, Pre-seed, Seed, Series A+
+        4. problem_solving: One sentence: "We help [who] achieve [outcome] by [method]"
+        5. team_size: A single number (digits only)
+        6. description: 1-2 professional sentences about the company
+        7. founder_name: Look for CEO, Founder, Co-founder names
+        8. location: { "city": "...", "state": "..." } - the company's city and state/region
+        9. valuation: Valuation or funding amount if mentioned, otherwise "Not Disclosed"
+
+        JSON format (return exactly this, with real values):
         {
-            "name": "string",
-            "industry": "string",
-            "stage": "string",
-            "problem_solving": "string",
-            "team_size": "string",
-            "description": "string",
-            "founder_name": "string",
-            "location": { "city": "string", "state": "string" },
-            "valuation": "string"
+            "name": "",
+            "industry": "",
+            "stage": "",
+            "problem_solving": "",
+            "team_size": "",
+            "description": "",
+            "founder_name": "",
+            "location": { "city": "", "state": "" },
+            "valuation": ""
         }
-        
-        If a piece of information is missing, use an empty string.
-        Result:
         `;
 
-        let text: string;
+        let rawText: string;
         if (type === 'image') {
-            text = await runInference(apiKey, prompt, { vision: true, file: content as File, baseUrl });
+            rawText = await runInference(apiKey, prompt, { vision: true, file: content as File, baseUrl });
         } else {
-            text = await runInference(apiKey, `${prompt}\n\nPITCH DECK CONTENT:\n${content as string}`, { baseUrl });
+            const textContent = content as string;
+            // Truncate text to avoid token limits (keep first ~8000 chars which covers most decks)
+            const truncated = textContent.length > 8000 ? textContent.substring(0, 8000) + '\n...[truncated]' : textContent;
+            rawText = await runInference(apiKey, `${prompt}\n\nPITCH DECK CONTENT:\n${truncated}`, { baseUrl });
         }
 
-        return extractJSON<ExtractedStartupInfo>(text);
+        console.log(`[PitchDeck] AI raw response:`, rawText.substring(0, 500));
+
+        const result = extractJSON<ExtractedStartupInfo>(rawText);
+        console.log(`[PitchDeck] Parsed result:`, result);
+        return result;
     } catch (error: unknown) {
         console.error("Pitch Deck Extraction Error:", error);
         throw new Error(`Failed to extract info from pitch deck: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
+
