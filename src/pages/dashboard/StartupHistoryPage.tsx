@@ -316,7 +316,7 @@ export function StartupHistoryPage() {
                   initial={{ y: 100, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 100, opacity: 0 }}
-                  className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40"
+                  className="fixed bottom-44 left-1/2 -translate-x-1/2 z-50"
                >
                   <Button
                      size="lg"
