@@ -37,12 +37,13 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
                 fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
             }
 
-            if (fullText.trim().length > 50) {
+            // Need at least 500 meaningful chars — typical pitch deck with real text has much more
+            if (fullText.trim().length > 500) {
                 console.log(`PDF text extracted: ${fullText.length} chars from ${pdf.numPages} pages`);
                 return { type: 'text', content: fullText };
             }
-            // If text is too sparse (e.g. scanned PDF), fall back to image
-            console.warn("PDF text extraction yielded sparse results, falling back to first-page image");
+            // If text is too sparse (e.g. scanned PDF or image-heavy deck), convert first page to image
+            console.warn(`PDF text only ${fullText.trim().length} chars — image-heavy deck detected. Falling back to image mode.`);
             const imageFile = await convertPdfPageToImage(file, 1);
             return { type: 'image', content: imageFile };
         } catch (err) {

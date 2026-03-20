@@ -25,8 +25,12 @@ export function AuthEventHandler() {
             } else if (event === 'SIGNED_IN') {
                 const currentHash = window.location.hash
                 const isDashboard = currentHash.includes('#/dashboard') || currentHash.includes('#/admin')
+                const isOnboarding = currentHash.includes('#/onboarding')
 
-                if (!isDashboard || currentHash.includes('access_token') || currentHash.includes('type=')) {
+                // Don't redirect away from onboarding — the user is mid-signup flow
+                if (isOnboarding) {
+                    console.log(`[AuthEventHandler] SIGNED_IN on /onboarding — skipping redirect`)
+                } else if (!isDashboard || currentHash.includes('access_token') || currentHash.includes('type=')) {
                     console.log(`[AuthEventHandler] SIGNED_IN detected. Redirecting to /dashboard. Current Hash: ${currentHash}`)
                     navigate('/dashboard', { replace: true })
                 } else {
