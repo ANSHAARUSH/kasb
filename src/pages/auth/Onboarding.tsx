@@ -9,7 +9,7 @@ import { supabase } from "../../lib/supabase"
 import { ArrowLeft, Rocket, Briefcase, CheckCircle2 } from "lucide-react"
 import { StartupFields } from "./signup/StartupFields"
 import { InvestorFields } from "./signup/InvestorFields"
-import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
+import { INDUSTRIES, EXPERTISE_AREAS, INDIAN_STATES } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { refineProblemStatement, extractStartupInfoFromPitchDeck } from "../../lib/ai"
@@ -101,25 +101,44 @@ export function Onboarding() {
             }
 
             const info = await extractStartupInfoFromPitchDeck(file, apiKey)
+            console.log("AI Extracted Info:", info)
             
             if (info.name) setCompanyName(info.name)
             if (info.founder_name) setName(info.founder_name)
+            
+            // Normalize Industry
             if (info.industry) {
                 const match = INDUSTRIES.find(i => i.toLowerCase() === info.industry.toLowerCase())
                 if (match) setSelectedIndustry(match)
-                else {
+                else if (info.industry.trim() !== "") {
                     setSelectedIndustry('Others')
                     setCustomIndustry(info.industry)
                 }
             }
-            if (info.stage) setStage(info.stage)
+
+            // Normalize Stage
+            if (info.stage) {
+                const s = info.stage.toLowerCase()
+                if (s.includes('ideation')) setStage('Ideation')
+                else if (s.includes('pre-seed') || s.includes('pre seed')) setStage('Pre-seed')
+                else if (s.includes('seed')) setStage('Seed')
+                else if (s.includes('series a')) setStage('Series A+')
+                else setStage(info.stage) // Fallback
+            }
+
             if (info.problem_solving) setProblemSolving(info.problem_solving)
             if (info.team_size) setTeamSize(info.team_size.replace(/[^\d]/g, ''))
-            if (info.location?.state) setState(info.location.state)
+            
+            // Normalize Location
+            if (info.location?.state) {
+                const stateMatch = INDIAN_STATES.find((s: string) => s.toLowerCase() === info.location.state.toLowerCase())
+                if (stateMatch) setState(stateMatch)
+                else setState(info.location.state)
+            }
             if (info.location?.city) setCity(info.location.city)
             
             toast("Pitch deck analyzed! Review your details in the next step.", "success")
-            setStep(3)
+            setTimeout(() => setStep(3), 500) // Small delay to ensure state propagates
         } catch (err: any) {
             toast(`Extraction failed: ${err.message}. Switching to manual.`, "error")
             setOnboardingMethod('manual')

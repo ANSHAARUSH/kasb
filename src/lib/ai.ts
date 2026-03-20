@@ -149,29 +149,36 @@ export interface IndustryInsight {
  */
 function extractJSON<T>(text: string): T {
     try {
-        // Try direct parsing first
-        return JSON.parse(text.trim()) as T;
-    } catch (e) {
-        // Find boundaries for both objects {} and arrays []
+        // 1. Remove markdown code blocks if present
+        const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+        try {
+            return JSON.parse(cleaned) as T;
+        } catch (e) {
+            // Continue to regex-based extraction
+        }
+
+        // 2. Try to find the first '{' or '[' and matching last brace
         const braceStart = text.indexOf('{');
         const braceEnd = text.lastIndexOf('}');
         const bracketStart = text.indexOf('[');
         const bracketEnd = text.lastIndexOf(']');
 
-        // Use the first occurring start and last occurring end among both types
-        const start = (braceStart !== -1 && bracketStart !== -1) 
-            ? Math.min(braceStart, bracketStart) 
+        const start = (braceStart !== -1 && bracketStart !== -1)
+            ? (braceStart < bracketStart ? braceStart : bracketStart)
             : (braceStart !== -1 ? braceStart : bracketStart);
-            
-        const end = (braceEnd !== -1 && bracketEnd !== -1) 
-            ? Math.max(braceEnd, bracketEnd) 
+
+        const end = (braceEnd !== -1 && bracketEnd !== -1)
+            ? (braceEnd > bracketEnd ? braceEnd : bracketEnd)
             : (braceEnd !== -1 ? braceEnd : bracketEnd);
 
         if (start !== -1 && end !== -1 && end > start) {
-            const json = text.substring(start, end + 1);
-            return JSON.parse(json) as T;
+            const jsonPart = text.substring(start, end + 1);
+            return JSON.parse(jsonPart) as T;
         }
-        throw new Error("No JSON object or array found in AI response");
+        throw new Error("No JSON structure found in text");
+    } catch (e) {
+        console.error("JSON Extraction Error:", e, "\nOriginal Text:", text);
+        throw e;
     }
 }
 
@@ -1224,10 +1231,10 @@ export async function extractStartupInfoFromPitchDeck(
         Analyze the provided ${type} content from a startup's pitch deck. 
         Extract the following information as accurately as possible for an onboarding form:
         1. Company Name
-        2. Industry (MUST map to one of: SaaS, FinTech, EdTech, HealthTech, E-commerce, AI/ML, CleanTech, Logistics, Others)
-        3. Current Stage (MUST map to one of: Ideation, Pre-seed, Seed, Series A+)
+        2. Industry (MUST EXACTLY match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others)
+        3. Current Stage (MUST EXACTLY match one of: Ideation, Pre-seed, Seed, Series A+)
         4. Problem Statement (A concise sentence: "We help [who] achieve [outcome] by [method]")
-        5. Team Size (A single number)
+        5. Team Size (A single integer number)
         6. Brief Description (1-2 professional sentences)
         7. Founder Name (Look for CEO, Founder, or contact name)
         8. Location (City and State/Country if found)
