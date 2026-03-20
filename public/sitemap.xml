@@ -1,27 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://anshaarush.github.io/kasb/</loc>
-    <lastmod>2026-02-15</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>https://www.kasbai.online/</loc>
     <priority>1.0</priority>
+    <changefreq>weekly</changefreq>
   </url>
   <url>
-    <loc>https://anshaarush.github.io/kasb/#/pricing</loc>
-    <lastmod>2026-02-15</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://www.kasbai.online/#/pricing</loc>
     <priority>0.8</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://anshaarush.github.io/kasb/#/login</loc>
-    <lastmod>2026-02-15</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://www.kasbai.online/#/login</loc>
     <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://anshaarush.github.io/kasb/#/signup</loc>
-    <lastmod>2026-02-15</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://www.kasbai.online/#/signup</loc>
     <priority>0.5</priority>
+    <changefreq>monthly</changefreq>
   </url>
 </urlset>

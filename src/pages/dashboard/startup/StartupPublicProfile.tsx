@@ -5,6 +5,7 @@ import { ProfileView } from "./ProfileView"
 import { Button } from "../../../components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
+import { SEO } from "../../../components/common/SEO"
 
 export function StartupPublicProfile() {
     const { id } = useParams<{ id: string }>()
@@ -68,6 +69,12 @@ export function StartupPublicProfile() {
 
     return (
         <div className="bg-white min-h-screen p-4 sm:p-8 overflow-y-auto">
+            <SEO 
+                title={`${startup.name} | Startup Profile`}
+                description={`View ${startup.name}'s profile on Kasb.AI. ${startup.problem_solving?.slice(0, 150) || "Connecting innovation with capital."}`}
+                ogType="profile"
+                canonical={`https://www.kasbai.online/#/dashboard/startup/${id}`}
+            />
             <div className="max-w-4xl mx-auto">
                 <div className="mb-6">
                     <Button

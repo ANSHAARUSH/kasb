@@ -5,6 +5,7 @@ import { ProfileView } from "./ProfileView"
 import { Button } from "../../../components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
+import { SEO } from "../../../components/common/SEO"
 
 export function InvestorPublicProfile() {
     const { id } = useParams<{ id: string }>()
@@ -70,6 +71,12 @@ export function InvestorPublicProfile() {
 
     return (
         <div className="bg-white rounded-3xl p-6 sm:p-8 h-full overflow-y-auto">
+            <SEO 
+                title={`${investor.name} | Investor Profile`}
+                description={`View ${investor.name}'s profile on Kasb.AI. ${investor.bio?.slice(0, 150)}...`}
+                ogType="profile"
+                canonical={`https://www.kasbai.online/#/dashboard/investor/${id}`}
+            />
             <div className="mb-6">
                 <Button
                     variant="ghost"

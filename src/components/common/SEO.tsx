@@ -47,18 +47,55 @@ export const SEO: React.FC<SEOProps> = ({
 
             {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">
-                {JSON.stringify({
-                    "@context": "https://schema.org",
-                    "@type": "WebSite",
-                    "name": "Kasb.AI",
-                    "url": "https://www.kasbai.online",
-                    "description": description,
-                    "potentialAction": {
-                        "@type": "SearchAction",
-                        "target": "https://www.kasbai.online/#features",
-                        "query-input": "required name=search_term_string"
+                {JSON.stringify([
+                    {
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        "name": "Kasb.AI",
+                        "url": "https://www.kasbai.online",
+                        "description": description,
+                        "potentialAction": {
+                            "@type": "SearchAction",
+                            "target": "https://www.kasbai.online/#features",
+                            "query-input": "required name=search_term_string"
+                        }
+                    },
+                    {
+                        "@context": "https://schema.org",
+                        "@type": "Organization",
+                        "name": "Kasb.AI",
+                        "url": "https://www.kasbai.online",
+                        "logo": "https://www.kasbai.online/logo.jpg",
+                        "sameAs": [
+                            "https://x.com/kasbai2025",
+                            "https://www.linkedin.com/in/kasb-ai-33173839b/",
+                            "https://www.instagram.com/kasb.ai/"
+                        ],
+                        "contactPoint": {
+                            "@type": "ContactPoint",
+                            "email": "kasbai2025@gmail.com",
+                            "contactType": "customer service"
+                        }
+                    },
+                    {
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://www.kasbai.online/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": title || "Platform",
+                                "item": canonical
+                            }
+                        ]
                     }
-                })}
+                ])}
             </script>
         </Helmet>
     );

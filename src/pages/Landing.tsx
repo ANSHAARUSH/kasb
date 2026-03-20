@@ -20,10 +20,45 @@ export function Landing() {
     return (
         <div className="flex flex-col gap-16 pb-20 overflow-hidden">
             <SEO
-                title="Connecting Visionary Capital with Extraordinary Innovation"
-                description="Kasb.AI is the premium matchmaking platform connecting visionary capital with extraordinary innovation. Empowering startups to raise capital and providing investors with vetted deal flow."
-                keywords="Kasb.AI, AI-powered startup platform, startup fundraising, raise capital for startups, find angel investors, venture capital platform, investor deal flow, angel investor network, AI matchmaking engine"
+                title="AI-Powered Startup Investment & Investor Matchmaking Platform"
+                description="Kasb.AI is the premium matchmaking platform connecting venture capital with high-growth startups. Accelerate your fundraising or find your next unicorn with AI-driven deal flow."
+                keywords="Kasb.AI, startup investment platform, investor matchmaking, venture capital AI, startup fundraising tool, angel investor network, investor deal flow, AI startup discovery"
             />
+            
+            {/* FAQ Structured Data */}
+            <script type="application/ld+json">
+                {JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "How does Kasb.AI match startups and investors?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Kasb.AI uses an advanced AI engine that analyzes over 50 data points, including industry, stage, ticket size, and geographic preference, to suggest the most relevant matches for both parties."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Is Kasb.AI only for tech startups?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "While we have a strong focus on high-growth tech ventures, Kasb.AI supports startups across various industries looking for professional investment."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "How can I start fundraising on Kasb.AI?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Founders can sign up, create a detailed profile of their venture, and immediately start appearing in the deal flow of verified investors who match their profile."
+                            }
+                        }
+                    ]
+                })}
+            </script>
+
             {/* Hero Section */}
             <section id="hero" className="relative flex min-h-screen flex-col items-center justify-center px-4 pt-20" aria-labelledby="hero-title">
                 {/* Dynamic Background */}
@@ -42,17 +77,17 @@ export function Landing() {
                 >
                     <div className="inline-flex items-center rounded-full border border-gray-100 bg-white/50 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-gray-600 shadow-sm">
                         <span className="flex h-2 w-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-                        Growing Community of Founders & Investors
+                        Vetted Network of High-Impact Founders & Investors
                     </div>
 
                     <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-tight">
-                        Connecting <span className="text-gray-400 font-light">Visionary Capital</span> <br />
-                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with Extraordinary Innovation</span>
+                        AI-Powered <span className="text-gray-400 font-light">Investor Matchmaking</span> <br />
+                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">& Startup Fundraising Platform</span>
                     </h1>
 
                     <p className="mx-auto max-w-2xl text-lg text-gray-500 sm:text-2xl leading-relaxed">
-                        A premium matchmaking platform for ambitious startups and visionary investors.
-                        Built for those who play the long game.
+                        The premium platform connecting visionary capital with extraordinary innovation. 
+                        Empowering startups to raise capital and providing investors with curated deal flow.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
@@ -81,7 +116,8 @@ export function Landing() {
                         <div className="relative z-10 overflow-hidden rounded-[3rem] shadow-2xl">
                             <img
                                 src={`${import.meta.env.BASE_URL}founders.jpg`}
-                                alt="Kasb.AI Co-Founders Aarush and Ansh - Building the future of startup fundraising"
+                                alt="Kasb.AI Co-Founders Aarush and Ansh - Experts in AI startup matchmaking and fundraising"
+                                title="Kasb.AI Founders"
                                 className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
                             />
                         </div>
@@ -110,12 +146,12 @@ export function Landing() {
                         className="space-y-8"
                     >
                         <div>
-                            <h2 className="text-5xl font-black mt-4 mb-6 tracking-tight text-soft-black leading-tight">Next-Gen Investor Deal Flow <br />Driven by AI Analysis</h2>
+                            <h2 className="text-5xl font-black mt-4 mb-6 tracking-tight text-soft-black leading-tight">Advanced Startup Discovery <br />& Investor Deal Flow</h2>
                             <p className="text-xl text-gray-500 leading-relaxed italic">
                                 "We started Kasb.AI with a simple goal: to remove the friction between great ideas and the capital they deserve."
                             </p>
                             <p className="text-xl text-gray-500 leading-relaxed mt-6">
-                                Founded by <span className="text-black font-bold underline decoration-indigo-500/30 underline-offset-4">Ansh and Aarush</span>, Kasb.AI is on a mission to democratize access to capital and create meaningful connections between visionary founders and forward-thinking investors.
+                                Founded by <span className="text-black font-bold underline decoration-indigo-500/30 underline-offset-4">Ansh and Aarush</span>, Kasb.AI is the leading AI platform for democratizing access to venture capital and creating meaningful connections in the startup ecosystem.
                             </p>
                         </div>
                     </motion.div>
@@ -124,15 +160,15 @@ export function Landing() {
                 <div className="grid gap-8 md:grid-cols-3">
                     {[
                         {
-                            title: "Our Mission",
+                            title: "Venture Capital Mission",
                             desc: "To empower startups with the resources they need to succeed while connecting investors with the next generation of industry-changing companies.",
                         },
                         {
-                            title: "Our Vision",
+                            title: "Investor Vision",
                             desc: "A world where every great idea has access to the capital and expertise needed to transform industries and improve lives globally.",
                         },
                         {
-                            title: "Our Values",
+                            title: "Core Ecosystem Values",
                             desc: "Trust, transparency, and innovation drive everything we do. We believe in building lasting relationships that create value for all stakeholders.",
                         },
                     ].map((item, i) => (
@@ -154,8 +190,8 @@ export function Landing() {
             {/* Features (Refined) */}
             <section id="features" className="container mx-auto px-4 py-24">
                 <div className="text-center mb-16">
-                    <h2 className="text-4xl font-bold tracking-tight mb-4">AI Matchmaking & Startup Discovery</h2>
-                    <p className="text-gray-500 text-lg max-w-2xl mx-auto">Discover high-growth startups and venture capital opportunities through our vetted investor network.</p>
+                    <h2 className="text-4xl font-bold tracking-tight mb-4">Venture Capital Discovery & AI Matchmaking</h2>
+                    <p className="text-gray-500 text-lg max-w-2xl mx-auto">Access high-growth investing opportunities and streamline your startup outreach through our AI-powered network.</p>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
