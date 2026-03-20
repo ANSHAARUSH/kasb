@@ -107,8 +107,9 @@ export function Onboarding() {
             const meaningfulFields = [info.name, info.founder_name, info.industry, info.stage, info.problem_solving, info.description].filter(v => v && v.trim() !== '')
             
             if (meaningfulFields.length === 0) {
-                toast("Couldn't extract details from this deck. It may be image-only or have minimal text. Please fill in manually.", "error")
-                setOnboardingMethod('manual')
+                // Still advance to step 3 — let the user fill in the blanks manually
+                toast("Couldn't auto-fill from this deck. Please fill in your details below.", "error")
+                setTimeout(() => setStep(3), 500)
                 return
             }
 
