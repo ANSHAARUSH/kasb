@@ -1224,56 +1224,93 @@ export async function extractStartupInfoFromPitchDeck(
     if (!apiKey) throw new Error("API Key is required for pitch deck extraction");
 
     try {
-        // 1. Extract content (text or image) from the file
-        const { type, content } = await extractDocumentContent(file);
-        console.log(`[PitchDeck] Extraction type: ${type}, content length: ${typeof content === 'string' ? content.length : 'image'}`);
+        const fileExt = file.name.split('.').pop()?.toLowerCase() ?? '';
+        const mimeType = file.type;
 
-        if (type === 'unsupported') {
-            throw new Error(`Unsupported file type: ${file.name}. Please upload a PDF, PPTX, or image.`);
+        console.log(`[PitchDeck] File: ${file.name}, MIME: ${mimeType}, size: ${file.size} bytes`);
+
+        let type: 'image' | 'text' = 'text';
+        let imageFile: File | null = null;
+        let textContent = '';
+
+        // For PDFs: inline canvas rendering to avoid stale module cache issues
+        if (mimeType === 'application/pdf' || fileExt === 'pdf') {
+            try {
+                const pdfjsLib = await import('pdfjs-dist');
+                pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+                console.log('[PitchDeck] Rendering PDF page to canvas...');
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 2.5 });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d')!;
+                await page.render({ canvasContext: ctx, viewport }).promise;
+
+                const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
+                if (blob) {
+                    imageFile = new File([blob], file.name.replace(/\.pdf$/i, '.png'), { type: 'image/png' });
+                    type = 'image';
+                    console.log('[PitchDeck] PDF → image conversion succeeded, size:', imageFile.size);
+                }
+            } catch (e) {
+                console.warn('[PitchDeck] PDF canvas render failed, falling back to text:', e);
+                // Fall through to text extraction via extractDocumentContent
+            }
         }
 
-        const prompt = `
-        You are analyzing a real startup's pitch deck. Extract ONLY actual information found in the content.
+        // If not a PDF or image conversion failed, get text content
+        if (type === 'text') {
+            const extracted = await extractDocumentContent(file);
+            console.log(`[PitchDeck] Text extraction type: ${extracted.type}, length: ${typeof extracted.content === 'string' ? extracted.content.length : 'N/A'}`);
+            if (extracted.type === 'unsupported') {
+                throw new Error(`Unsupported file: ${file.name}. Please upload a PDF, PPTX, DOCX, or image.`);
+            }
+            if (extracted.type === 'image') {
+                imageFile = extracted.content as File;
+                type = 'image';
+            } else {
+                textContent = extracted.content as string;
+            }
+        }
 
-        STRICT RULES:
-        - Return ONLY a valid JSON object. No markdown, no explanations, no code blocks.
-        - NEVER use placeholder, generic, or example values (e.g. do NOT write "We help companies achieve goals", "sample company", "10", etc.)
-        - If a field cannot be found in the actual content, use an empty string "".
-        - All values must come DIRECTLY from the pitch deck content.
+        const prompt = `You are extracting startup information from a pitch deck to pre-fill an onboarding form.
+        
+Be confident and extract any information visible in the content. Use your best inference based on context.
+Do not invent completely fictional data, but DO infer the industry, stage, and description from what you see.
 
-        Extract ONLY what is explicitly present:
-        1. name: The exact startup/company name (look for branding, logos, headers)
-        2. industry: Must match one of: AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
-        3. stage: Must match one of: Ideation, Pre-seed, Seed, Series A+ (or empty if not stated)
-        4. problem_solving: Direct quote or close paraphrase of the problem statement from the deck
-        5. team_size: Number of team members if explicitly stated (digits only), else ""
-        6. description: 1-2 sentences about what the company does, based on the deck
-        7. founder_name: Name of founder/CEO/co-founder if shown
-        8. location: city and state/region if mentioned
-        9. valuation: Funding ask or valuation if stated, else ""
+Extract these fields:
+- name: Company/startup name (from title slide, headers, logo text)
+- industry: Best match from [AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others]
+- stage: Best match from [Ideation, Pre-seed, Seed, Series A+] based on context
+- problem_solving: The core problem or value proposition 
+- team_size: Number if shown, else ""
+- description: 1-2 sentences about what the company does
+- founder_name: Founder/CEO name if visible
+- location: city and state/region if mentioned
+- valuation: Funding ask if stated, else ""
 
-        Return ONLY this JSON (fill with actual values or empty strings):
-        {"name":"","industry":"","stage":"","problem_solving":"","team_size":"","description":"","founder_name":"","location":{"city":"","state":""},"valuation":""}
-        `;
+Return ONLY valid JSON, no markdown:
+{"name":"","industry":"","stage":"","problem_solving":"","team_size":"","description":"","founder_name":"","location":{"city":"","state":""},"valuation":""}`;
 
         let rawText: string;
-        if (type === 'image') {
-            rawText = await runInference(apiKey, prompt, { vision: true, file: content as File, baseUrl });
+        if (type === 'image' && imageFile) {
+            rawText = await runInference(apiKey, prompt, { vision: true, file: imageFile, baseUrl });
         } else {
-            const textContent = content as string;
-            // Truncate text to avoid token limits (keep first ~8000 chars which covers most decks)
-            const truncated = textContent.length > 8000 ? textContent.substring(0, 8000) + '\n...[truncated]' : textContent;
-            rawText = await runInference(apiKey, `${prompt}\n\nPITCH DECK CONTENT:\n${truncated}`, { baseUrl });
+            const truncated = textContent.length > 8000 ? textContent.substring(0, 8000) : textContent;
+            rawText = await runInference(apiKey, `${prompt}\n\nPITCH DECK TEXT:\n${truncated}`, { baseUrl });
         }
 
         console.log(`[PitchDeck] AI raw response:`, rawText.substring(0, 500));
-
         const result = extractJSON<ExtractedStartupInfo>(rawText);
         console.log(`[PitchDeck] Parsed result:`, result);
         return result;
     } catch (error: unknown) {
         console.error("Pitch Deck Extraction Error:", error);
-        throw new Error(`Failed to extract info from pitch deck: ${error instanceof Error ? error.message : "Unknown error"}`);
+        throw new Error(`Failed to extract info: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
 
