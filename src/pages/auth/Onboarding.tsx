@@ -103,6 +103,7 @@ export function Onboarding() {
             const info = await extractStartupInfoFromPitchDeck(file, apiKey)
             
             if (info.name) setCompanyName(info.name)
+            if (info.founder_name) setName(info.founder_name)
             if (info.industry) {
                 const match = INDUSTRIES.find(i => i.toLowerCase() === info.industry.toLowerCase())
                 if (match) setSelectedIndustry(match)
@@ -114,6 +115,8 @@ export function Onboarding() {
             if (info.stage) setStage(info.stage)
             if (info.problem_solving) setProblemSolving(info.problem_solving)
             if (info.team_size) setTeamSize(info.team_size.replace(/[^\d]/g, ''))
+            if (info.location?.state) setState(info.location.state)
+            if (info.location?.city) setCity(info.location.city)
             
             toast("Pitch deck analyzed! Review your details in the next step.", "success")
             setStep(3)

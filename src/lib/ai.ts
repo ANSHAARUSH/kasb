@@ -883,32 +883,84 @@ export async function generateFounderAnalysis(
     }
 }
 
+export interface PitchDeckScorecard {
+    problem: { score: number; feedback: string };
+    solution: { score: number; feedback: string };
+    market: { score: number; feedback: string };
+    traction: { score: number; feedback: string };
+    team: { score: number; feedback: string };
+    business_model: { score: number; feedback: string };
+    overall_sentiment: string;
+    critical_missing_info: string[];
+    investor_recommendation: 'strong_pass' | 'monitor' | 'potential_investment' | 'high_priority';
+}
+
 export async function reviewPitchDeck(
-    deckText: string,
+    content: string | File,
     apiKey: string,
     baseUrl?: string
-): Promise<string> {
-    const prompt = `
-    Critically review the following pitch deck content(extracted text) from an investor's perspective.
-
-    Content: ${deckText}
-    
-    Provide structured feedback:
-    1. Clarity & Storytelling(1 - 10)
-    2. Market Opportunity Analysis
-    3. Competitive Advantage Evidence
-    4. Missing Key Information
-    5. Specific "Slide-by-Slide" Improvement Suggestions
-
-    TONE: Blunt, constructive, and oriented towards maximizing chance of investment.
-    `;
+): Promise<PitchDeckScorecard | string> {
+    if (!apiKey) throw new Error("API Key is required for pitch deck review");
 
     try {
-        const text = await runInference(apiKey, prompt, { baseUrl });
-        return text.trim() || "Failed to review pitch deck.";
+        const isFile = content instanceof File;
+        let extractionType: 'image' | 'text' = 'text';
+        let extractionContent: string | File = content as string;
+
+        if (isFile) {
+            const extraction = await extractDocumentContent(content as File);
+            if (extraction.type === 'unsupported') {
+                return "Unsupported file format for deep analysis.";
+            }
+            extractionType = extraction.type as 'image' | 'text';
+            extractionContent = extraction.content;
+        }
+
+        const prompt = `
+        You are a seasoned Venture Capitalist (VC) analyzing a startup's pitch deck. 
+        Provide a critical, constructive, and detailed scorecard review.
+        
+        Evaluate the following categories from 1-10 and provide specific feedback for each:
+        1. Problem (Is it real, large, and urgent?)
+        2. Solution (Is it unique, scalable, and effective?)
+        3. Market (Size, growth, and accessibility)
+        4. Traction (Evidence of product-market fit or momentum)
+        5. Team (Execution capability and domain expertise)
+        6. Business Model (Revenue strategy and unit economics potential)
+
+        Also identify any critical missing information that an investor would immediately ask for.
+
+        Return ONLY a JSON object in this format:
+        {
+            "problem": { "score": 8, "feedback": "Concise feedback here" },
+            "solution": { "score": 7, "feedback": "Concise feedback here" },
+            "market": { "score": 9, "feedback": "Concise feedback here" },
+            "traction": { "score": 5, "feedback": "Concise feedback here" },
+            "team": { "score": 8, "feedback": "Concise feedback here" },
+            "business_model": { "score": 6, "feedback": "Concise feedback here" },
+            "overall_sentiment": "Detailed summary of the investment potential",
+            "critical_missing_info": ["Item 1", "Item 2"],
+            "investor_recommendation": "monitor" | "potential_investment" | "high_priority" | "strong_pass"
+        }
+
+        Analysis content follows:
+        `;
+
+        let text: string;
+        if (extractionType === 'image') {
+            text = await runInference(apiKey, prompt, { vision: true, file: extractionContent as File, baseUrl });
+        } else {
+            text = await runInference(apiKey, `${prompt}\n\nCONTENT:\n${extractionContent as string}`, { baseUrl });
+        }
+
+        try {
+            return extractJSON<PitchDeckScorecard>(text);
+        } catch (e) {
+            return text;
+        }
     } catch (error: unknown) {
-        console.error("AI Review Error:", error);
-        throw new Error("AI Pitch Deck Review failed");
+        console.error("Pitch Deck Review Error:", error);
+        throw new Error(`Failed to review pitch deck: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
 
@@ -1152,6 +1204,9 @@ export interface ExtractedStartupInfo {
     problem_solving: string;
     team_size: string;
     description: string;
+    founder_name: string;
+    location: { city: string; state: string };
+    valuation: string;
 }
 
 export async function extractStartupInfoFromPitchDeck(
@@ -1167,13 +1222,16 @@ export async function extractStartupInfoFromPitchDeck(
 
         const prompt = `
         Analyze the provided ${type} content from a startup's pitch deck. 
-        Extract the following information:
+        Extract the following information as accurately as possible for an onboarding form:
         1. Company Name
-        2. Industry (Choose one from: SaaS, FinTech, EdTech, HealthTech, E-commerce, AI/ML, CleanTech, AgriTech, Logistics, Others)
-        3. Current Stage (Choose one from: Ideation, Pre-seed, Seed, Series A+)
+        2. Industry (MUST map to one of: SaaS, FinTech, EdTech, HealthTech, E-commerce, AI/ML, CleanTech, Logistics, Others)
+        3. Current Stage (MUST map to one of: Ideation, Pre-seed, Seed, Series A+)
         4. Problem Statement (A concise sentence: "We help [who] achieve [outcome] by [method]")
         5. Team Size (A single number)
-        6. Brief Description (1-2 sentences)
+        6. Brief Description (1-2 professional sentences)
+        7. Founder Name (Look for CEO, Founder, or contact name)
+        8. Location (City and State/Country if found)
+        9. Valuation (If mentioned, otherwise "Not Disclosed")
 
         Return ONLY a JSON object with these keys: 
         {
@@ -1182,7 +1240,10 @@ export async function extractStartupInfoFromPitchDeck(
             "stage": "string",
             "problem_solving": "string",
             "team_size": "string",
-            "description": "string"
+            "description": "string",
+            "founder_name": "string",
+            "location": { "city": "string", "state": "string" },
+            "valuation": "string"
         }
         
         If a piece of information is missing, use an empty string.
@@ -1202,5 +1263,3 @@ export async function extractStartupInfoFromPitchDeck(
         throw new Error(`Failed to extract info from pitch deck: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 }
-
-
