@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { reviewPitchDeck, type PitchDeckScorecard } from "../../lib/ai"
-import { Progress } from "../../components/ui/Progress"
+import { Progress } from "../../components/ui/ScorecardProgress"
 import { Badge } from "../../components/ui/badge"
 import { cn } from "../../lib/utils"
 import { 
