@@ -60,7 +60,7 @@ export function Landing() {
             </script>
 
             {/* Hero Section */}
-            <section id="hero" className="relative flex min-h-[90vh] lg:min-h-screen flex-col items-center justify-start lg:justify-center px-4 pt-28 lg:pt-20" aria-labelledby="hero-title">
+            <section id="hero" className="relative flex min-h-[90vh] lg:min-h-screen flex-col items-center justify-start px-4 pt-6 lg:pt-8" aria-labelledby="hero-title">
                 {/* Dynamic Background */}
                 <div className="absolute inset-0 -z-10 bg-white">
                     <div className="absolute top-[-10%] left-[-10%] h-[40%] w-[40%] rounded-full bg-indigo-50/50 blur-[120px]"></div>
@@ -81,8 +81,8 @@ export function Landing() {
                     </div>
 
                     <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-[1.1]">
-                        AI-Powered <span className="text-gray-400 font-light">Investor Matchmaking</span> <br />
-                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">& Startup Fundraising Platform</span>
+                        Connecting <span className="text-gray-400 font-light">vision</span> <br />
+                        <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with valuation</span>
                     </h1>
 
                     <p className="mx-auto max-w-2xl text-base text-gray-500 sm:text-xl leading-relaxed">
