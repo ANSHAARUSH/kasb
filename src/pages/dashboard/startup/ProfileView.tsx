@@ -2,7 +2,8 @@ import { Card, CardContent } from "../../../components/ui/card"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { VerificationSection } from "./VerificationSection"
 import { useMemo, useState, useEffect } from "react"
-import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, CheckCircle2, Lock, ExternalLink } from "lucide-react"
+import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, CheckCircle2, Lock, ExternalLink, History as HistoryIcon } from "lucide-react"
+import { Link } from "react-router-dom"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, isProfileComplete, getStartupMissingFields } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { Avatar } from "../../../components/ui/Avatar"
@@ -294,6 +295,25 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Mobile-only Quick Links (relocated from bottom nav) */}
+                    <div className="mt-4 px-4 sm:hidden">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-2">Dashboard Tools</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Link to="/dashboard/startup/analytics" className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-50 border border-gray-100 text-gray-900 transition-all active:scale-95 no-underline">
+                                <BarChart3 className="w-5 h-5 mb-2 text-indigo-600" />
+                                <span className="text-xs font-bold">Analytics</span>
+                            </Link>
+                            <Link to="/dashboard/startup/history" className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gray-50 border border-gray-100 text-gray-900 transition-all active:scale-95 no-underline">
+                                <HistoryIcon className="w-5 h-5 mb-2 text-indigo-600" />
+                                <span className="text-xs font-bold">History</span>
+                            </Link>
+                            <Link to="/dashboard/startup/cheatsheet" className="col-span-2 flex items-center justify-center gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 text-gray-900 transition-all active:scale-95 no-underline">
+                                <FileText className="w-5 h-5 text-indigo-600" />
+                                <span className="text-xs font-bold">View Cheat Sheet</span>
+                            </Link>
                         </div>
                     </div>
 

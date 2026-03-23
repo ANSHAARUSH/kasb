@@ -35,6 +35,7 @@ const EmailConfirmed = lazyWithRetry(() => import("./pages/auth/EmailConfirmed")
 const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
 const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 const StartupPublicProfile = lazyWithRetry(() => import("./pages/dashboard/startup/StartupPublicProfile").then(m => ({ default: m.StartupPublicProfile })))
+const FounderGPT = lazyWithRetry(() => import("./pages/dashboard/FounderGPT").then(m => ({ default: m.FounderGPT })))
 
 function CatchAll() {
   const { user, loading } = useAuth();
@@ -131,6 +132,7 @@ function App() {
                     <Route path="startup/profile" element={<StartupProfile />} />
                     <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
                     <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
+                    <Route path="startup/foundergpt" element={<FounderGPT />} />
                     <Route path="startup/:id" element={<StartupPublicProfile />} />
 
                     {/* Shared Routes - Keep for fallbacks or generic access */}

@@ -1,4 +1,4 @@
-import { Home, History, MessageSquare, FileText, User, LogOut, BarChart3, Mail, Shield } from "lucide-react"
+import { Home, History, MessageSquare, Sparkles, User, LogOut, BarChart3, Mail, Shield } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
@@ -16,7 +16,7 @@ export function SideNav() {
     const dashboardHome = isStartupDashboard ? '/dashboard/startup' : '/dashboard/investor'
     const historyRoute = isStartupDashboard ? '/dashboard/startup/history' : '/dashboard/investor/history'
     const messagesRoute = isStartupDashboard ? '/dashboard/startup/messages' : '/dashboard/investor/messages'
-    const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/cheatsheet' : '/dashboard/investor/cheatsheet'
+    const cheatSheetRoute = isStartupDashboard ? '/dashboard/startup/foundergpt' : '/dashboard/investor/foundergpt'
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
     const analyticsRoute = '/dashboard/startup/analytics'
 
@@ -24,7 +24,7 @@ export function SideNav() {
         { icon: Home, label: "Feed", href: dashboardHome },
         { icon: History, label: "History", href: historyRoute },
         { icon: MessageSquare, label: "Messages", href: messagesRoute },
-        { icon: FileText, label: "Cheat Sheet", href: cheatSheetRoute },
+        { icon: Sparkles, label: isStartupDashboard ? "Founder GPT" : "Kasb AI", href: cheatSheetRoute },
         { icon: User, label: "Profile", href: profileRoute },
         ...(isStartupDashboard ? [{ icon: BarChart3, label: "Analytics", href: analyticsRoute }] : []),
         ...(role === 'admin' ? [{ icon: Shield, label: "Admin Panel", href: "/admin-portal-v3x8z1" }] : []),
