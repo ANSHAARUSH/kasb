@@ -80,7 +80,7 @@ export function Landing() {
                         Vetted Network of High-Impact Founders & Investors
                     </div>
 
-                    <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-[1.1]">
+                    <h1 id="hero-title" className="text-5xl font-bold tracking-tighter text-soft-black sm:text-7xl md:text-8xl lg:text-[5.5rem] leading-[1.1]">
                         Connecting <span className="text-gray-500 font-light">vision</span> <br />
                         <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with valuation</span>
                     </h1>

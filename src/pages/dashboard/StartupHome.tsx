@@ -194,7 +194,7 @@ export function StartupHome() {
                 panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'
             )}>
                 {/* Filters Header (Minimized) */}
-                <div className={cn("flex-none transition-all duration-300", showFilters ? "p-6 pb-2" : "p-0")}>
+                <div className={cn("flex-none transition-all duration-300", showFilters ? "p-6 pb-2 relative z-50" : "p-0")}>
                     <InvestorFilterPanel
                         isOpen={showFilters}
                         filters={filters}
