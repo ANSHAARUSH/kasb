@@ -15,9 +15,9 @@ export const SEO: React.FC<SEOProps> = ({
     title,
     description = "Kasb.AI - The AI-powered platform for startups and investors. Matching innovation with capital.",
     keywords = "Kasb.AI, AI-powered startup platform, startup fundraising, investor deal flow, venture capital, angel investors, startup matchmaking",
-    canonical = "https://www.kasbai.online",
+    canonical = "https://kasbai.online",
     ogType = "website",
-    ogImage = "https://www.kasbai.online/logo.jpg",
+    ogImage = "https://kasbai.online/logo.jpg",
     twitterHandle = "@kasbai2025",
 }) => {
     const siteTitle = "Kasb.AI";
@@ -52,11 +52,11 @@ export const SEO: React.FC<SEOProps> = ({
                         "@context": "https://schema.org",
                         "@type": "WebSite",
                         "name": "Kasb.AI",
-                        "url": "https://www.kasbai.online",
+                        "url": "https://kasbai.online",
                         "description": description,
                         "potentialAction": {
                             "@type": "SearchAction",
-                            "target": "https://www.kasbai.online/#features",
+                            "target": "https://kasbai.online/#features",
                             "query-input": "required name=search_term_string"
                         }
                     },
@@ -64,8 +64,8 @@ export const SEO: React.FC<SEOProps> = ({
                         "@context": "https://schema.org",
                         "@type": "Organization",
                         "name": "Kasb.AI",
-                        "url": "https://www.kasbai.online",
-                        "logo": "https://www.kasbai.online/logo.jpg",
+                        "url": "https://kasbai.online",
+                        "logo": "https://kasbai.online/logo.jpg",
                         "sameAs": [
                             "https://x.com/kasbai2025",
                             "https://www.linkedin.com/in/kasb-ai-33173839b/",
@@ -85,7 +85,7 @@ export const SEO: React.FC<SEOProps> = ({
                                 "@type": "ListItem",
                                 "position": 1,
                                 "name": "Home",
-                                "item": "https://www.kasbai.online/"
+                                "item": "https://kasbai.online/"
                             },
                             {
                                 "@type": "ListItem",

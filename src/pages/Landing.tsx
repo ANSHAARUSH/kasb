@@ -81,7 +81,7 @@ export function Landing() {
                     </div>
 
                     <h1 id="hero-title" className="text-4xl font-bold tracking-tighter text-soft-black sm:text-6xl leading-[1.1]">
-                        Connecting <span className="text-gray-400 font-light">vision</span> <br />
+                        Connecting <span className="text-gray-500 font-light">vision</span> <br />
                         <span className="bg-gradient-to-r from-black via-gray-700 to-black bg-clip-text text-transparent">with valuation</span>
                     </h1>
 
@@ -119,6 +119,8 @@ export function Landing() {
                                 alt="Kasb.AI Co-Founders Aarush and Ansh - Experts in AI startup matchmaking and fundraising"
                                 title="Kasb.AI Founders"
                                 className="w-full h-auto object-cover hover:scale-105 transition-transform duration-700"
+                                width={800}
+                                height={800}
                             />
                         </div>
                         {/* Decorative elements */}
