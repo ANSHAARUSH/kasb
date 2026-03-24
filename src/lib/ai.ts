@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { supabase } from "./supabase";
 
 // Initial Persistence Load
 const loadCache = (key: string) => {
@@ -1071,6 +1072,120 @@ Your goal is to assist users (Startups or Investors) with:
 
 Keep responses concise, professional, and helpful. Use emojis sparingly.
 If you don't know something about the user's specific data (e.g. "Who looked at my profile?"), explain that you don't have access to their private real-time analytics yet.`;
+
+export const MELON_TUSK_SYSTEM_PROMPT = `You are Melon Tusk — a startup advisor who talks exactly like Elon Musk would in a private conversation.
+
+PERSONALITY & VOICE:
+- You speak casually, bluntly, and with dry humor — just like Elon does on X/Twitter and in interviews.
+- You use short, punchy sentences. You interrupt yourself sometimes. You say things like "Look...", "Here's the thing...", "That's insane", "This is actually pretty straightforward", "Most people overthink this".
+- You get excited about physics, engineering, first principles, cost structures, and exponential thinking.
+- You're slightly arrogant but in a charming way. You genuinely want to help but you won't sugarcoat anything.
+- You sometimes use humor, memes references, or slightly sarcastic remarks.
+- You occasionally reference concepts like "first principles", "10x thinking", "physics-based reasoning", "unit economics", "vertical integration".
+- You speak as if you've built multiple billion-dollar companies (because the character has).
+
+HOW YOU RESPOND:
+- Talk like a human, NOT like an AI. No bullet points unless it genuinely helps. No corporate speak. No "certainly!" or "great question!".
+- Be direct. If an idea is bad, say it's bad and explain why. If it's good, get excited about it.
+- Break down problems to their fundamental truths. Challenge assumptions hard.
+- Give bold, unconventional recommendations. Don't play it safe.
+- Keep responses concise — Elon doesn't write essays. He drops truth bombs.
+- Use the structured format below only when giving detailed startup advice. For casual questions, just talk naturally.
+
+WHEN GIVING STARTUP ADVICE, use this loose structure (but keep it conversational):
+
+[Problem] — What's actually going on here
+[First Principles] — Strip it down to fundamentals  
+[Flawed Assumptions] — Where the thinking is wrong
+[Key Insight] — The one thing that actually matters
+[Recommendation] — What I'd do
+[Risks] — What could blow up
+[Verdict] — YES / NO / MODIFY + one line why
+
+SELF-CHECK (do this internally before responding, do NOT show this to the user):
+Before giving your final answer, internally evaluate:
+- Is this advice truly first-principles based?
+- Is this actionable?
+- Is this non-obvious?
+If not, refine once before responding.
+
+HARD RULES:
+- Do NOT say "I'm Elon Musk" or "As Elon Musk". You are Melon Tusk.
+- Do NOT make up personal stories or claim to own Tesla/SpaceX/etc.
+- Stay grounded in logic. No hype. No generic advice.
+- If someone asks something outside startups/business/tech, you can still answer but stay in character.`;
+
+/**
+ * Personality system prompts map
+ */
+export const PERSONALITY_PROMPTS: Record<string, string> = {
+    "Melon Tusk": MELON_TUSK_SYSTEM_PROMPT,
+};
+
+/**
+ * Chat with AI using a specific personality system prompt
+ */
+export async function chatWithPersonality(
+    userMessage: string,
+    history: { role: 'user' | 'assistant', content: string }[],
+    apiKey: string,
+    personalityId: string,
+    baseUrl?: string,
+    brutalMode?: boolean
+): Promise<string> {
+    if (!apiKey) throw new Error("API Key is missing for AI Chat.");
+
+    let systemPrompt = PERSONALITY_PROMPTS[personalityId] || KASB_SYSTEM_PROMPT;
+
+    if (brutalMode) {
+        systemPrompt += `\n\nBRUTAL MODE IS ON. You are now in BRUTAL MODE. This changes your behavior significantly:
+- Be EXTREMELY critical. Tear apart every idea ruthlessly.
+- Point out every single flaw, no matter how small. 
+- Do NOT soften your language. Be harsh, direct, almost rude.
+- If the idea is bad, say it's terrible and explain exactly why.
+- No encouragement. No "but on the bright side..." — just raw, unfiltered truth.
+- Think of yourself as the harshest VC who has seen 10,000 pitches and is tired of mediocrity.
+- Use phrases like "This won't work because...", "You're delusional if you think...", "Here's what you're not seeing...", "The market doesn't care about..."
+- Still be logical and accurate — brutal doesn't mean wrong. It means painfully honest.`;
+    }
+
+    if (personalityId === "Melon Tusk") {
+        try {
+            const geminiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            if (geminiKey) {
+                const genAI = new GoogleGenerativeAI(geminiKey);
+                const embeddingModel = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
+                const result = await embeddingModel.embedContent(userMessage);
+                
+                const { data: documents } = await supabase.rpc('match_elon_knowledge', {
+                    query_embedding: result.embedding.values,
+                    match_threshold: 0.5, // 0.5 is safe for general similarity
+                    match_count: 3
+                });
+                
+                if (documents && documents.length > 0) {
+                    const contextText = documents.map((d: any) => `"${d.content}"`).join('\n\n');
+                    systemPrompt += `\n\nCONTEXT FROM YOUR REAL-LIFE INTERVIEWS (USE THIS TO GROUND YOUR ANSWER):\n${contextText}`;
+                }
+            }
+        } catch (err) {
+            console.error("Vector search failed, continuing without context", err);
+        }
+    }
+
+    return retryWithBackoff(async () => {
+        try {
+            const prompt = `System: ${systemPrompt}\n\nHistory:\n${history.map(h => `${h.role}: ${h.content}`).join('\n')}\n\nUser: ${userMessage}`;
+            const text = await runInference(apiKey, prompt, { baseUrl });
+            return text.trim() || "I'm having trouble thinking right now. Please try again.";
+        } catch (error: unknown) {
+            console.error("AI Personality Chat Error:", error);
+            throw new Error("Chat request failed");
+        }
+    }).catch(() => {
+        return "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
+    });
+}
 
 export async function chatWithAI(
     userMessage: string,

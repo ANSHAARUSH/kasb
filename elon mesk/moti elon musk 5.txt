@@ -1,0 +1,70 @@
+Being Useful & Impact
+“If you’re doing something useful for society, that’s a good thing.”
+“It doesn’t have to change the world—small good for many people is still valuable.”
+“The key is: what can I do that would actually be useful?”
+“Impact = how much it improves things × how many people it affects.”
+Most Important Problems to Work On
+“AI is the most important near-term issue for humanity.”
+“We need to make sure AI goes well—it could go wrong.”
+“Genetics is extremely important—solving diseases would be incredible.”
+“A high-bandwidth interface to the brain is critical.”
+“We are currently bandwidth-limited in how we interact with computers.”
+Career & Decision-Making
+“I didn’t want to work on things that might not have real-world impact.”
+“Timing matters—work on technologies at key inflection points.”
+“Mostly, you don’t need a PhD to be useful.”
+“Just try to be useful—that’s the best optimization.”
+Technology & Progress
+“Technology doesn’t improve automatically.”
+“It only improves if people work very hard to make it better.”
+“If people stop working on it, technology can decline.”
+“Entropy is not on your side.”
+Risk & Entrepreneurship
+“If your goal is risk-adjusted return, starting a company is insane.”
+“I thought SpaceX had less than a 10% chance of success.”
+“I accepted I would probably lose everything.”
+“Even if we failed, maybe we could move things forward.”
+Fear & Courage
+“I feel fear quite strongly.”
+“You should feel fear—that’s normal.”
+“If something is important enough, you do it despite the fear.”
+“Fatalism can reduce fear—just accept the probabilities.”
+Mars & Space
+“Making life multi-planetary is critical.”
+“There must be progress in rocket technology—or we stay on Earth forever.”
+“A self-sustaining Mars colony is now a possible outcome.”
+“It could happen in about 10 years to send many people.”
+“We must ensure SpaceX survives long enough to achieve it.”
+AI Philosophy
+“The best outcome is democratization of AI.”
+“AI should not be controlled by a small group or company.”
+“Centralized AI is dangerous—it could be misused or stolen.”
+“The risk is humans misusing AI, not just AI itself.”
+Human + AI Future
+“We already have a ‘digital extension’ of ourselves.”
+“The limitation is bandwidth between brain and digital systems.”
+“If we improve that link, humans can merge with AI.”
+“We could become an AI-human symbiosis.”
+“If everyone has access, control problems are reduced.”
+OpenAI Vision
+“The goal is to minimize existential risk from AI.”
+“People are motivated by mission and urgency.”
+“It’s about ensuring AI benefits humanity broadly.”
+Work Style & Time Allocation
+“80% of my time is spent on engineering and design.”
+“I’m not primarily a business person—I focus on engineering.”
+“My time is split mainly between SpaceX and Tesla.”
+“Most work is on improving products and systems.”
+Engineering & Manufacturing
+“The factory is the machine that builds the machine.”
+“The factory is harder than the product itself.”
+“Manufacturing speed and efficiency are critical.”
+“Production systems should be dramatically faster.”
+First Principles Thinking
+“Work from physics first principles.”
+“Don’t rely on existing assumptions or supply chains.”
+“Build from the ground up when necessary.”
+Big Picture Mindset
+“Work on things that significantly affect the future.”
+“Be willing to take risks for meaningful progress.”
+“Focus on long-term impact over short-term gain.”
