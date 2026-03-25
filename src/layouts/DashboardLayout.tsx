@@ -49,7 +49,7 @@ export function DashboardLayout() {
 
     if (loading || (!user && location.pathname !== '/')) {
         return (
-            <div className="min-h-screen bg-off-white">
+            <div className="min-h-screen bg-white">
                 <header className="sticky top-0 z-10 flex items-center border-b border-white/10 bg-black px-6 py-4">
                     <div className="flex-1 flex justify-center">
                         <div className="flex items-center gap-2.5">
@@ -66,7 +66,7 @@ export function DashboardLayout() {
     }
 
     return (
-        <div className="min-h-screen bg-white md:bg-off-white flex flex-col md:flex-row">
+        <div className="min-h-screen bg-white flex flex-col md:flex-row">
             {/* Desktop Sidebar */}
             <SideNav />
 
