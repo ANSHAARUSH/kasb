@@ -250,12 +250,6 @@ export function StartupHome() {
                                         <span className="text-sm">Analytics</span>
                                     </Button>
                                 </Link>
-                                <Link to="/dashboard/startup/cheatsheet" className="md:hidden">
-                                    <Button variant="outline" size="sm" className="h-10 rounded-xl gap-1.5 border-gray-200 text-gray-600 shadow-sm">
-                                        <FileText className="h-4 w-4" />
-                                        <span className="text-sm">Cheat Sheet</span>
-                                    </Button>
-                                </Link>
                                 <span className="text-sm text-gray-500 hidden sm:inline">
                                     {filteredInvestors.length} matches
                                 </span>
