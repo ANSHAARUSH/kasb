@@ -83,7 +83,7 @@ export function DashboardLayout() {
                     <div className="flex-1 hidden md:block" /> {/* Spacer */}
                     <div className="flex-none flex items-center gap-2">
                         <ProfileCompletionIndicator />
-                        <UsageIcon isMobile className="md:hidden" />
+                        <UsageIcon isMobile />
                         <NotificationBell />
                     </div>
                 </header>

@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { UsageIcon } from "../layout/UsageIcon"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function SideNav() {
@@ -65,10 +64,6 @@ export function SideNav() {
                     )
                 })}
             </nav>
-
-            <div className="px-4 mb-4">
-                <UsageIcon showLabel placement="right" className="w-full flex-row justify-start gap-3 rounded-xl px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-black group" />
-            </div>
 
             <div className="p-4 border-t border-gray-50 flex flex-col gap-1">
                 {subscriptionManager.hasPaidPlan() && (
