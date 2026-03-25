@@ -1,0 +1,168 @@
+1. Computers Are Simple but Powerful
+Computers are fundamentally simple machines executing basic instructions extremely fast.
+The “magic” comes from speed and scale, not complexity.
+
+Key quotes:
+
+“Computers are really dumb… but they’re really fast.”
+“It’s just a series of very simple instructions.”
+2. Abstraction Enables Power
+Humans interact with computers at higher levels, hiding complexity underneath.
+Layers of abstraction make technology usable.
+
+Key quote:
+
+“We’ve started… to deal with computers in higher and higher levels of abstraction.”
+3. Personal Computers = A New Medium
+Computers are not just tools—they are a new form of communication.
+Like TV or radio, they will reshape how people interact.
+
+Key quotes:
+
+“The personal computer is a new medium of communication.”
+“Each medium shapes not only the communication… but the process of communication.”
+4. Every New Medium Starts by Copying the Old
+Early stages mimic previous technologies before evolving into something unique.
+
+Key quote:
+
+“We tend to fall back into old-media habits.”
+5. Computing Revolution = “Fractional Horsepower”
+Personal computers bring computing power to individuals, just like small motors did.
+This democratization drives massive adoption.
+
+Key quote:
+
+“That’s why we exist—fractional-horsepower computing.”
+6. Design Matters Deeply
+Computers will become central to daily life, so their design must be excellent.
+Beauty and usability are not optional.
+
+Key quotes:
+
+“It doesn’t cost any more money to make it look great.”
+“We have a shot at putting a great object there… or one more piece-of-junk object.”
+7. Computers Will Dominate Daily Life
+People will spend hours interacting with computers—more than with cars.
+They will become central to work, education, and home life.
+
+Key quote:
+
+“People are going to be spending two, three hours a day… interacting with these machines.”
+8. Software = Ideas, Not Objects
+Software has no physical form—it’s pure thought encoded into systems.
+It captures principles, not just experiences.
+
+Key quotes:
+
+“Computer programs have no physical manifestation at all.”
+“They’re simply ideas expressed.”
+9. Computers Enable New Ways of Learning
+Interactive systems teach through simulation and experience.
+Learning becomes exploratory, not passive.
+
+Key idea:
+
+Programs can model real systems (economics, physics, etc.) and allow experimentation.
+10. Future: Capturing Human Thought
+Computers could preserve and simulate human thinking.
+One day, you might “interact” with great minds digitally.
+
+Key quote:
+
+“Maybe someday… we can ask this machine, ‘What would Aristotle have said?’”
+11. Networking Will Connect People
+Computers will be linked together to enable communication and collaboration.
+Communities will form around shared interests.
+
+Key quote:
+
+“A computer is going to be a tool for communication.”
+12. Vision: Portable Personal Computers
+Goal: a powerful, portable computer anyone can carry and learn quickly.
+Eventually wireless and always connected.
+
+Key quote:
+
+“We want to put an incredibly great computer in a book that you can carry around with you.”
+13. Technology Should Empower Individuals
+Tools should help people turn information into knowledge.
+Intelligence should be decentralized, not controlled.
+
+Key idea:
+
+Give people tools to filter and understand information themselves.
+14. Education Is Critical
+The future depends on teaching people how to use technology.
+Early exposure is essential.
+
+Key quote:
+
+“The kids can’t wait.”
+15. We Are Already in the Information Age
+Most people already work with information rather than physical goods.
+The shift is irreversible.
+
+Key quote:
+
+“We’re already in the information age.”
+16. Software Distribution Will Become Digital
+Physical distribution is inefficient.
+Software will be delivered electronically.
+
+Key quote:
+
+“We’ll send tones over the phone… directly from computer to computer.”
+17. Make Computers Easy to Use
+People don’t want to program—they want to use tools.
+Software should do most of the work.
+
+Key quotes:
+
+“People don’t want to program computers, people want to use computers.”
+“We’ll write 90% of the program—you fill in the last 10%.”
+18. Great People Drive Innovation
+A few exceptional individuals outperform many average ones.
+Talent density matters more than size.
+
+Key quote:
+
+“Great people can run circles around five pretty good people.”
+19. Build with Autonomy & Trust
+Hire smart people and let them decide what to do.
+Innovation comes from independence.
+
+Key quote:
+
+“We hire people to tell us what to do.”
+20. Small Teams, Big Impact
+Keep organizations lean and minimize bureaucracy.
+Too many layers kill innovation.
+
+Key quote:
+
+“We see no reason why we need over four layers of management.”
+21. Take Big Risks
+Breakthrough products require bold bets.
+Playing safe leads to mediocrity.
+
+Key quote:
+
+“We gambled the company on Lisa.”
+22. Build for Impact, Not Safety
+Don’t become conservative after success.
+Keep the startup mindset alive.
+
+Key idea:
+
+Avoid “cover-your-ass mode.”
+23. Technology + Liberal Arts
+The future of computing blends engineering with creativity and design.
+
+Key quote:
+
+“We’re… injecting some liberal arts into these computers.”
+Final Core Message
+Computers are not just machines—they are a transformative medium.
+The goal is to empower individuals, enhance creativity, and reshape society.
+Success comes from great people, bold vision, and deep care for design and purpose.
