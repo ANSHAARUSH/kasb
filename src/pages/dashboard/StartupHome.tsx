@@ -11,7 +11,7 @@ import { useDebounce } from "../../hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { type Startup } from "../../data/mockData"
-import { FileText, Filter } from "lucide-react"
+import { FileText, Filter, BarChart3 } from "lucide-react"
 import { InvestorDetail, type PanelSize, InvestorDetailModal } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 
@@ -244,6 +244,12 @@ export function StartupHome() {
                                         </span>
                                     )}
                                 </Button>
+                                <Link to="/dashboard/startup/analytics">
+                                    <Button variant="outline" className="gap-2 shadow-sm rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 h-10">
+                                        <BarChart3 className="h-4 w-4" />
+                                        <span className="text-sm">Analytics</span>
+                                    </Button>
+                                </Link>
                                 <Link to="/dashboard/startup/cheatsheet" className="md:hidden">
                                     <Button variant="outline" size="sm" className="h-10 rounded-xl gap-1.5 border-gray-200 text-gray-600 shadow-sm">
                                         <FileText className="h-4 w-4" />
