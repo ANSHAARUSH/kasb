@@ -11,7 +11,7 @@ import { useDebounce } from "../../hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { type Startup } from "../../data/mockData"
-import { FileText, Filter, BarChart3 } from "lucide-react"
+import { Filter, BarChart3, Lock } from "lucide-react"
 import { InvestorDetail, type PanelSize, InvestorDetailModal } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 
@@ -19,7 +19,6 @@ import { InvestorFilterPanel, type InvestorFilterState } from "../../components/
 import { parseRevenue } from "../../lib/utils"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { isProfileComplete } from "../../lib/questionnaire"
-import { Lock } from "lucide-react"
 
 export function StartupHome() {
     // ... hooks ...
