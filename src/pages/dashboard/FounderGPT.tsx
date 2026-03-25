@@ -541,21 +541,6 @@ export function FounderGPT() {
                         {/* Chat Input Bar */}
                         <div className="sticky bottom-0 bg-white pt-4 pb-2">
                             <div className="relative w-full max-w-2xl mx-auto">
-                                {/* Brutal mode toggle in chat */}
-                                <div className="flex justify-center mb-2">
-                                    <button
-                                        onClick={() => setBrutalMode(!brutalMode)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border",
-                                            brutalMode
-                                                ? "bg-red-500 text-white border-red-400 shadow-sm shadow-red-200/50"
-                                                : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100"
-                                        )}
-                                    >
-                                        <Flame className={cn("h-3 w-3", brutalMode && "animate-pulse")} />
-                                        Brutal {brutalMode ? "On" : "Off"}
-                                    </button>
-                                </div>
                                 <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-full p-1.5 shadow-lg group focus-within:border-black focus-within:ring-4 focus-within:ring-black/5 transition-all duration-300">
                                     <input 
                                         type="text"
@@ -579,6 +564,21 @@ export function FounderGPT() {
                                         ) : (
                                             <Send className="h-4 w-4" />
                                         )}
+                                    </button>
+                                </div>
+                                {/* Brutal mode toggle in chat */}
+                                <div className="flex justify-center mt-4">
+                                    <button
+                                        onClick={() => setBrutalMode(!brutalMode)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border",
+                                            brutalMode
+                                                ? "bg-red-500 text-white border-red-400 shadow-sm shadow-red-200/50"
+                                                : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100"
+                                        )}
+                                    >
+                                        <Flame className={cn("h-3 w-3", brutalMode && "animate-pulse")} />
+                                        Brutal {brutalMode ? "On" : "Off"}
                                     </button>
                                 </div>
                             </div>
