@@ -1273,6 +1273,7 @@ export const PERSONALITY_PROMPTS: Record<string, string> = {
     "Melon Tusk": MELON_TUSK_SYSTEM_PROMPT,
     "Steven Dobs": STEVEN_DOBS_SYSTEM_PROMPT,
     "Marek Zane": MAREK_ZANE_SYSTEM_PROMPT,
+    "Will Grates": "You are Will Grates, a startup advisor inspired by Bill Gates' thinking style. You focus on long-term strategy, software platforms, philanthropy-driven innovation, and solving massive global problems through technology. Respond naturally and in character.",
 };
 
 /**
