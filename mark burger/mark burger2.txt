@@ -1,0 +1,87 @@
+🗣️ Foundational Belief: Free Expression
+“You only start one of these companies if you believe in giving people a voice.”
+“The whole point of social media is giving people the ability to share what they want.”
+“Our original mission is to give people the power to share and make the world more open and connected.”
+⚖️ Shift Toward Censorship (and Regret)
+“It was really in the last 10 years that people started pushing for ideological-based censorship.”
+Two major turning points:
+2016 (Trump election + Brexit)
+2020 (COVID)
+“We faced massive institutional pressure to start censoring content on ideological grounds.”
+“Looking back, I gave too much deference to the media.”
+🧪 The ‘Slippery Slope’ of Fact-Checking
+“I was worried about becoming the decider of what is true in the world.”
+Initial goal:
+Only filter clear hoaxes
+Reality:
+“It just veered from there.”
+“People felt fact-checkers were biased… especially in what they chose to check.”
+“It’s a slippery slope… it destroyed a lot of trust.”
+🦠 COVID & Government Pressure
+“At the beginning, it made sense to defer to health authorities.”
+Over time:
+“It became very difficult to follow… everything was shifting.”
+On pressure from government:
+“They pushed us super hard to take down things that were true.”
+“We’re not going to take down things that are true. That’s ridiculous.”
+“They wanted us to take down humor and satire… we said no.”
+🏛️ Government vs Platforms
+“The First Amendment applies to the government, not companies.”
+“Government officials pressuring companies to censor true things is pretty bad.”
+“The U.S. government should be defending its companies, not attacking them.”
+“When the U.S. government attacks its tech companies, it’s open season globally.”
+🌍 Global Impact & Trust Collapse
+“There’s been a broad decrease in trust… not just in the U.S., but globally.”
+“People don’t trust mainstream institutions like they used to.”
+“Social media is increasingly how people get information.”
+🧑‍🤝‍🧑 Rise of New “Cultural Elites”
+“People don’t trust platforms—they trust creators.”
+“There’s going to be a whole new class of creators people look to.”
+“People want voices who give it to them straight.”
+🧮 Moderation at Scale = Trade-offs
+“3.2 billion people use one of our services every day.”
+Core problem:
+Precision vs Coverage
+“If you lower confidence thresholds, you catch more bad content… but remove more innocent content.”
+“At scale, even a small error rate means millions of mistakes.”
+“Removing someone’s account by mistake is a terrible experience.”
+⚙️ Policy Direction (New Approach)
+Shift toward:
+Higher precision (fewer wrongful removals)
+“We’d rather remove less bad content than mistakenly punish innocent users.”
+Replacing centralized fact-checking:
+“Community-driven systems are better.”
+“Show more context, not less content.”
+🤖 On Bots & Manipulation
+“Nation states create networks of fake accounts to manipulate perception.”
+Detection strategy:
+Behavioral patterns (not human-like activity)
+“This is an adversarial space… they evolve, we evolve.”
+🧩 What Content Is Truly Agreed Upon?
+
+Widely agreed as harmful:
+
+Terrorism
+Child exploitation
+Drug trafficking
+Foreign interference
+
+Politicized categories:
+
+“Misinformation”
+“Hate speech”
+“These exist on a spectrum… and can go too far.”
+🧠 Personal Evolution (His Own Words)
+“I started very pro free expression.”
+“Then we went through intense pressure over the last 10 years.”
+“Now I feel like I have a much clearer understanding of what the policy should be.”
+“This is going to be a more durable position going forward.”
+⚡ Meta-Philosophy (Condensed)
+Free speech is the default
+Centralized truth control is dangerous
+Scale makes perfection impossible
+Trust is shifting from institutions → individuals
+Moderation must balance harm vs freedom
+🔥 One-Line Summary
+
+“We tried to manage truth at scale, got pulled into a slippery slope, and now we’re resetting toward more free expression, higher precision, and trusting people more.”

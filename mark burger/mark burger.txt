@@ -1,0 +1,85 @@
+🕶️ The Future of Computing: AR Glasses
+“This is probably going to be the next major platform after phones.”
+AR glasses represent a shift toward more natural, social, and immersive computing.
+“The trend in computing is it gets more ubiquitous, more natural, and more social.”
+Full holographic AR could transform work, education, gaming, and communication.
+“It’s going to remake so many different fields.”
+🧩 Multiple Device Ecosystems (Not One Winner)
+Future hardware will exist in layers:
+Display-less AI glasses
+Heads-up display glasses
+Full holographic AR glasses
+Mixed reality headsets
+“All of those are going to be important long-term product lines.”
+Different devices will serve different price points and use cases.
+👥 Presence: The Core Goal of XR
+“The main value we’re trying to bring is this feeling of presence.”
+True innovation is making people feel physically together, not just connected.
+“The holy grail… is delivering a deep sense of social presence.”
+Presence is fragile:
+It’s not about one feature working
+It’s about nothing breaking the illusion
+🤖 Personalized AI as a Second Pillar
+“The other big track is personalized AI.”
+AI becomes powerful when it understands:
+Your life context
+Your environment in real time
+“Glasses are the ideal form factor… they can see what you see and hear what you hear.”
+Future = deeply personal, context-aware intelligence
+🧑‍🤝‍🧑 The Loneliness Problem (and Opportunity)
+“The average person would like to have 10 friends and they have two.”
+Digital tools are not replacing real connection, but filling unmet demand.
+“People already don’t have as much connection as they would like.”
+AR/AI could increase total connection, not reduce it.
+⚖️ AI and Human Growth (Struggle vs Ease)
+Some struggles should be removed (e.g. translation).
+Some struggles are essential (e.g. thinking, learning).
+“We’ll always find new things to struggle with.”
+AI shifts effort from execution → creativity and iteration.
+🧑‍💻 Learning in an AI World
+“There are some things you need to be able to do yourself.”
+Skills like coding:
+Not just practical
+But a way of thinking rigorously
+“Teaching someone how to code… makes you a better thinker.”
+🌐 Social Media + AI Evolution
+Shift already happening:
+From friends → creators/content
+AI will:
+Enhance content creation
+Auto-generate personalized content
+Enable AI versions of creators
+“AI is going to change almost every feature of every application.”
+😰 Fear of Change vs Opportunity
+“The pace of change is always a concerning thing.”
+AI will:
+Raise quality standards
+Increase competition
+Success mindset:
+“Maintain curiosity”
+Adapt instead of resisting
+🔓 Open Source vs Closed AI
+Two visions:
+One centralized AI system
+Many decentralized AIs
+“I think we’re going to have a lot of different AI systems.”
+On safety:
+“Open source software is often more secure because more people can scrutinize it.”
+Open ecosystems → innovation + resilience
+🚀 The Big Unknown: AI Scaling
+“We haven’t found the end yet.”
+Key question:
+Does AI keep improving with more data + compute?
+“It’s possible we hit a limit… but it’s also possible we keep scaling for a long time.”
+This decision drives hundreds of billions in investment
+🔥 Compressed Philosophy (Zuckerberg’s Lens)
+
+If you boil it down, his worldview is:
+
+Build technology that increases human presence
+Create AI that understands you personally
+Expand connection, not replace it
+Bet on long-term scaling of AI
+Favor open ecosystems over centralized control
+And above all:
+“People who do well are generally curious… and try to use technology to live better lives.”

@@ -90,6 +90,9 @@ export function FounderGPT() {
         if (selectedPersonality === "Steven Dobs") {
             return import.meta.env.VITE_STEVEN_DOBS_API_KEY;
         }
+        if (selectedPersonality === "Marek Zane") {
+            return import.meta.env.VITE_MAREK_ZANE_API_KEY;
+        }
         // Fallback to the default API key
         return import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     }
@@ -198,7 +201,7 @@ export function FounderGPT() {
     const personalities = [
         { id: "Melon Tusk", label: "Melon Tusk", icon: "🚀" },
         { id: "Steven Dobs", label: "Steven Dobs", icon: "" },
-        { id: "Personality 3", label: "TBD Personality 3", icon: "👤" },
+        { id: "Marek Zane", label: "Marek Zane", icon: "👤" },
         { id: "Personality 4", label: "TBD Personality 4", icon: "👤" },
         { id: "Personality 5", label: "TBD Personality 5", icon: "👤" },
     ]

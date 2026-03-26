@@ -1,0 +1,124 @@
+1. Start simple & build fast
+“I started writing the site and launched it at Harvard in February 2004.”
+“Within a couple of weeks, a few thousand people had signed up.”
+“We started getting emails from other colleges asking us to launch it.”
+
+👉 Key idea: Launch early → let demand guide expansion.
+
+2. Learn fast, don’t wait to be ready
+“If you have a good background in C, you can pick up PHP in a day or two.”
+“The internet is a pretty good tool… that’s how we learned most of it.”
+
+👉 Key idea: Speed of learning matters more than prior expertise.
+
+3. Work with smart people
+“The most important thing is to have smart people.”
+“We don’t hire people for specific skills—we hire for intelligence.”
+“The most performant people are younger people who learn quickly.”
+
+👉 Key idea: Raw intelligence + adaptability > fixed skillsets.
+
+4. Focus on building, not over-planning
+“We were making stuff instead of talking to lawyers early on.”
+“It’s more useful to make things happen and apologize later than to over-plan and not get stuff done.”
+
+👉 Key idea: Action beats perfection and bureaucracy.
+
+5. Core idea behind Facebook
+“I just wanted to make something where people can type in someone’s name and get information about them.”
+“Wanting to look people up is a core human desire.”
+
+👉 Key idea: Simple, fundamental human behavior drives great products.
+
+6. Scaling through smart architecture
+“The computation of connections grows exponentially—n squared, n cubed.”
+“We split databases by school to make it manageable.”
+“Instead of scaling over millions, we scaled over smaller groups.”
+
+👉 Key idea: Good architecture solves scale before it becomes a problem.
+
+7. Iterate instead of perfecting
+“It doesn’t have to be perfect the first time.”
+“As long as the architecture is right, you can fix implementation later.”
+
+👉 Key idea: Build → test → fix → repeat.
+
+8. Technology leverage is unprecedented
+“You can rent machines for $100 a month and scale to hundreds of thousands of users.”
+“Individuals are able to do way more than ever before.”
+
+👉 Key idea: Small teams can now build massive systems.
+
+9. Don’t fear big competitors
+“Instead of worrying about Google, you can just get a lot of stuff done.”
+
+👉 Key idea: Execution matters more than competition.
+
+10. Platform & growth thinking
+“We want to maximize long-term value, not short-term money.”
+“We’re always building infrastructure.”
+
+👉 Key idea: Think long-term; keep investing in the foundation.
+
+11. Privacy philosophy
+“Information should be available to the people you want it to be available to.”
+“We give people complete control over what they share.”
+
+👉 Key idea: User control builds trust and sustainability.
+
+12. Social solutions > technical solutions
+“People use real names, so they behave better.”
+“That solves problems that would otherwise need complex systems.”
+
+👉 Key idea: Design behavior, not just systems.
+
+13. Decision-making on technology
+“Trust the smart people.”
+“Build consensus among engineers.”
+
+👉 Key idea: Good teams outperform rigid processes.
+
+14. Product development mindset
+“We anticipate problems, evaluate options, and make decent decisions.”
+“It wasn’t upfront genius—just solving problems as they came.”
+
+👉 Key idea: Success = continuous problem-solving, not perfect foresight.
+
+15. Meritocracy in teams
+“People who build the best things get the most influence.”
+“We try to be as much of a meritocracy as possible.”
+
+👉 Key idea: Reward execution and impact.
+
+16. Learning philosophy
+“Take the hardest courses—you learn the most when challenged.”
+“Framework matters more than perfect optimization.”
+
+👉 Key idea: Deep thinking > surface efficiency.
+
+17. On company origins
+“Most successful companies start from someone trying to make something cool—not trying to build a company.”
+
+👉 Key idea: Great companies are byproducts of great ideas.
+
+18. On innovation & ideas
+“We have a unique platform—others can’t easily replicate what we build.”
+“A lot of ideas come from people just experimenting.”
+
+👉 Key idea: Innovation emerges from freedom and context.
+
+19. On simplicity in product design
+“Facebook is a directory—everyone’s page should be structured the same way.”
+“Consistency makes it easier to use.”
+
+👉 Key idea: Simplicity and standardization improve usability.
+
+20. Core philosophy of execution
+“At each point, we picked out problems quickly and made decisions.”
+“We had enough competence to evaluate options and execute.”
+
+👉 Key idea: Speed + judgment > perfect planning.
+
+🧠 One-Line Summary
+
+Build simple things fast, learn quickly, work with smart people, and scale through good architecture—while focusing on real human behavior and long-term value.

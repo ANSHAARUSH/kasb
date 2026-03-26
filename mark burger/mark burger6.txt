@@ -1,0 +1,113 @@
+1. Photorealistic avatars & presence
+“The goal… is delivering a sense of presence—as if you’re there together no matter where you are.”
+“It feels like you’re just sitting right in front of me… it’s pretty wild.”
+“Most communication isn’t the words—it’s expression.”
+“Perfection isn’t what leads to immersion—it’s the subtle flaws.”
+
+👉 Key idea: Realistic avatars + micro-expressions create true emotional presence, not just visual fidelity.
+
+2. Technology behind avatars
+“We scan faces across many expressions and build a model… then encode and transmit it efficiently.”
+“It’s more bandwidth-efficient than transmitting full video.”
+“The face is the highest-resolution channel for emotion.”
+
+👉 Key idea: AI-driven face models + encoding outperform traditional video.
+
+3. Big vision: the metaverse
+“The real world will be a combination of the physical and digital.”
+“We’re moving from screens to a coherent blended experience.”
+“This is the next frontier of social computing.”
+
+👉 Key idea: Not replacing reality—merging digital + physical into one “real world.”
+
+4. Future accessibility
+“You’ll be able to scan your face with a phone in 2–3 minutes.”
+“We’ll roll this out progressively—it won’t happen all at once.”
+
+👉 Key idea: Current tech is complex, but mass adoption = simple phone scanning.
+
+5. Use cases beyond video calls
+“The metaverse isn’t just video calls—it’s doing things together.”
+“Meetings, games, hangouts—physically participating together.”
+“You can have people physically present and others as holograms.”
+
+👉 Key idea: Interaction > communication.
+
+6. Mixed reality (MR) shift
+“Mixed reality is the next major capability.”
+“You can overlay digital objects onto the physical world.”
+“It feels safer and more natural than fully immersive VR.”
+
+👉 Key idea: MR = bridge between real world and digital immersion.
+
+7. Why faces matter most
+“If your eyebrow moves a millimeter, it changes expression.”
+“Moving your arm an inch matters far less than facial nuance.”
+
+👉 Key idea: Emotional fidelity is concentrated in the face.
+
+8. Customization & identity
+“People might want avatars that express emotions better than they physically can.”
+“Your avatar may not match your real-time appearance exactly.”
+
+👉 Key idea: Avatars become enhanced versions of self, not exact copies.
+
+9. AI + avatars
+“You’ll have AI that can be embodied as realistic avatars.”
+“You might have meetings with people and AI teammates.”
+“Creators could build AI versions of themselves to interact with fans.”
+
+👉 Key idea: AI becomes social, embodied, and interactive—not just text.
+
+10. AI strategy
+“We don’t want one super AI—we want many AIs for different purposes.”
+“You don’t program them—you train them.”
+“The challenge is making them reliable and predictable.”
+
+👉 Key idea: Decentralized AI ecosystem, personalized to users.
+
+11. Digital identity & philosophy
+“Are we the person or the avatar?”
+“People may identify with their best version of themselves.”
+“Reality is shifting toward subjective experience.”
+
+👉 Key idea: Identity becomes fluid between physical and digital selves.
+
+12. Social & ethical implications
+“We need to figure out what harm means in digital spaces.”
+“Some things harmful in real life aren’t harmful digitally—and vice versa.”
+“Anonymity changes behavior and incentives.”
+
+👉 Key idea: New rules needed for a new kind of world.
+
+13. Remote work & geography
+“You could live anywhere but still feel physically present at work.”
+“We’re not there yet—but this gets us closer.”
+
+👉 Key idea: Tech may eliminate location as a constraint.
+
+14. Emotional impact
+“This enables a level of intimacy that wasn’t possible remotely.”
+“It shortcuts the laws of physics while keeping the social benefits.”
+
+👉 Key idea: Emotional connection becomes location-independent.
+
+15. Long-term vision
+“Eventually you’ll wear glasses and see holograms everywhere.”
+“There may be as many digital objects as physical ones.”
+“Anything physical could become a hologram.”
+
+👉 Key idea: Digital layer becomes ubiquitous in everyday life.
+
+16. On open-source AI (LLaMA)
+“The benefits of open sourcing outweigh the risks.”
+“It’s infrastructure—not a consumer product.”
+“We’re building toward products used by hundreds of millions.”
+
+👉 Key idea: Open AI models fuel ecosystem growth.
+
+🧠 One-Line Summary
+
+Zuckerberg’s core thesis:
+
+The future is a blended physical + digital world where presence, identity, and interaction are redefined through photorealistic avatars, mixed reality, and embodied AI.
