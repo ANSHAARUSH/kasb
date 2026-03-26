@@ -361,14 +361,7 @@ export function FounderGPT() {
                                 </div>
                             </div>
 
-                            <div className="pt-6 border-t border-gray-100">
-                                <div className="p-4 rounded-2xl bg-indigo-50 border border-indigo-100">
-                                    <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Pro Tip</p>
-                                    <p className="text-xs text-indigo-900/70 leading-relaxed font-medium">
-                                        Ask me about your TAM, potential competitors, or pitch deck improvements.
-                                    </p>
-                                </div>
-                            </div>
+
                         </motion.aside>
                     </>
                 )}
