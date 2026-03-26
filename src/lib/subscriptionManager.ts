@@ -95,6 +95,7 @@ export const STARTUP_TIERS: TierConfig[] = [
             'Priority Email & Chat Support',
             'Early access to Beta features',
             'Personalized investment matching',
+            'Request to add a custom AI chatbot',
             'And more features coming soon...'
         ]
     }

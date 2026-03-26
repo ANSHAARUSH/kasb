@@ -36,6 +36,7 @@ const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m 
 const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 const StartupPublicProfile = lazyWithRetry(() => import("./pages/dashboard/startup/StartupPublicProfile").then(m => ({ default: m.StartupPublicProfile })))
 const FounderGPT = lazyWithRetry(() => import("./pages/dashboard/FounderGPT").then(m => ({ default: m.FounderGPT })))
+const CustomChatbotRequest = lazyWithRetry(() => import("./pages/dashboard/CustomChatbotRequest").then(m => ({ default: m.CustomChatbotRequest })))
 
 function CatchAll() {
   const { user, loading } = useAuth();
@@ -136,6 +137,7 @@ function App() {
                     <Route path="startup/:id" element={<StartupPublicProfile />} />
 
                     {/* Shared Routes - Keep for fallbacks or generic access */}
+                    <Route path="custom-chatbot" element={<CustomChatbotRequest />} />
                     <Route path="pricing" element={<DashboardPricing />} />
                     <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
                   </Route>

@@ -10,6 +10,7 @@ import { MessagingInsights } from "./admin/MessagingInsights"
 import { AdminSettings } from "./admin/AdminSettings"
 import { AdminModals } from "./admin/AdminModals"
 import { AdminReports } from "./admin/AdminReports"
+import { CustomAIChatbots } from "./admin/CustomAIChatbots"
 import { Button } from "../components/ui/button"
 import { Plus } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
@@ -538,6 +539,8 @@ export function AdminDashboard() {
                     {activeTab === 'moderation' && <ModerationQueue />}
 
                     {activeTab === 'reports' && <AdminReports />}
+                    
+                    {activeTab === 'custom_ai' && <CustomAIChatbots />}
 
                     {activeTab === 'messages' && <MessagingInsights />}
 

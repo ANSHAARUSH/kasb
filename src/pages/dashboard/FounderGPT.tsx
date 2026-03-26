@@ -6,6 +6,8 @@ import { Button } from "../../components/ui/button"
 import { chatWithPersonality } from "../../lib/ai"
 import { useAuth } from "../../context/AuthContext"
 import { getUserChatSessions, getChatMessages, createChatSession, saveChatMessage, deleteChatSession, type ChatSession } from "../../lib/aiHistory"
+import { useNavigate } from "react-router-dom"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
 const QUOTES = [
     { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
@@ -23,6 +25,7 @@ interface ChatMessage {
 }
 
 export function FounderGPT() {
+    const navigate = useNavigate()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isOpenPersonality, setIsOpenPersonality] = useState(false)
     const [query, setQuery] = useState("")
@@ -202,11 +205,11 @@ export function FounderGPT() {
     }
 
     const personalities = [
-        { id: "Melon Tusk", label: "Melon Tusk", icon: "🚀" },
-        { id: "Steven Dobs", label: "Steven Dobs", icon: "" },
-        { id: "Marek Zane", label: "Marek Zane", icon: "👤" },
-        { id: "Will Grates", label: "Will Grates", icon: "💻" },
-        { id: "Personality 5", label: "TBD Personality 5", icon: "👤" },
+        { id: "Melon Tusk", label: "Melon Tusk", icon: "🚀", bio: "For first principles, physics, and aggressive engineering" },
+        { id: "Steven Dobs", label: "Steven Dobs", icon: "", bio: "For product design, UX, and obsessive simplicity" },
+        { id: "Marek Zane", label: "Marek Zane", icon: "👤", bio: "For scaling, network effects, and distribution" },
+        { id: "Will Grates", label: "Will Grates", icon: "💻", bio: "For structural logic, platforms, and long-term impact" },
+        { id: "Custom Chatbot", label: "Request a Custom Chatbot", icon: "🪄", bio: "Fundraise Pro exclusive feature" },
     ]
 
     const hasMessages = messages.length > 0
@@ -262,24 +265,40 @@ export function FounderGPT() {
                                             initial={{ opacity: 0, y: -10, scale: 0.95 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-[1.5rem] shadow-2xl z-[60] overflow-hidden p-2"
+                                            className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-[1.5rem] shadow-2xl z-[60] overflow-y-auto overflow-x-hidden max-h-[300px] p-2"
                                         >
                                             {personalities.map(p => (
                                                 <button
                                                     key={p.id}
                                                     onClick={() => {
+                                                        if (p.id === "Custom Chatbot") {
+                                                            if (subscriptionManager.getTier() === "fundraise_pro") {
+                                                                navigate("/dashboard/custom-chatbot")
+                                                            } else {
+                                                                navigate("/dashboard/pricing")
+                                                            }
+                                                            return;
+                                                        }
                                                         setPersonality(p.id)
                                                         setIsOpenPersonality(false)
                                                     }}
                                                     className={cn(
-                                                        "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all",
+                                                        "w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl transition-all",
                                                         personality === p.id 
                                                             ? "bg-black text-white" 
                                                             : "text-gray-600 hover:bg-gray-50"
                                                     )}
                                                 >
-                                                    <span className="text-lg">{p.icon}</span>
-                                                    {p.label}
+                                                    <div className="flex items-center gap-3 font-bold text-sm">
+                                                        <span className="text-lg">{p.icon}</span>
+                                                        <span>{p.label}</span>
+                                                    </div>
+                                                    <span className={cn(
+                                                        "text-xs font-normal text-left line-clamp-1", 
+                                                        personality === p.id ? "text-gray-300" : "text-gray-400"
+                                                    )}>
+                                                        {p.bio}
+                                                    </span>
                                                 </button>
                                             ))}
                                         </motion.div>
