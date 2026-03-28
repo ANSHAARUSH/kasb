@@ -11,9 +11,10 @@ import { useDebounce } from "../../hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { type Startup } from "../../data/mockData"
-import { Filter, BarChart3, Lock } from "lucide-react"
+import { Filter, BarChart3, Lock, ChevronUp } from "lucide-react"
 import { InvestorDetail, type PanelSize, InvestorDetailModal } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { InvestorFilterPanel, type InvestorFilterState } from "../../components/dashboard/InvestorFilterPanel"
 import { parseRevenue } from "../../lib/utils"
@@ -48,6 +49,7 @@ export function StartupHome() {
     const loading = investorsLoading || savedLoading
 
     const [searchQuery, setSearchQuery] = useState("")
+    const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
     const { startup: profileStartup } = useStartupProfile() // Used for impact tracker
 
     // Panel State
@@ -57,6 +59,12 @@ export function StartupHome() {
     const detailInvestor = useMemo(() => 
         investors.find(i => i.id === selectedId) || null,
     [investors, selectedId])
+
+    useEffect(() => {
+        if (!detailInvestor) {
+            setIsSummaryExpanded(false)
+        }
+    }, [detailInvestor])
 
     // Track impact points for notifications
     const trackerEntity = useMemo(() => profileStartup ? ({
@@ -186,10 +194,10 @@ export function StartupHome() {
 
     // ... render ... 
     return (
-        <div className="h-[calc(100vh-100px)] flex flex-col lg:flex-row overflow-hidden">
+        <div className="h-[calc(100vh-100px)] md:h-[calc(100vh-61px)] flex flex-col lg:flex-row overflow-hidden md:-mt-6 md:-mb-6">
             {/* Middle Panel: Feed */}
             <div className={cn(
-                "flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out",
+                "relative flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out",
                 panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'
             )}>
                 {/* Filters Header (Minimized) */}
@@ -203,7 +211,7 @@ export function StartupHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-20 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-40 md:pb-32 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Incomplete Warning */}
                         {profileStartup && !isProfileComplete(profileStartup.stage, profileStartup.questionnaire) && (
@@ -298,14 +306,55 @@ export function StartupHome() {
                     </div>
                 </div>
 
-                {/* Fixed Bottom Search Bar */}
-                <div className={cn(
-                    "fixed bottom-24 left-0 right-0 z-40 px-4 md:left-64 lg:right-auto transition-all duration-300 pointer-events-none",
-                    panelSize === 'minimized'
-                        ? "lg:w-[calc(100%-256px)]"
-                        : "lg:w-[calc(100%-450px-256px)] xl:w-[calc(100%-500px-256px)]"
-                )}>
-                    <div className="max-w-md mx-auto pointer-events-auto">
+                {/* Expandable Bottom Search Bar */}
+                <motion.div 
+                    initial={false}
+                    animate={{ 
+                        height: isSummaryExpanded ? '100%' : 'auto',
+                        y: 0 
+                    }}
+                    transition={{ 
+                        type: "spring", 
+                        damping: 25,
+                        stiffness: 150,
+                        mass: 0.8
+                    }}
+                    className={cn(
+                        "absolute bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100 pb-14 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden",
+                        isSummaryExpanded 
+                            ? "w-[calc(100%-2rem)] md:w-full rounded-t-[1.5rem] pt-4 border-x border-t border-gray-400" 
+                            : "md:w-[600px] rounded-t-[2.5rem] pt-4 border border-gray-400 border-b-0",
+                        "transition-colors duration-300"
+                    )}
+                >
+                    <AnimatePresence>
+                        {detailInvestor && !isSummaryExpanded && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
+                                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                className="flex justify-center shrink-0"
+                            >
+                                <motion.button
+                                    onClick={() => setIsSummaryExpanded(true)}
+                                    drag="y"
+                                    dragConstraints={{ top: 0, bottom: 0 }}
+                                    dragElastic={0.2}
+                                    onDragEnd={(_, info) => {
+                                        if (info.offset.y < -15) setIsSummaryExpanded(true);
+                                    }}
+                                    className="p-1.5 rounded-full bg-white/60 hover:bg-white border text-gray-500 border-gray-200 hover:border-gray-300 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:-translate-y-0.5"
+                                    title="Show Summary"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    <ChevronUp className="h-4 w-4" />
+                                </motion.button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    <div className="max-w-md mx-auto w-full shrink-0 relative z-10">
                         <SearchInput
                             value={searchQuery}
                             onChange={setSearchQuery}
@@ -313,7 +362,58 @@ export function StartupHome() {
                             className="w-full !relative !bottom-0 !px-0 !pb-0"
                         />
                     </div>
-                </div>
+
+                    <AnimatePresence>
+                        {isSummaryExpanded && detailInvestor && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 20 }}
+                                transition={{ 
+                                    type: "spring",
+                                    damping: 20,
+                                    stiffness: 120,
+                                    delay: 0.1
+                                }}
+                                className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0"
+                            >
+                                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full flex justify-center py-2 z-10">
+                                    <motion.button
+                                        onClick={() => setIsSummaryExpanded(false)}
+                                        drag="y"
+                                        dragConstraints={{ top: 0, bottom: 0 }}
+                                        dragElastic={0.4}
+                                        onDragEnd={(_, info) => {
+                                            if (info.offset.y > 20) setIsSummaryExpanded(false);
+                                        }}
+                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full cursor-grab active:cursor-grabbing transition-colors"
+                                    />
+                                </div>
+                                <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
+                                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
+                                    {detailInvestor.name} Summary
+                                </h4>
+                                <div className="prose prose-sm font-medium text-gray-600 max-w-none">
+                                    <p className="leading-relaxed text-base">
+                                        {detailInvestor.bio || `${detailInvestor.name} is an active investor specializing in ${detailInvestor.expertise.slice(0, 3).join(", ")}.`}
+                                    </p>
+                                    <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                        <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Expertise & Focus</h5>
+                                        <p className="text-gray-500">{detailInvestor.expertise.join(" • ")}</p>
+                                    </div>
+                                    <div className="flex gap-2 mt-4">
+                                        <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
+                                            {detailInvestor.title}
+                                        </span>
+                                        <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
+                                            {detailInvestor.city || detailInvestor.state || 'Remote'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
             </div>
 
             {/* Right Panel: Investor Details (Desktop) */}

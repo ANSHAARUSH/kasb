@@ -17,7 +17,7 @@ export function SearchInput({ value, onChange, placeholder = "Search startups wi
                         <Sparkles className="h-4 w-4 text-purple-600 animate-pulse" />
                     </div>
                     <Input
-                        className="pl-10 h-12 rounded-2xl border-gray-200 shadow-sm focus:border-black focus:ring-1 focus:ring-black transition-all"
+                        className="pl-10 h-12 rounded-2xl bg-white border-0 shadow-lg focus:ring-2 focus:ring-indigo-500 transition-all text-black placeholder:text-gray-400"
                         placeholder={placeholder}
                         value={value}
                         onChange={(e) => onChange?.(e.target.value)}
