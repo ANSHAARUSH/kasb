@@ -450,8 +450,10 @@ export function KasbStudio() {
                                             <div className="space-y-3">
                                                 <div className="p-5 bg-[#0a0a0a] border border-gray-800 rounded-xl flex items-start gap-4 shadow-xl">
                                                     <ToolLogo toolName={parsed.tool || parsed.suggestedTool || "Tool"} />
-                                                    <div>
-                                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">Recommended Tech Stack</h3>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Recommended Tech Stack</h3>
+                                                        </div>
                                                         <p className="text-lg font-bold text-white mb-2">{parsed.tool || parsed.suggestedTool}</p>
                                                         {parsed.reasoning && (
                                                             <p className="text-sm text-gray-400 leading-relaxed border-l-2 border-indigo-500/30 pl-3">
@@ -460,6 +462,9 @@ export function KasbStudio() {
                                                         )}
                                                     </div>
                                                 </div>
+                                                <p className="px-5 text-[9px] text-gray-600 uppercase tracking-[0.2em] font-medium opacity-60">
+                                                    * Kasb.AI is independent and not sponsored by these tools.
+                                                </p>
                                             </div>
 
                                             {/* Generated Prompt/Architecture */}
