@@ -178,10 +178,11 @@ export function KasbStudio() {
     const handleSendMessage = async () => {
         if (!query.trim() || isLoading) return;
 
-        const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+        // Exclusively use Groq/Kasb keys for Studio architecture; remove Gemini fallback to avoid 404s
+        const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GROQ_API_KEY;
 
         if (!apiKey) {
-            setError("Missing AI API Key. Please add VITE_KASB_STUDIO_API_KEY to your environment variables in your hosting dashboard.");
+            setError("Missing Kasb Studio API Key. Please add VITE_KASB_STUDIO_API_KEY (Groq) to your hosting dashboard.");
             return;
         }
 
