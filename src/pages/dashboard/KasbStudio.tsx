@@ -351,12 +351,20 @@ export function KasbStudio() {
             </AnimatePresence>
 
             {/* Header - Auto Hiding Wrapper */}
-            <div className="sticky top-0 z-30 pointer-events-none">
+            <div className="sticky top-0 z-50 pointer-events-none w-full h-0">
+                {/* Invisible Top Sensor for Mouse Triggering (Fixes mid-chat visibility) */}
+                <div 
+                    className="fixed top-0 left-0 right-0 h-8 z-[60] pointer-events-auto cursor-ns-resize" 
+                    onMouseEnter={() => setIsHeaderVisible(true)}
+                    onMouseMove={() => setIsHeaderVisible(true)}
+                />
+
                 <motion.header 
                     initial={{ y: 0 }}
                     animate={{ y: isHeaderVisible || isSidebarOpen ? 0 : "-100%" }}
                     transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                     className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3 bg-black/80 backdrop-blur-md border-b border-gray-900 pointer-events-auto shadow-md"
+                    onMouseEnter={() => setIsHeaderVisible(true)}
                 >
                     <button 
                         onClick={() => setIsSidebarOpen(true)}
