@@ -96,7 +96,7 @@ export function KasbStudio() {
     const handleScroll = () => {
         if (!scrollContainerRef.current) return;
         const scrolled = scrollContainerRef.current.scrollTop;
-        setShowScrollTop(scrolled > 300);
+        setShowScrollTop(scrolled > 150);
     };
 
     const scrollToTop = () => {
@@ -277,7 +277,7 @@ export function KasbStudio() {
     };
 
     return (
-        <div className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4rem)] md:-mt-6 -mb-24 md:-mb-6 pb-24 md:pb-6 bg-[#141414] text-white overflow-hidden flex flex-col transition-all duration-500">
+        <div className="relative h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] md:-mt-6 bg-[#141414] text-white overflow-hidden flex flex-col transition-all duration-500">
             {/* Sidebar Drawer */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -541,7 +541,7 @@ export function KasbStudio() {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     onClick={scrollToTop}
-                                    className="fixed bottom-32 right-8 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white text-black shadow-2xl flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95 z-20 pointer-events-auto border border-white/50"
+                                    className="fixed bottom-32 right-8 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-indigo-600 text-white shadow-2xl flex items-center justify-center hover:bg-indigo-500 transition-all active:scale-95 z-[100] pointer-events-auto border border-white/20"
                                 >
                                     <ArrowUp className="h-5 w-5 sm:h-6 sm:w-6" />
                                 </motion.button>
