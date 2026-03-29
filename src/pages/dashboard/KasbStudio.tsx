@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Menu, History, X, Search, Send, Loader2, Wrench, Code, Copy, Check, Trash2 } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -82,20 +82,18 @@ export function KasbStudio() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<{ tool: string; prompt: string; reasoning?: string } | null>(null);
+    const [messages, setMessages] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
 
     const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
 
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const handleCopy = () => {
-        if (!result?.prompt) return;
-        navigator.clipboard.writeText(result.prompt);
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-    };
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, isLoading]);
 
     useEffect(() => {
         let timeout: NodeJS.Timeout;
@@ -137,9 +135,15 @@ export function KasbStudio() {
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
+    // Initial load logic: fetch sessions, and if none selected, auto-load the most recent one
     useEffect(() => {
         if (user) {
-            getUserChatSessions(user.id, "kasb_studio").then((data) => setSessions(data));
+            getUserChatSessions(user.id, "kasb_studio").then((data) => {
+                setSessions(data);
+                if (data.length > 0 && !currentSessionId) {
+                    loadSession(data[0].id);
+                }
+            });
         }
     }, [user]);
 
@@ -150,18 +154,7 @@ export function KasbStudio() {
         setError(null);
         try {
             const msgs = await getChatMessages(sessionId);
-            // find the last assistant message
-            const lastAssistantMsg = [...msgs].reverse().find(m => m.role === 'assistant');
-            if (lastAssistantMsg) {
-                const parsed = JSON.parse(lastAssistantMsg.content);
-                setResult({
-                    tool: parsed.tool || parsed.suggestedTool,
-                    prompt: parsed.prompt || parsed.generatedPrompt,
-                    reasoning: parsed.reasoning
-                });
-            } else {
-                setResult(null);
-            }
+            setMessages(msgs);
         } catch (e) {
             console.error("Failed to load session:", e);
         } finally {
@@ -176,7 +169,7 @@ export function KasbStudio() {
             setSessions(prev => prev.filter(s => s.id !== sessionId));
             if (currentSessionId === sessionId) {
                 setCurrentSessionId(null);
-                setResult(null);
+                setMessages([]);
                 setQuery("");
             }
         }
@@ -197,7 +190,16 @@ export function KasbStudio() {
             }
             
             // Pass previous Context if it exists so the AI can refine it
-            const prevContext = result ? { tool: result.tool, blueprint: result.prompt } : undefined;
+            const prevContext = messages.length > 0 ? (() => {
+                const lastAsst = [...messages].reverse().find(m => m.role === 'assistant');
+                if (lastAsst) {
+                    try {
+                        const parsed = JSON.parse(lastAsst.content);
+                        return { tool: parsed.tool || parsed.suggestedTool, blueprint: parsed.prompt || parsed.generatedPrompt };
+                    } catch(e) {}
+                }
+                return undefined;
+            })() : undefined;
             
             let sessionId = currentSessionId;
             if (!sessionId && user) {
@@ -210,24 +212,29 @@ export function KasbStudio() {
                 }
             }
 
+            const tempUserId = `user-${Date.now()}`;
+            setMessages(prev => [...prev, { id: tempUserId, role: 'user', content: userText, created_at: new Date().toISOString(), session_id: sessionId || '' }]);
+
             if (sessionId) {
                 await saveChatMessage(sessionId, 'user', userText);
             }
 
             const aiResponse = await askKasbStudio(userText, apiKey, prevContext);
             
-            // We consciously hide the raw complexity string as requested by the user
             const newResult = {
                 tool: aiResponse.suggestedTool,
                 prompt: aiResponse.generatedPrompt,
                 reasoning: aiResponse.reasoning
             };
 
+            const assistantMsg = { id: `ai-${Date.now()}`, role: 'assistant', content: JSON.stringify(newResult), created_at: new Date().toISOString(), session_id: sessionId || '' };
+            setMessages(prev => [...prev, assistantMsg]);
+
             if (sessionId) {
+                // Ensure db stays perfectly in sync with what was just rendered
                 await saveChatMessage(sessionId, 'assistant', JSON.stringify(newResult));
             }
 
-            setResult(newResult);
             // Clear input on successful generation
             setQuery("");
             
@@ -246,7 +253,7 @@ export function KasbStudio() {
     };
 
     const handleNewChat = () => {
-        setResult(null);
+        setMessages([]);
         setQuery("");
         setError(null);
         setCurrentSessionId(null);
@@ -363,7 +370,7 @@ export function KasbStudio() {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col px-6 max-w-4xl mx-auto w-full pb-8">
-                {!result && !isLoading && !error ? (
+                {!messages.length && !isLoading && !error ? (
                     // Initial State
                     <div className="flex-1 flex flex-col items-center justify-center">
                         <motion.div
@@ -415,81 +422,98 @@ export function KasbStudio() {
                         </motion.div>
                     </div>
                 ) : (
-                    // Loading or Results State
-                    <div className="flex-1 flex flex-col py-8 animate-in fade-in duration-700 max-w-3xl mx-auto w-full">
+                    // Chat View State
+                    <div className="flex-1 flex flex-col pt-8 animate-in fade-in duration-700 max-w-4xl mx-auto w-full relative">
                         {error && (
-                            <div className="p-4 bg-red-950/30 border border-red-900 rounded-lg text-red-400 text-sm mb-6 text-center">
-                                {error}
-                            </div>
+                             <div className="p-4 bg-red-950/30 border border-red-900 rounded-lg text-red-400 text-sm mb-6 text-center mx-6">
+                                 {error}
+                             </div>
                         )}
 
-                        {isLoading && !result && !error && (
-                            <div className="flex-1 flex flex-col items-center justify-center gap-6 mt-12">
-                                 <Loader2 className="h-10 w-10 text-indigo-500 animate-spin" />
-                                 <p className="text-gray-400 font-medium animate-pulse text-sm uppercase tracking-widest">
-                                     Analyzing Architecture...
-                                 </p>
-                            </div>
-                        )}
-
-                        {result && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="w-full max-w-3xl mx-auto space-y-8"
-                            >
-                                {/* Tool Suggestion Card */}
-                                <div className="space-y-3">
-                                    <div className="p-6 bg-[#141414] border border-gray-800 rounded-xl flex items-start gap-4 shadow-xl">
-                                        <ToolLogo toolName={result.tool} />
-                                        <div>
-                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Recommended Tech Stack</h3>
-                                            <p className="text-xl font-bold text-white mb-2">{result.tool}</p>
-                                            {result.reasoning && (
-                                                <p className="text-sm text-gray-400 leading-relaxed border-l-2 border-indigo-500/30 pl-3">
-                                                    {result.reasoning}
-                                                </p>
-                                            )}
+                        <div className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-40 scroll-smooth">
+                             {messages.map((msg) => {
+                                 if (msg.role === 'user') {
+                                     return (
+                                        <div key={msg.id} className="flex justify-end w-full">
+                                            <div className="bg-indigo-600 border border-indigo-500 text-white px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] font-medium shadow-md text-sm leading-relaxed">
+                                                {msg.content}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <p className="text-center text-[9px] text-gray-500 uppercase tracking-widest font-black opacity-80">
-                                        * Kasb.AI is completely independent and not sponsored by any of these tools.
-                                    </p>
-                                </div>
+                                     );
+                                 } else {
+                                     let parsed;
+                                     try { parsed = JSON.parse(msg.content); } catch(e) { parsed = { tool: "Error", prompt: msg.content }; }
+                                     
+                                     return (
+                                        <div key={msg.id} className="w-full max-w-3xl mx-auto space-y-6">
+                                            {/* Tool Suggestion Card */}
+                                            <div className="space-y-3">
+                                                <div className="p-5 bg-[#0a0a0a] border border-gray-800 rounded-xl flex items-start gap-4 shadow-xl">
+                                                    <ToolLogo toolName={parsed.tool || parsed.suggestedTool || "Tool"} />
+                                                    <div>
+                                                        <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1">Recommended Tech Stack</h3>
+                                                        <p className="text-lg font-bold text-white mb-2">{parsed.tool || parsed.suggestedTool}</p>
+                                                        {parsed.reasoning && (
+                                                            <p className="text-sm text-gray-400 leading-relaxed border-l-2 border-indigo-500/30 pl-3">
+                                                                {parsed.reasoning}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                {/* Generated Prompt/Architecture */}
-                                <div className="p-6 bg-[#111] border border-gray-800 rounded-xl shadow-xl">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <Code className="h-5 w-5 text-gray-400" />
-                                            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-300">Implementation Blueprint</h3>
+                                            {/* Generated Prompt/Architecture */}
+                                            <div className="p-5 bg-[#000000] border border-gray-800 rounded-xl shadow-xl">
+                                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-800/50">
+                                                    <div className="flex items-center gap-2">
+                                                        <Code className="h-4 w-4 text-indigo-500" />
+                                                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300">Implementation Blueprint</h3>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => {
+                                                            if (parsed.prompt || parsed.generatedPrompt) {
+                                                                navigator.clipboard.writeText(parsed.prompt || parsed.generatedPrompt);
+                                                                setIsCopied(true);
+                                                                setTimeout(() => setIsCopied(false), 2000);
+                                                            }
+                                                        }}
+                                                        className="px-2 py-1 hover:bg-white/5 border border-transparent hover:border-gray-700 rounded transition-all flex items-center gap-1.5 group"
+                                                    >
+                                                        {isCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3 text-gray-500 group-hover:text-white transition-colors" />}
+                                                        <span className="text-[9px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">
+                                                            {isCopied ? "Copied" : "Copy"}
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                                <div className="prose prose-invert max-w-none text-gray-300 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                                                    {parsed.prompt || parsed.generatedPrompt}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <button 
-                                            onClick={handleCopy}
-                                            className="px-3 py-1.5 hover:bg-gray-800 border border-transparent hover:border-gray-700 rounded-lg transition-all flex items-center gap-2 group"
-                                            title="Copy blueprint"
-                                        >
-                                            {isCopied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-gray-400 group-hover:text-white transition-colors" />}
-                                            <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">
-                                                {isCopied ? "Copied" : "Copy"}
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div className="prose prose-invert max-w-none text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
-                                        {result.prompt}
+                                     );
+                                 }
+                             })}
+
+                             {isLoading && (
+                                <div className="flex justify-start w-full max-w-3xl mx-auto">
+                                    <div className="flex items-center gap-3 bg-[#0a0a0a] border border-gray-800 px-5 py-3 rounded-2xl rounded-tl-sm">
+                                        <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
+                                        <span className="text-gray-400 text-[10px] font-bold tracking-widest uppercase">Processing Request...</span>
                                     </div>
                                 </div>
-                            </motion.div>
-                        )}
+                             )}
+                             
+                             <div ref={messagesEndRef} className="h-10 w-full" />
+                        </div>
 
                         {/* Follow Up Search Bar */}
-                        {(result || isLoading) && !error && (
-                            <div className="relative w-full max-w-3xl mx-auto mt-auto pt-10">
-                                <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 ml-1 flex items-center gap-2">
+                        <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-[#141414] via-[#141414] to-transparent pointer-events-none">
+                            <div className="relative w-full max-w-3xl mx-auto pointer-events-auto">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2 ml-1 flex items-center gap-1.5">
                                     <Sparkles className="h-3 w-3 text-indigo-400" />
                                     Refine Architecture
                                 </div>
-                                <div className="relative flex items-center bg-[#111] border border-gray-800 rounded-lg p-1.5 shadow-xl group focus-within:border-gray-500 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
+                                <div className="relative flex items-center bg-[#111] border border-gray-700 rounded-lg p-1.5 shadow-2xl group focus-within:border-gray-500 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
                                     <input 
                                         type="text"
                                         value={query}
@@ -497,21 +521,21 @@ export function KasbStudio() {
                                         onKeyDown={handleKeyDown}
                                         disabled={isLoading}
                                         placeholder="E.g., Make it include user authentication..."
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-gray-600 h-10 text-base outline-none pl-4"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-gray-600 h-10 text-sm sm:text-base outline-none pl-3"
                                     />
                                     <button 
                                         onClick={handleSendMessage}
                                         disabled={!query.trim() || isLoading}
                                         className={cn(
                                             "h-10 w-10 rounded-md flex items-center justify-center transition-all duration-300",
-                                            query.trim() && !isLoading ? "bg-white text-black hover:bg-gray-200" : "bg-gray-900 text-gray-700"
+                                            query.trim() && !isLoading ? "bg-white text-black hover:bg-gray-200" : "bg-gray-800 text-gray-600"
                                         )}
                                     >
-                                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-gray-400" /> : <Send className="h-4 w-4" />}
+                                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" /> : <Send className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
             </main>

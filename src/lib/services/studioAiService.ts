@@ -82,12 +82,12 @@ ${contextBlock}`;
       const jsonStr = cleanedText.substring(start, end + 1);
       const parsed: StudioAIResponse = JSON.parse(jsonStr);
       return parsed;
-    } catch (parseError) {
+    } catch (parseError: any) {
       console.error("Kasb Studio JSON Parse Error:", parseError, responseText);
       throw new Error("Kasb AI returned malformed data. Please try again.");
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error("Kasb Studio API Error:", err);
-    throw new Error("Failed to consult Kasb Studio. Ensure your API key is valid and you have internet access.");
+    throw new Error(err.message || "Failed to consult Kasb Studio. Ensure your API key is valid and you have internet access.");
   }
 }
