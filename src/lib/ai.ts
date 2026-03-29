@@ -87,13 +87,15 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
     // GEMINI PATH (Secondary Fallback)
     else if (type === 'gemini') {
         const genAI = client as GoogleGenerativeAI;
+        
+        // Filter out non-Gemini models from the options to avoid unnecessary 404s
+        const preferredModel = options.model && options.model.toLowerCase().includes('gemini') ? options.model : null;
+
         const fallbackModels = [
-            options.model,
-            options.vision ? "gemini-1.5-flash" : null,
-            "gemini-1.5-flash",
+            preferredModel,
+            options.vision ? "gemini-1.5-flash" : "gemini-1.5-flash",
             "gemini-1.5-pro",
-            "gemini-1.0-pro",
-            "gemini-pro"
+            "gemini-2.0-flash-exp", // Latest experimental but fast
         ].filter(Boolean) as string[];
 
         let lastError: any = null;
@@ -111,16 +113,25 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
                 }
 
                 const result = await model.generateContent(prompt);
-                return result.response.text();
+                const text = result.response.text();
+                if (!text) throw new Error("Empty response from Gemini");
+                return text;
             } catch (error: any) {
                 lastError = error;
-                const isNotFound = error.message?.includes('not found') || error.status === 404;
-                if (!isNotFound) break;
-                console.warn(`Gemini model ${modelName} not found, trying fallback...`);
+                const errMsg = error.message?.toLowerCase() || '';
+                const isNotFound = errMsg.includes('not found') || errMsg.includes('404') || errMsg.includes('not supported') || error.status === 404;
+                
+                if (isNotFound) {
+                    console.warn(`Gemini model ${modelName} not available or not found, trying fallback...`);
+                    continue;
+                }
+                
+                // If it's a safety block or billable issue, don't try others, just throw
+                break;
             }
         }
 
-        throw lastError || new Error("All Gemini model fallbacks failed.");
+        throw lastError || new Error("All Gemini model fallbacks failed. Your API key may be restricted or this region is unsupported.");
     }
 
     throw new Error("Unsupported AI client type");
