@@ -93,9 +93,10 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
 
         const fallbackModels = [
             preferredModel,
-            options.vision ? "gemini-1.5-flash" : "gemini-1.5-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
             "gemini-1.5-pro",
-            "gemini-2.0-flash-exp", // Latest experimental but fast
+            "gemini-1.5-pro-latest",
         ].filter(Boolean) as string[];
 
         let lastError: any = null;
@@ -119,19 +120,26 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
             } catch (error: any) {
                 lastError = error;
                 const errMsg = error.message?.toLowerCase() || '';
-                const isNotFound = errMsg.includes('not found') || errMsg.includes('404') || errMsg.includes('not supported') || error.status === 404;
+                
+                // Log detailed error for debugging
+                console.warn(`Gemini attempt failed for ${modelName}:`, errMsg);
+
+                const isNotFound = errMsg.includes('not found') || 
+                                 errMsg.includes('404') || 
+                                 errMsg.includes('not supported') || 
+                                 errMsg.includes('model is not available') ||
+                                 error.status === 404;
                 
                 if (isNotFound) {
-                    console.warn(`Gemini model ${modelName} not available or not found, trying fallback...`);
                     continue;
                 }
                 
-                // If it's a safety block or billable issue, don't try others, just throw
+                // If it's a structural error (invalid key, etc), don't keep trying others
                 break;
             }
         }
 
-        throw lastError || new Error("All Gemini model fallbacks failed. Your API key may be restricted or this region is unsupported.");
+        throw lastError || new Error("All Gemini model fallbacks failed. Your API key might be for Vertex AI instead of AI Studio, or this region is unsupported.");
     }
 
     throw new Error("Unsupported AI client type");
