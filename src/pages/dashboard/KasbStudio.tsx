@@ -178,16 +178,18 @@ export function KasbStudio() {
     const handleSendMessage = async () => {
         if (!query.trim() || isLoading) return;
 
+        const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+
+        if (!apiKey) {
+            setError("Missing AI API Key. Please add VITE_KASB_STUDIO_API_KEY to your environment variables in your hosting dashboard.");
+            return;
+        }
+
         const userText = query.trim();
         setIsLoading(true);
         setError(null);
 
-        const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-
         try {
-            if (!apiKey) {
-                throw new Error("Missing AI API Key. Please add VITE_KASB_STUDIO_API_KEY to your environment.");
-            }
             
             // Pass previous Context if it exists so the AI can refine it
             const prevContext = messages.length > 0 ? (() => {
@@ -239,6 +241,7 @@ export function KasbStudio() {
             setQuery("");
             
         } catch (err: any) {
+             console.error("Kasb Studio Error:", err);
              setError(err.message || "Something went wrong.");
         } finally {
             setIsLoading(false);
@@ -424,12 +427,6 @@ export function KasbStudio() {
                 ) : (
                     // Chat View State
                     <div className="flex-1 flex flex-col pt-8 animate-in fade-in duration-700 max-w-4xl mx-auto w-full relative">
-                        {error && (
-                             <div className="p-4 bg-red-950/30 border border-red-900 rounded-lg text-red-400 text-sm mb-6 text-center mx-6">
-                                 {error}
-                             </div>
-                        )}
-
                         <div className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-40 scroll-smooth">
                              {messages.map((msg) => {
                                  if (msg.role === 'user') {
@@ -511,13 +508,19 @@ export function KasbStudio() {
                              <div ref={messagesEndRef} className="h-10 w-full" />
                         </div>
 
-                        {/* Follow Up Search Bar */}
+                        {/* Follow Up Search Bar & Error Display */}
                         <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-[#141414] via-[#141414] to-transparent pointer-events-none">
-                            <div className="relative w-full max-w-3xl mx-auto pointer-events-auto">
-                                <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2 ml-1 flex items-center gap-1.5">
-                                    <Sparkles className="h-3 w-3 text-indigo-400" />
-                                    Refine Architecture
-                                </div>
+                            <div className="relative w-full max-w-3xl mx-auto pointer-events-auto flex flex-col gap-4">
+                                {error && (
+                                    <div className="p-3 bg-red-950/40 border border-red-900/50 rounded-lg text-red-400 text-xs text-center animate-in slide-in-from-bottom-2">
+                                        {error}
+                                    </div>
+                                )}
+                                <div>
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2 ml-1 flex items-center gap-1.5">
+                                        <Sparkles className="h-3 w-3 text-indigo-400" />
+                                        Refine Architecture
+                                    </div>
                                 <div className="relative flex items-center bg-[#111] border border-gray-700 rounded-lg p-1.5 shadow-2xl group focus-within:border-gray-500 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
                                     <input 
                                         type="text"
@@ -538,6 +541,7 @@ export function KasbStudio() {
                                     >
                                          {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" /> : <Send className="h-4 w-4" />}
                                     </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
