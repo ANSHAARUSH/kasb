@@ -89,7 +89,6 @@ export function KasbStudio() {
 
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
-    const [showScrollTop, setShowScrollTop] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
