@@ -104,16 +104,16 @@ export function KasbStudio() {
                 return;
             }
 
-            // Show if near top
-            if (e.clientY < 150) {
+            // Show if near top (Increase sensitivity to 200px for better UX)
+            if (e.clientY < 200) {
                 setIsHeaderVisible(true);
                 clearTimeout(timeout);
             } else {
-                // If it is currently visible and pointer moved away, queue it to hide
+                // If the pointer is anywhere else, wait 2 seconds before hiding
                 clearTimeout(timeout);
                 timeout = setTimeout(() => {
                     setIsHeaderVisible(false);
-                }, 1000);
+                }, 2000);
             }
         };
 
