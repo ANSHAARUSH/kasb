@@ -1,9 +1,8 @@
-import { Home, History, MessageSquare, Sparkles, User, LogOut, Mail, Shield, FileText } from "lucide-react"
+import { Home, History, MessageSquare, Sparkles, User, LogOut, Shield, FileText, Wrench } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { subscriptionManager } from "../../lib/subscriptionManager"
 
 export function SideNav() {
     const location = useLocation()
@@ -22,6 +21,7 @@ export function SideNav() {
         { icon: MessageSquare, label: "Messages", href: messagesRoute },
         ...(isStartupDashboard ? [
             { icon: Sparkles, label: "Founder GPT", href: '/dashboard/startup/foundergpt' },
+            { icon: Wrench, label: "Kasb Studio", href: '/dashboard/startup/studio' },
             { icon: FileText, label: "Cheat Sheet", href: '/dashboard/startup/cheatsheet' }
         ] : [
             { icon: Sparkles, label: "Kasb AI", href: '/dashboard/investor/cheatsheet' }
@@ -67,16 +67,6 @@ export function SideNav() {
             </nav>
 
             <div className="p-4 border-t border-gray-50 flex flex-col gap-1">
-                {subscriptionManager.hasPaidPlan() && (
-                    <a
-                        href="mailto:kasbai2025@gmail.com"
-                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-500 transition-colors hover:bg-gray-50 hover:text-black group"
-                    >
-                        <Mail className="h-5 w-5 text-gray-400 group-hover:text-black" />
-                        <span className="text-sm font-semibold">kasbai2025@gmail.com</span>
-                    </a>
-                )}
-
                 <button
                     onClick={() => signOut()}
                     className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 group"

@@ -36,6 +36,7 @@ const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m 
 const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 const StartupPublicProfile = lazyWithRetry(() => import("./pages/dashboard/startup/StartupPublicProfile").then(m => ({ default: m.StartupPublicProfile })))
 const FounderGPT = lazyWithRetry(() => import("./pages/dashboard/FounderGPT").then(m => ({ default: m.FounderGPT })))
+const KasbStudio = lazyWithRetry(() => import("./pages/dashboard/KasbStudio").then(m => ({ default: m.KasbStudio })))
 const CustomChatbotRequest = lazyWithRetry(() => import("./pages/dashboard/CustomChatbotRequest").then(m => ({ default: m.CustomChatbotRequest })))
 
 function CatchAll() {
@@ -134,6 +135,7 @@ function App() {
                     <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
                     <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
                     <Route path="startup/foundergpt" element={<FounderGPT />} />
+                    <Route path="startup/studio" element={<KasbStudio />} />
                     <Route path="startup/:id" element={<StartupPublicProfile />} />
 
                     {/* Shared Routes - Keep for fallbacks or generic access */}

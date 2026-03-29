@@ -3,6 +3,7 @@ import { SideNav } from "../components/layout/SideNav"
 import { NotificationBell } from "../components/layout/NotificationBell"
 import { UsageIcon } from "../components/layout/UsageIcon"
 import { ProfileCompletionIndicator } from "../components/layout/ProfileCompletionIndicator"
+import { ContactSupport } from "../components/layout/ContactSupport"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 // import { KYCVerification } from "../components/dashboard/KYCVerification"
@@ -84,6 +85,7 @@ export function DashboardLayout() {
                     <div className="flex-none flex items-center gap-2">
                         <ProfileCompletionIndicator />
                         <UsageIcon isMobile />
+                        <ContactSupport />
                         <NotificationBell />
                     </div>
                 </header>

@@ -20,12 +20,19 @@ export interface ChatMessage {
 /**
  * Fetch all chat sessions for a given user, ordered by most recently updated
  */
-export async function getUserChatSessions(userId: string): Promise<ChatSession[]> {
-    const { data, error } = await supabase
+export async function getUserChatSessions(userId: string, appContext: "founder_gpt" | "kasb_studio" = "founder_gpt"): Promise<ChatSession[]> {
+    let query = supabase
         .from('ai_chat_sessions')
         .select('*')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false });
+        .eq('user_id', userId);
+
+    if (appContext === "kasb_studio") {
+        query = query.eq('personality_id', 'Kasb Studio');
+    } else {
+        query = query.neq('personality_id', 'Kasb Studio');
+    }
+
+    const { data, error } = await query.order('updated_at', { ascending: false });
 
     if (error) {
         console.error("Error fetching chat sessions:", error);
