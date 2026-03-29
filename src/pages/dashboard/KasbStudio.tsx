@@ -93,11 +93,15 @@ export function KasbStudio() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const scrollToTop = () => {
+        // Try the internal scroll container first
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-        } else {
-            window.scrollTo({ top: 0, behavior: "smooth" });
         }
+        // Also scroll the window/page in case the dashboard layout is the scroller
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Also try scrolling the closest scrollable parent (dashboard main content)
+        const mainContent = document.querySelector('main');
+        if (mainContent) mainContent.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     useEffect(() => {
@@ -274,7 +278,7 @@ export function KasbStudio() {
     };
 
     return (
-        <div className="relative h-[calc(100vh-4rem)] md:h-[calc(100vh-6rem)] md:-mt-6 bg-[#141414] text-white overflow-hidden flex flex-col transition-all duration-500">
+        <div className="relative min-h-[calc(100vh-4rem)] md:-mt-6 -mb-24 md:-mb-6 pb-0 bg-[#141414] text-white overflow-hidden flex flex-col transition-all duration-500">
             {/* Sidebar Drawer */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -447,7 +451,7 @@ export function KasbStudio() {
                     <div className="flex-1 flex flex-col pt-8 animate-in fade-in duration-700 max-w-4xl mx-auto w-full relative">
                         <div 
                             ref={scrollContainerRef}
-                            className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-40 scroll-smooth"
+                            className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-28 scroll-smooth"
                         >
                              {messages.map((msg) => {
                                  if (msg.role === 'user') {
