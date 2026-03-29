@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Menu, History, X, Search, Send, Loader2, Wrench, Code, Copy, Check, Trash2 } from "lucide-react";
+import { Sparkles, Menu, History, X, Search, Send, Loader2, Wrench, Code, Copy, Check, Trash2, ArrowUp } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
@@ -89,7 +89,19 @@ export function KasbStudio() {
 
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isCopied, setIsCopied] = useState(false);
+    const [showScrollTop, setShowScrollTop] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = () => {
+        if (!scrollContainerRef.current) return;
+        const scrolled = scrollContainerRef.current.scrollTop;
+        setShowScrollTop(scrolled > 300);
+    };
+
+    const scrollToTop = () => {
+        scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -436,7 +448,11 @@ export function KasbStudio() {
                 ) : (
                     // Chat View State
                     <div className="flex-1 flex flex-col pt-8 animate-in fade-in duration-700 max-w-4xl mx-auto w-full relative">
-                        <div className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-40 scroll-smooth">
+                        <div 
+                            ref={scrollContainerRef}
+                            onScroll={handleScroll}
+                            className="flex-1 overflow-y-auto px-2 md:px-6 w-full space-y-12 pb-40 scroll-smooth"
+                        >
                              {messages.map((msg) => {
                                  if (msg.role === 'user') {
                                      return (
@@ -516,6 +532,21 @@ export function KasbStudio() {
                              
                              <div ref={messagesEndRef} className="h-10 w-full" />
                         </div>
+
+                        {/* Floating Scroll to Top Button */}
+                        <AnimatePresence>
+                            {showScrollTop && (
+                                <motion.button
+                                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    onClick={scrollToTop}
+                                    className="fixed bottom-32 right-8 h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-white text-black shadow-2xl flex items-center justify-center hover:bg-gray-200 transition-all active:scale-95 z-20 pointer-events-auto border border-white/50"
+                                >
+                                    <ArrowUp className="h-5 w-5 sm:h-6 sm:w-6" />
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
 
                         {/* Follow Up Search Bar & Error Display */}
                         <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-[#141414] via-[#141414] to-transparent pointer-events-none">
