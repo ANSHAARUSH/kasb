@@ -632,10 +632,16 @@ export function InvestorHome() {
                                 exit={{ opacity: 0, y: 20 }}
                                 className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0 overscroll-contain"
                             >
-                                <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full flex justify-center py-2 z-10">
-                                    <button
+                                <div className="absolute top-0 left-0 w-full flex justify-center py-4 z-10">
+                                    <motion.button
                                         onClick={() => setIsSummaryExpanded(false)}
-                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full transition-colors cursor-pointer"
+                                        drag="y"
+                                        dragConstraints={{ top: 0, bottom: 0 }}
+                                        dragElastic={0.4}
+                                        onDragEnd={(_, info) => {
+                                            if (info.offset.y > 40) setIsSummaryExpanded(false);
+                                        }}
+                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full cursor-grab active:cursor-grabbing transition-colors"
                                     />
                                 </div>
                                 <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
