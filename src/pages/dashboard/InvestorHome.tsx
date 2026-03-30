@@ -32,6 +32,7 @@ export function InvestorHome() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [detailStartup, setDetailStartup] = useState<Startup | null>(null)
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
+    const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
     const { startups, loading: startupsLoading } = useStartups()
     // const [savedStartupIds, setSavedStartupIds] = useState<string[]>([]) // Replaced by hook
     const { savedIds: savedStartupIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
@@ -440,12 +441,24 @@ export function InvestorHome() {
                                                             isSelected={selectedId === startup.id}
                                                             isSaved={savedStartupIds.includes(startup.id)}
                                                             onClick={() => {
-                                                                if (selectedId === startup.id) {
-                                                                    subscriptionManager.trackView(startup.id)
+                                                                const now = Date.now();
+                                                                const isMobile = window.innerWidth < 1024;
+                                                                
+                                                                if (isMobile) {
+                                                                    if (lastTap?.id === startup.id && (now - lastTap.time < 300)) {
+                                                                        // Double tap -> Open Modal
+                                                                        setDetailStartup(startup)
+                                                                        setLastTap(null)
+                                                                    } else {
+                                                                        // Single tap -> Highlight only
+                                                                        setSelectedId(startup.id)
+                                                                        setLastTap({ id: startup.id, time: now })
+                                                                    }
+                                                                } else {
+                                                                    // Desktop behavior
+                                                                    setSelectedId(startup.id)
                                                                     setDetailStartup(startup)
                                                                     if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
-                                                                } else {
-                                                                    setSelectedId(startup.id)
                                                                 }
                                                             }}
                                                             onToggleSave={() => handleToggleSave(startup.id, "Startup")}
@@ -489,12 +502,24 @@ export function InvestorHome() {
                                                 isSelected={selectedId === startup.id}
                                                 isSaved={savedStartupIds.includes(startup.id)}
                                                 onClick={() => {
-                                                    if (selectedId === startup.id) {
-                                                        subscriptionManager.trackView(startup.id)
+                                                    const now = Date.now();
+                                                    const isMobile = window.innerWidth < 1024;
+                                                    
+                                                    if (isMobile) {
+                                                        if (lastTap?.id === startup.id && (now - lastTap.time < 300)) {
+                                                            // Double tap -> Open Modal
+                                                            setDetailStartup(startup)
+                                                            setLastTap(null)
+                                                        } else {
+                                                            // Single tap -> Highlight only
+                                                            setSelectedId(startup.id)
+                                                            setLastTap({ id: startup.id, time: now })
+                                                        }
+                                                    } else {
+                                                        // Desktop behavior
+                                                        setSelectedId(startup.id)
                                                         setDetailStartup(startup)
                                                         if (window.innerWidth >= 1024 && panelSize === 'minimized') setPanelSize('default')
-                                                    } else {
-                                                        setSelectedId(startup.id)
                                                     }
                                                 }}
                                                 onToggleSave={() => handleToggleSave(startup.id, "Startup")}

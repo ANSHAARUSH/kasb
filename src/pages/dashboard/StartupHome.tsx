@@ -54,11 +54,9 @@ export function StartupHome() {
 
     // Panel State
     const [selectedId, setSelectedId] = useState<string | null>(null)
+    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
-
-    const detailInvestor = useMemo(() => 
-        investors.find(i => i.id === selectedId) || null,
-    [investors, selectedId])
+    const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
 
     useEffect(() => {
         if (!detailInvestor) {
@@ -284,17 +282,28 @@ export function StartupHome() {
                                             isSaved={savedInvestorIds.includes(investor.id)}
                                             onMessageClick={handleMessageClick}
                                             onToggleSave={() => handleToggleSave(investor.id, "Investor")}
-                                            onClick={() => setSelectedId(investor.id)}
-                                            showImpactPoints={false}
-                                            onDoubleClick={() => {
-                                                if (window.innerWidth >= 1024) {
-                                                    setSelectedId(investor.id)
-                                                    if (panelSize === 'minimized') setPanelSize('default')
+                                            onClick={() => {
+                                                const now = Date.now();
+                                                const isMobile = window.innerWidth < 1024;
+                                                
+                                                if (isMobile) {
+                                                    if (lastTap?.id === investor.id && (now - lastTap.time < 300)) {
+                                                        // Double tap -> Open Modal
+                                                        setDetailInvestor(investor)
+                                                        setLastTap(null)
+                                                    } else {
+                                                        // Single tap -> Highlight only
+                                                        setSelectedId(investor.id)
+                                                        setLastTap({ id: investor.id, time: now })
+                                                    }
                                                 } else {
-                                                    // Mobile: Open modal
+                                                    // Desktop behavior
                                                     setSelectedId(investor.id)
+                                                    setDetailInvestor(investor)
+                                                    if (panelSize === 'minimized') setPanelSize('default')
                                                 }
                                             }}
+                                            showImpactPoints={false}
                                         />
                                     </div>
                                 ))}
@@ -433,7 +442,7 @@ export function StartupHome() {
             <div className="lg:hidden">
                 <InvestorDetailModal
                     investor={detailInvestor}
-                    onClose={() => setSelectedId(null)}
+                    onClose={() => setDetailInvestor(null)}
                 />
             </div>
         </div>
