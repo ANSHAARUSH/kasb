@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
@@ -6,24 +6,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../..
 import { useNavigate } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { supabase } from "../../lib/supabase"
-import { ArrowLeft, Rocket, Briefcase, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Rocket, Briefcase, CheckCircle2, Upload, FileText, Loader2, PenLine, Sparkles } from "lucide-react"
 import { StartupFields } from "./signup/StartupFields"
 import { InvestorFields } from "./signup/InvestorFields"
 import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
-import { refineProblemStatement } from "../../lib/ai"
+import { refineProblemStatement, extractStartupDetailsFromPitchDeck } from "../../lib/ai"
 import { getGlobalConfig, getUserSetting } from "../../lib/supabase"
 import { LoadingScreen } from "../../components/ui/LoadingScreen"
+import { extractFullTextFromDocument } from "../../lib/documentExtraction"
 
 export function Onboarding() {
     const { user, loading: authLoading, refreshUser } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
 
-    const [step, setStep] = useState(1) // 1: Role, 2: Identity/Method, 3: Details
+    const [step, setStep] = useState(1) // 1: Role, 2: Method (startup only), 3: Identity, 4: Details
     const [role, setRole] = useState<'investor' | 'startup' | null>(null)
     const [loading, setLoading] = useState(false)
+
+    // Pitch Deck Auto-fill State
+    const [entryMethod, setEntryMethod] = useState<'pitchdeck' | 'manual' | null>(null)
+    const [isExtracting, setIsExtracting] = useState(false)
+    const [uploadedFileName, setUploadedFileName] = useState('')
+    const [extractionError, setExtractionError] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Shared Fields
     const [name, setName] = useState("")
@@ -57,13 +65,19 @@ export function Onboarding() {
     const isStepValid = () => {
         if (step === 1) return role !== null
         if (step === 2) {
+            // Step 2 is method selection for startups (always valid if a method is picked)
+            if (role === 'startup') return entryMethod !== null
+            // For investors, step 2 is skipped (they go straight to step 3)
+            return true
+        }
+        if (step === 3) {
             if (role === 'startup') {
                 return name.trim() !== '' && companyName.trim() !== '' && selectedIndustry !== ''
             } else {
                 return name.trim() !== '' && investorType !== '' && investmentRange.trim() !== ''
             }
         }
-        if (step === 3) {
+        if (step === 4) {
             if (!state.trim() || !city.trim()) return false
             if (role === 'startup') {
                 return stage !== '' && problemSolving.trim() !== ''
@@ -77,6 +91,53 @@ export function Onboarding() {
     const nextStep = () => {
         if (isStepValid()) setStep(prev => prev + 1)
         else toast("Please fill in all required fields", "error")
+    }
+
+    // Pitch Deck Upload Handler
+    const handlePitchDeckUpload = async (file: File) => {
+        setIsExtracting(true)
+        setExtractionError(null)
+        setUploadedFileName(file.name)
+
+        try {
+            // 1. Extract full text from the document
+            const extractedText = await extractFullTextFromDocument(file)
+
+            // 2. Use the universal system API key
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            if (!apiKey) {
+                throw new Error('System AI key is not configured. Please use manual entry.')
+            }
+
+            // 3. Send to AI for structured extraction
+            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+
+            // 4. Auto-populate form fields
+            if (details.companyName) setCompanyName(details.companyName)
+            if (details.industry && INDUSTRIES.includes(details.industry as any)) {
+                setSelectedIndustry(details.industry)
+            } else if (details.industry) {
+                setSelectedIndustry('Others')
+                setCustomIndustry(details.industry)
+            }
+            if (details.stage) setStage(details.stage)
+            if (details.teamSize) setTeamSize(details.teamSize)
+            if (details.problemSolving) setProblemSolving(details.problemSolving)
+            if (details.state) setState(details.state)
+            if (details.city) setCity(details.city)
+            if (details.founderName && !name) setName(details.founderName)
+
+            toast('Pitch deck analyzed! Review the pre-filled details below.', 'success')
+
+            // 5. Jump to the identity step (step 3) so user can review
+            setStep(3)
+        } catch (err: any) {
+            console.error('Pitch deck extraction failed:', err)
+            setExtractionError(err.message || 'Failed to extract details from your pitch deck.')
+            toast('Extraction failed. You can try again or enter details manually.', 'error')
+        } finally {
+            setIsExtracting(false)
+        }
     }
 
 
@@ -178,6 +239,30 @@ export function Onboarding() {
         }
     }
 
+    // Step title helpers
+    const getStepTitle = () => {
+        if (step === 1) return "Choose your journey"
+        if (step === 2 && role === 'startup') return "How would you like to start?"
+        if (step === 3) return `Identify as ${role}`
+        if (step === 4) return "Traction & Vision"
+        return ""
+    }
+
+    const getStepDescription = () => {
+        if (step === 1) return "Are you building something great or looking to support it?"
+        if (step === 2 && role === 'startup') return "Upload your pitch deck for instant auto-fill, or enter details manually"
+        if (step === 3) return "Basic details to get started"
+        if (step === 4) return "Final details to complete your profile"
+        return ""
+    }
+
+    // Total steps: 4 for startups, 3 for investors (investors skip method selection)
+    const totalSteps = role === 'startup' ? 4 : 3
+    const getDisplayStep = () => {
+        if (role === 'investor' && step >= 3) return step - 1  // Investors: 1, 3→2, 4→3
+        return step
+    }
+
     if (authLoading) return <LoadingScreen />
 
     return (
@@ -195,12 +280,12 @@ export function Onboarding() {
                 <Card className="border-0 shadow-2xl rounded-[3rem] bg-white overflow-hidden ring-1 ring-gray-100 relative transition-all duration-300 hover:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)]">
                     <CardHeader className="p-8 pb-4 text-center">
                         <div className="flex justify-center gap-2 mb-4">
-                            {[1, 2, 3].map((i) => (
+                            {Array.from({ length: totalSteps }, (_, i) => i + 1).map((i) => (
                                 <div
                                     key={i}
                                     className={cn(
                                         "h-1.5 w-12 rounded-full transition-all duration-500",
-                                        step === i ? "bg-black w-16" : "bg-gray-100"
+                                        getDisplayStep() === i ? "bg-black w-16" : getDisplayStep() > i ? "bg-gray-400" : "bg-gray-100"
                                     )}
                                 />
                             ))}
@@ -213,12 +298,10 @@ export function Onboarding() {
                                 exit={{ opacity: 0, x: -20 }}
                             >
                                 <CardTitle className="text-3xl font-extrabold tracking-tight">
-                                    {step === 1 ? "Choose your journey" : step === 2 ? `Identify as ${role}` : "Traction & Vision"}
+                                    {getStepTitle()}
                                 </CardTitle>
                                 <CardDescription className="text-gray-500 font-medium text-lg mt-1">
-                                    {step === 1
-                                        ? "Are you building something great or looking to support it?"
-                                        : step === 2 ? "Basic details to get started" : "Final details to complete your profile"}
+                                    {getStepDescription()}
                                 </CardDescription>
                             </motion.div>
                         </AnimatePresence>
@@ -237,7 +320,8 @@ export function Onboarding() {
                                     <button
                                         onClick={() => {
                                             setRole('startup')
-                                            setStep(2)
+                                            setEntryMethod(null)
+                                            setStep(2) // Go to method selection for startups
                                         }}
                                         className={cn(
                                             "group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 hover:-translate-y-2",
@@ -257,7 +341,8 @@ export function Onboarding() {
                                     <button
                                         onClick={() => {
                                             setRole('investor')
-                                            setStep(2)
+                                            setEntryMethod('manual')
+                                            setStep(3) // Investors skip method selection, go to step 3 directly
                                         }}
                                         className={cn(
                                             "group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 hover:-translate-y-2",
@@ -274,6 +359,148 @@ export function Onboarding() {
                                         </p>
                                     </button>
                                 </motion.div>
+                            ) : step === 2 && role === 'startup' ? (
+                                /* Step 2: Method Selection (Startup Only) */
+                                <motion.div
+                                    key="step2-method"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="space-y-6"
+                                >
+                                    {/* Hidden file input */}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept=".pdf,.pptx,.docx"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) handlePitchDeckUpload(file)
+                                        }}
+                                    />
+
+                                    {!isExtracting ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Option A: Upload Pitch Deck */}
+                                            <button
+                                                onClick={() => {
+                                                    setEntryMethod('pitchdeck')
+                                                    fileInputRef.current?.click()
+                                                }}
+                                                className={cn(
+                                                    "group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 hover:-translate-y-2",
+                                                    "border-gray-50 bg-gray-50/50 hover:bg-white hover:border-indigo-600 hover:shadow-[12px_12px_0px_0px_rgba(79,70,229,0.8)]",
+                                                    entryMethod === 'pitchdeck' && "border-indigo-600 shadow-[12px_12px_0px_0px_rgba(79,70,229,0.8)] bg-white"
+                                                )}
+                                            >
+                                                <div className="h-14 w-14 bg-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-6 transition-transform">
+                                                    <Upload className="h-7 w-7 text-white" />
+                                                </div>
+                                                <h3 className="text-xl font-bold mb-2">Upload Pitch Deck</h3>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                                                    Let AI read your pitch deck and auto-fill your profile instantly.
+                                                </p>
+                                                <div className="mt-4 flex items-center gap-2">
+                                                    <Sparkles className="h-3.5 w-3.5 text-indigo-500" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">AI-Powered</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-400 mt-2">Supports PDF, PPTX, DOCX</p>
+                                            </button>
+
+                                            {/* Option B: Manual Entry */}
+                                            <button
+                                                onClick={() => {
+                                                    setEntryMethod('manual')
+                                                    setStep(3)
+                                                }}
+                                                className={cn(
+                                                    "group p-8 rounded-[2.5rem] border-2 text-left transition-all duration-300 hover:-translate-y-2",
+                                                    "border-gray-50 bg-gray-50/50 hover:bg-white hover:border-black hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)]",
+                                                    entryMethod === 'manual' && "border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] bg-white"
+                                                )}
+                                            >
+                                                <div className="h-14 w-14 bg-black rounded-2xl flex items-center justify-center mb-6 group-hover:-rotate-6 transition-transform">
+                                                    <PenLine className="h-7 w-7 text-white" />
+                                                </div>
+                                                <h3 className="text-xl font-bold mb-2">Enter Manually</h3>
+                                                <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                                                    Fill in your startup details step by step.
+                                                </p>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        /* Extracting State */
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="flex flex-col items-center justify-center py-12 space-y-6"
+                                        >
+                                            <div className="h-20 w-20 bg-indigo-50 rounded-3xl flex items-center justify-center">
+                                                <Loader2 className="h-10 w-10 text-indigo-600 animate-spin" />
+                                            </div>
+                                            <div className="text-center space-y-2">
+                                                <h3 className="text-xl font-bold text-gray-900">Analyzing Your Pitch Deck</h3>
+                                                <p className="text-sm text-gray-500 font-medium max-w-sm">
+                                                    AI is reading <span className="font-bold text-indigo-600">{uploadedFileName}</span> and extracting your startup details...
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-2 w-2 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="h-2 w-2 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="h-2 w-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Extraction Error */}
+                                    {extractionError && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="p-4 bg-red-50 border border-red-200 rounded-2xl text-sm text-red-700 space-y-3"
+                                        >
+                                            <p className="font-medium">{extractionError}</p>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => {
+                                                        setExtractionError(null)
+                                                        fileInputRef.current?.click()
+                                                    }}
+                                                    className="text-xs font-bold text-red-600 hover:text-red-800 underline"
+                                                >
+                                                    Try Again
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setExtractionError(null)
+                                                        setEntryMethod('manual')
+                                                        setStep(3)
+                                                    }}
+                                                    className="text-xs font-bold text-gray-600 hover:text-gray-800 underline"
+                                                >
+                                                    Enter Manually Instead
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {/* Back button */}
+                                    <div className="flex items-center mt-8 pt-6 border-t border-gray-100">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => {
+                                                setStep(1)
+                                                setEntryMethod(null)
+                                                setExtractionError(null)
+                                            }}
+                                            className="px-6 h-12 rounded-xl font-bold text-gray-500 hover:text-black hover:bg-gray-100"
+                                        >
+                                            <ArrowLeft className="h-4 w-4 mr-2" />
+                                            Back
+                                        </Button>
+                                    </div>
+                                </motion.div>
                             ) : (
                                 <motion.div
                                     key="step-content"
@@ -283,8 +510,25 @@ export function Onboarding() {
                                     className="space-y-6"
                                 >
                                     <div className="space-y-4">
-                                        {step === 2 && (
+                                        {step === 3 && (
                                             <div className="space-y-4">
+                                                {/* Auto-fill success banner */}
+                                                {entryMethod === 'pitchdeck' && uploadedFileName && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: -10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3"
+                                                    >
+                                                        <div className="h-8 w-8 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                                                            <FileText className="h-4 w-4 text-emerald-600" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-bold text-emerald-800">Auto-filled from pitch deck</p>
+                                                            <p className="text-[11px] text-emerald-600 truncate">{uploadedFileName} — Review & edit below</p>
+                                                        </div>
+                                                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                                    </motion.div>
+                                                )}
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-gray-700">Display Name</label>
                                                     <Input
@@ -374,7 +618,7 @@ export function Onboarding() {
                                             </div>
                                         )}
 
-                                        {step === 3 && (
+                                        {step === 4 && (
                                             <div className="space-y-4">
                                                 {role === 'startup' ? (
                                                     <StartupFields
@@ -426,7 +670,12 @@ export function Onboarding() {
                                             <Button
                                                 variant="ghost"
                                                 onClick={() => {
-                                                    setStep(prev => prev - 1)
+                                                    // Investors skip step 2 (method selection), so go from 3→1
+                                                    if (role === 'investor' && step === 3) {
+                                                        setStep(1)
+                                                    } else {
+                                                        setStep(prev => prev - 1)
+                                                    }
                                                 }}
                                                 className="px-6 h-12 rounded-xl font-bold text-gray-500 hover:text-black hover:bg-gray-100"
                                             >
@@ -435,7 +684,7 @@ export function Onboarding() {
                                             </Button>
                                         )}
                                         <div className="flex-1" />
-                                        {step < 3 && (
+                                        {((role === 'startup' && step < 4) || (role === 'investor' && step < 4)) && step >= 3 && (
                                             <Button
                                                 onClick={nextStep}
                                                 disabled={!isStepValid()}
@@ -444,7 +693,7 @@ export function Onboarding() {
                                                 Next Step
                                             </Button>
                                         )}
-                                        {step === 3 && (
+                                        {step === 4 && (
                                             <Button
                                                 onClick={handleSubmit}
                                                 disabled={loading || !isStepValid()}

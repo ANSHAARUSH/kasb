@@ -794,6 +794,85 @@ export async function refineProblemStatement(rawProblem: string, apiKey: string,
     }
 }
 
+export interface PitchDeckExtraction {
+    companyName: string;
+    industry: string;
+    stage: string;
+    teamSize: string;
+    problemSolving: string;
+    state: string;
+    city: string;
+    founderName: string;
+}
+
+/**
+ * Extracts structured startup details from raw pitch deck text.
+ * Uses the universal system API key (VITE_GROQ_API_KEY).
+ * Returns a structured object matching the onboarding form fields.
+ */
+export async function extractStartupDetailsFromPitchDeck(
+    extractedText: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<PitchDeckExtraction> {
+    if (!apiKey) {
+        throw new Error("System API key is not configured. Please contact support.");
+    }
+
+    // Truncate to avoid token limits (pitch decks can be verbose)
+    const truncatedText = extractedText.length > 8000
+        ? extractedText.substring(0, 8000) + '\n...[truncated]'
+        : extractedText;
+
+    const prompt = `You are an expert startup analyst. Read the following raw extracted text from a pitch deck and identify the startup's key details.
+
+RAW PITCH DECK TEXT:
+"""
+${truncatedText}
+"""
+
+EXTRACTION TASK:
+From the text above, extract the following details. If a field cannot be determined from the text, return an empty string "" for that field. Do NOT guess or fabricate data — only extract what is explicitly present.
+
+VALID INDUSTRIES (pick the closest match):
+AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
+
+VALID STAGES (pick the closest match):
+Ideation, Pre-seed, Seed, Series A+
+
+OUTPUT FORMAT (return ONLY this JSON, no other text):
+{
+    "companyName": "The startup/company name",
+    "industry": "One of the valid industries listed above",
+    "stage": "One of the valid stages listed above",
+    "teamSize": "Number of team members as a string, e.g. '5'",
+    "problemSolving": "A concise 1-2 sentence description of the problem the startup solves",
+    "state": "Indian state where the startup is based, if mentioned",
+    "city": "City where the startup is based, if mentioned",
+    "founderName": "Name of the founder or CEO, if mentioned"
+}`;
+
+    try {
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        const result = extractJSON<PitchDeckExtraction>(text);
+
+        // Sanitize: ensure all fields are strings
+        return {
+            companyName: result.companyName || '',
+            industry: result.industry || '',
+            stage: result.stage || '',
+            teamSize: result.teamSize || '',
+            problemSolving: result.problemSolving || '',
+            state: result.state || '',
+            city: result.city || '',
+            founderName: result.founderName || '',
+        };
+    } catch (error: unknown) {
+        console.error("Pitch Deck Extraction Error:", error);
+        throw new Error(`Failed to extract details from pitch deck: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
 export async function generateInvestorSummary(
     answers: Record<string, Record<string, string>>,
     stage: string,

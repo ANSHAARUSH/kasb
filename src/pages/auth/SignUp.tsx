@@ -1,20 +1,21 @@
-import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
 import { Link, useNavigate } from "react-router-dom"
 import { cn } from "../../lib/utils"
 import { supabase } from "../../lib/supabase"
-import { Mail, ArrowRight, Eye, EyeOff } from "lucide-react"
+import { Mail, ArrowRight, Eye, EyeOff, Upload, PenLine, Loader2, FileText, CheckCircle2, Sparkles } from "lucide-react"
 import { StartupFields } from "./signup/StartupFields"
 import { InvestorFields } from "./signup/InvestorFields"
-import { refineProblemStatement } from "../../lib/ai"
+import { refineProblemStatement, extractStartupDetailsFromPitchDeck } from "../../lib/ai"
 import { getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import { INDUSTRIES, EXPERTISE_AREAS, APP_URL } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { SEO } from "../../components/common/SEO"
+import { extractFullTextFromDocument } from "../../lib/documentExtraction"
 
 export function SignUp() {
     const { toast } = useToast()
@@ -73,6 +74,51 @@ export function SignUp() {
     const [investorType, setInvestorType] = useState('')
     const [investmentRange, setInvestmentRange] = useState('')
     const [investorBio, setInvestorBio] = useState('')
+
+    // Pitch Deck Auto-fill State
+    const [entryMethod, setEntryMethod] = useState<'pitchdeck' | 'manual' | null>(null)
+    const [isExtracting, setIsExtracting] = useState(false)
+    const [uploadedFileName, setUploadedFileName] = useState('')
+    const [extractionError, setExtractionError] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    // Pitch Deck Upload Handler
+    const handlePitchDeckUpload = async (file: File) => {
+        setIsExtracting(true)
+        setExtractionError(null)
+        setUploadedFileName(file.name)
+
+        try {
+            const extractedText = await extractFullTextFromDocument(file)
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            if (!apiKey) throw new Error('System AI key is not configured. Please use manual entry.')
+
+            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+
+            if (details.companyName) setCompanyName(details.companyName)
+            if (details.industry && INDUSTRIES.includes(details.industry as any)) {
+                setSelectedIndustry(details.industry)
+            } else if (details.industry) {
+                setSelectedIndustry('Others')
+                setCustomIndustry(details.industry)
+            }
+            if (details.stage) setStage(details.stage)
+            if (details.teamSize) setTeamSize(details.teamSize)
+            if (details.problemSolving) setProblemSolving(details.problemSolving)
+            if (details.state) setState(details.state)
+            if (details.city) setCity(details.city)
+            if (details.founderName && !name) setName(details.founderName)
+
+            toast('Pitch deck analyzed! Review the pre-filled details below.', 'success')
+            setEntryMethod('pitchdeck')
+        } catch (err: any) {
+            console.error('Pitch deck extraction failed:', err)
+            setExtractionError(err.message || 'Failed to extract details from your pitch deck.')
+            toast('Extraction failed. You can try again or enter details manually.', 'error')
+        } finally {
+            setIsExtracting(false)
+        }
+    }
 
     const handleRefineProblem = async () => {
         if (!problemSolving.trim()) return
@@ -332,27 +378,151 @@ export function SignUp() {
 
                                 <div className="pt-4 border-t border-gray-50">
                                     {role === 'startup' ? (
-                                        <StartupFields
-                                            companyName={companyName}
-                                            setCompanyName={setCompanyName}
-                                            industries={INDUSTRIES}
-                                            selectedIndustry={selectedIndustry}
-                                            setSelectedIndustry={setSelectedIndustry}
-                                            customIndustry={customIndustry}
-                                            setCustomIndustry={setCustomIndustry}
-                                            problemSolving={problemSolving}
-                                            setProblemSolving={setProblemSolving}
-                                            isRefining={isRefining}
-                                            onRefine={handleRefineProblem}
-                                            state={state}
-                                            setState={setState}
-                                            city={city}
-                                            setCity={setCity}
-                                            stage={stage}
-                                            setStage={setStage}
-                                            teamSize={teamSize}
-                                            setTeamSize={setTeamSize}
-                                        />
+                                        <div className="space-y-6">
+                                            {/* Hidden file input */}
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept=".pdf,.pptx,.docx"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (file) handlePitchDeckUpload(file)
+                                                }}
+                                            />
+
+                                            {/* Method Selection: Upload vs Manual */}
+                                            {!entryMethod && !isExtracting && (
+                                                <AnimatePresence>
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            className="group p-5 rounded-2xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-indigo-500 hover:shadow-lg text-left transition-all duration-300"
+                                                        >
+                                                            <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:rotate-6 transition-transform">
+                                                                <Upload className="h-5 w-5 text-white" />
+                                                            </div>
+                                                            <h3 className="text-sm font-bold mb-1">Upload Pitch Deck</h3>
+                                                            <p className="text-xs text-gray-500 leading-relaxed">
+                                                                Auto-fill with AI from your deck
+                                                            </p>
+                                                            <div className="mt-2 flex items-center gap-1.5">
+                                                                <Sparkles className="h-3 w-3 text-indigo-500" />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500">AI-Powered</span>
+                                                            </div>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setEntryMethod('manual')}
+                                                            className="group p-5 rounded-2xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-black hover:shadow-lg text-left transition-all duration-300"
+                                                        >
+                                                            <div className="h-10 w-10 bg-black rounded-xl flex items-center justify-center mb-3 group-hover:-rotate-6 transition-transform">
+                                                                <PenLine className="h-5 w-5 text-white" />
+                                                            </div>
+                                                            <h3 className="text-sm font-bold mb-1">Enter Manually</h3>
+                                                            <p className="text-xs text-gray-500 leading-relaxed">
+                                                                Fill in your startup details step by step
+                                                            </p>
+                                                        </button>
+                                                    </motion.div>
+                                                </AnimatePresence>
+                                            )}
+
+                                            {/* Extracting Loading State */}
+                                            {isExtracting && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="flex flex-col items-center justify-center py-8 space-y-4"
+                                                >
+                                                    <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                                                        <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+                                                    </div>
+                                                    <div className="text-center space-y-1">
+                                                        <h3 className="text-base font-bold text-gray-900">Analyzing Your Pitch Deck</h3>
+                                                        <p className="text-xs text-gray-500 font-medium">
+                                                            Reading <span className="font-bold text-indigo-600">{uploadedFileName}</span>...
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-1.5 w-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                        <div className="h-1.5 w-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                        <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                    </div>
+                                                </motion.div>
+                                            )}
+
+                                            {/* Extraction Error */}
+                                            {extractionError && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 space-y-2"
+                                                >
+                                                    <p className="font-medium text-xs">{extractionError}</p>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setExtractionError(null); fileInputRef.current?.click() }}
+                                                            className="text-xs font-bold text-red-600 hover:text-red-800 underline"
+                                                        >Try Again</button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setExtractionError(null); setEntryMethod('manual') }}
+                                                            className="text-xs font-bold text-gray-600 hover:text-gray-800 underline"
+                                                        >Enter Manually</button>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+
+                                            {/* Auto-fill Success Banner */}
+                                            {entryMethod === 'pitchdeck' && uploadedFileName && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3"
+                                                >
+                                                    <div className="h-7 w-7 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                                                        <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[11px] font-bold text-emerald-800">Auto-filled from pitch deck</p>
+                                                        <p className="text-[10px] text-emerald-600 truncate">{uploadedFileName} — Review & edit below</p>
+                                                    </div>
+                                                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                                </motion.div>
+                                            )}
+
+                                            {/* Show startup fields once a method is chosen (or after extraction) */}
+                                            {(entryMethod === 'manual' || entryMethod === 'pitchdeck') && (
+                                                <StartupFields
+                                                    companyName={companyName}
+                                                    setCompanyName={setCompanyName}
+                                                    industries={INDUSTRIES}
+                                                    selectedIndustry={selectedIndustry}
+                                                    setSelectedIndustry={setSelectedIndustry}
+                                                    customIndustry={customIndustry}
+                                                    setCustomIndustry={setCustomIndustry}
+                                                    problemSolving={problemSolving}
+                                                    setProblemSolving={setProblemSolving}
+                                                    isRefining={isRefining}
+                                                    onRefine={handleRefineProblem}
+                                                    state={state}
+                                                    setState={setState}
+                                                    city={city}
+                                                    setCity={setCity}
+                                                    stage={stage}
+                                                    setStage={setStage}
+                                                    teamSize={teamSize}
+                                                    setTeamSize={setTeamSize}
+                                                />
+                                            )}
+                                        </div>
                                     ) : (
                                         <InvestorFields
                                             expertiseAreas={EXPERTISE_AREAS}

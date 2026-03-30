@@ -130,6 +130,102 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
 }
 
 /**
+ * Extracts full text content from a document file (PDF, PPTX, DOCX).
+ * Unlike extractDocumentContent, this always prioritizes text extraction
+ * across ALL pages — ideal for pitch deck auto-fill where we need the
+ * complete textual content, not a visual snapshot.
+ */
+export async function extractFullTextFromDocument(file: File): Promise<string> {
+    const fileType = file.name.split('.').pop()?.toLowerCase();
+    const mimeType = file.type;
+
+    // 1. PDF — Force full text extraction across all pages
+    if (mimeType === 'application/pdf' || fileType === 'pdf') {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
+            const pdf = await loadingTask.promise;
+            let fullText = '';
+
+            // Extract up to 30 pages (pitch decks are usually 10-20 slides)
+            for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 30); pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                const pageText = (textContent.items as any[])
+                    .map((item) => item.str)
+                    .join(' ');
+                fullText += `--- Page ${pageNum} ---\n${pageText}\n\n`;
+            }
+
+            if (fullText.trim().length > 50) {
+                console.log(`[PitchDeck] PDF full-text: ${fullText.length} chars from ${pdf.numPages} pages`);
+                return fullText;
+            }
+            throw new Error('PDF text extraction returned insufficient content');
+        } catch (err) {
+            console.error('[PitchDeck] PDF text extraction failed:', err);
+            throw new Error(`Could not extract text from PDF: ${file.name}`);
+        }
+    }
+
+    // 2. PPTX — Extract text from all slides
+    if (fileType === 'pptx') {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            let pptxText = '';
+
+            const slideFiles = Object.keys(zip.files)
+                .filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'))
+                .sort((a, b) => {
+                    const numA = parseInt(a.replace(/[^\d]/g, ''));
+                    const numB = parseInt(b.replace(/[^\d]/g, ''));
+                    return numA - numB;
+                });
+
+            for (const slidePath of slideFiles) {
+                const xmlText = await zip.files[slidePath].async('text');
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                const textNodes = xmlDoc.getElementsByTagName('a:t');
+                let slideText = '';
+                for (let i = 0; i < textNodes.length; i++) {
+                    slideText += textNodes[i].textContent + ' ';
+                }
+                pptxText += `--- Slide ${slidePath.replace(/[^\d]/g, '')} ---\n${slideText}\n\n`;
+            }
+
+            if (pptxText.trim().length > 50) {
+                console.log(`[PitchDeck] PPTX full-text: ${pptxText.length} chars from ${slideFiles.length} slides`);
+                return pptxText;
+            }
+            throw new Error('PPTX text extraction returned insufficient content');
+        } catch (err) {
+            console.error('[PitchDeck] PPTX text extraction failed:', err);
+            throw new Error(`Could not extract text from PPTX: ${file.name}`);
+        }
+    }
+
+    // 3. DOCX — Extract raw text
+    if (fileType === 'docx') {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            if (result.value.trim().length > 50) {
+                console.log(`[PitchDeck] DOCX full-text: ${result.value.length} chars`);
+                return result.value;
+            }
+            throw new Error('DOCX text extraction returned insufficient content');
+        } catch (err) {
+            console.error('[PitchDeck] DOCX text extraction failed:', err);
+            throw new Error(`Could not extract text from DOCX: ${file.name}`);
+        }
+    }
+
+    throw new Error(`Unsupported file type: ${fileType}. Please upload a PDF, PPTX, or DOCX file.`);
+}
+
+/**
  * Converts a single page of a PDF to an image File (fallback for scanned PDFs).
  */
 async function convertPdfPageToImage(pdfFile: File, pageNum: number = 1): Promise<File> {

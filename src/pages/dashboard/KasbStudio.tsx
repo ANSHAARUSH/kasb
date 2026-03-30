@@ -93,15 +93,30 @@ export function KasbStudio() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const scrollToTop = () => {
-        // Try the internal scroll container first
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+        // Collect all potential scrollable area candidates
+        const elements = [
+            document.documentElement,
+            document.body,
+            document.getElementById('root'),
+            document.querySelector('.min-w-0\\.md\\:pl-64'),
+            document.querySelector('main'),
+            scrollContainerRef.current
+        ].filter(Boolean) as Element[];
+
+        // Find the one container that is actually scrolled down the most
+        const scrolledElement = elements.reduce((maxEl, el) => {
+            return el && el.scrollTop > (maxEl ? maxEl.scrollTop : 0) ? el : maxEl;
+        }, elements[0]);
+
+        if (scrolledElement && scrolledElement.scrollTop > 0) {
+            scrolledElement.scrollTo({ top: 0, behavior: "smooth" });
+        } else if (window.scrollY > 0) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+            // Absolute fallback instantly
+            window.scrollTo(0, 0);
+            if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
         }
-        // Also scroll the window/page in case the dashboard layout is the scroller
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        // Also try scrolling the closest scrollable parent (dashboard main content)
-        const mainContent = document.querySelector('main');
-        if (mainContent) mainContent.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     useEffect(() => {
