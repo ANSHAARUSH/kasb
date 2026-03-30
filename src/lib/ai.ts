@@ -854,19 +854,34 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
 
     try {
         const text = await runInference(apiKey, prompt, { baseUrl });
-        const result = extractJSON<PitchDeckExtraction>(text);
+        console.log('[PitchDeck AI] Raw response:', text);
+        
+        let result: PitchDeckExtraction;
+        try {
+            result = extractJSON<PitchDeckExtraction>(text);
+        } catch (jsonErr) {
+            console.error('[PitchDeck AI] JSON extraction failed, trying manual parse:', jsonErr);
+            // Try parsing the whole text as JSON directly
+            const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+            result = JSON.parse(cleaned);
+        }
+        
+        console.log('[PitchDeck AI] Parsed result:', result);
 
         // Sanitize: ensure all fields are strings
-        return {
-            companyName: result.companyName || '',
-            industry: result.industry || '',
-            stage: result.stage || '',
-            teamSize: result.teamSize || '',
-            problemSolving: result.problemSolving || '',
-            state: result.state || '',
-            city: result.city || '',
-            founderName: result.founderName || '',
+        const sanitized = {
+            companyName: String(result.companyName || ''),
+            industry: String(result.industry || ''),
+            stage: String(result.stage || ''),
+            teamSize: String(result.teamSize || ''),
+            problemSolving: String(result.problemSolving || ''),
+            state: String(result.state || ''),
+            city: String(result.city || ''),
+            founderName: String(result.founderName || ''),
         };
+        
+        console.log('[PitchDeck AI] Sanitized output:', sanitized);
+        return sanitized;
     } catch (error: unknown) {
         console.error("Pitch Deck Extraction Error:", error);
         throw new Error(`Failed to extract details from pitch deck: ${error instanceof Error ? error.message : 'Unknown error'}`);

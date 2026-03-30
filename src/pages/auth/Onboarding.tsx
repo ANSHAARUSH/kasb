@@ -111,6 +111,7 @@ export function Onboarding() {
 
             // 3. Send to AI for structured extraction
             const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+            console.log('[Onboarding] Extracted details:', details)
 
             // 4. Auto-populate form fields
             if (details.companyName) setCompanyName(details.companyName)
@@ -126,6 +127,8 @@ export function Onboarding() {
             if (details.state) setState(details.state)
             if (details.city) setCity(details.city)
             if (details.founderName && !name) setName(details.founderName)
+
+            console.log('[Onboarding] Fields populated, moving to step 3')
 
             toast('Pitch deck analyzed! Review the pre-filled details below.', 'success')
 
