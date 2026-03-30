@@ -6,6 +6,8 @@ import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher";
+import { StudioToolLogo } from "../../components/studio/StudioToolLogo";
 
 const PLACEHOLDERS = [
     "Build an MVP for my new SaaS idea...",
@@ -18,68 +20,9 @@ const PLACEHOLDERS = [
     "Script a 60-second explainer video..."
 ];
 
-const TOOL_DOMAINS: Record<string, string> = {
-    "lovable": "lovable.dev",
-    "base44": "base44.com",
-    "replit": "replit.com",
-    "bolt": "bolt.new",
-    "gamma": "gamma.app",
-    "canva": "canva.com",
-    "anthropic": "anthropic.com",
-    "copy.ai": "copy.ai",
-    "jasper": "jasper.ai",
-    "google": "google.com",
-    "chatgpt": "openai.com",
-    "vercel": "vercel.com",
-    "v0": "vercel.com",
-    "vercel v0": "vercel.com",
-    "figma": "figma.com",
-    "perplexity": "perplexity.ai",
-    "perplexity ai": "perplexity.ai",
-    "synthesia": "synthesia.io",
-    "runway": "runwayml.com",
-    "notion": "notion.so",
-    "apollo.io": "apollo.io",
-    "hubspot": "hubspot.com"
-};
+// Tool naming and lookup moved to StudioToolLogo.tsx
 
-function ToolLogo({ toolName }: { toolName: string }) {
-    const [failed, setFailed] = useState(false);
-    useEffect(() => { setFailed(false); }, [toolName]);
-
-    const raw = toolName.toLowerCase();
-    let domain = null;
-    let fallbackAlt = "Tool";
-
-    for (const [key, d] of Object.entries(TOOL_DOMAINS)) {
-        if (raw.includes(key)) {
-            domain = d;
-            fallbackAlt = key;
-            break;
-        }
-    }
-    
-    if (!domain || failed) {
-        return (
-            <div className="h-12 w-12 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-                <Wrench className="h-6 w-6 text-indigo-400" />
-            </div>
-        );
-    }
-    
-    return (
-        <div className="h-12 w-12 rounded-lg bg-white border border-gray-800 flex items-center justify-center shrink-0 overflow-hidden p-1.5 shadow-lg">
-            <img 
-                src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
-                alt={fallbackAlt}
-                className="w-full h-full object-contain"
-                onError={() => setFailed(true)}
-            />
-        </div>
-    );
-}
-
-export function KasbStudio() {
+export default function KasbStudio() {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [query, setQuery] = useState("");
@@ -332,23 +275,8 @@ export function KasbStudio() {
                             </button>
 
                             <div className="flex-1 overflow-y-auto space-y-6">
-                                {/* Mobile View Switcher */}
-                                <div className="md:hidden px-2 mb-2">
-                                    <div className="flex p-1 bg-gray-900 rounded-2xl border border-gray-800">
-                                        <button 
-                                            onClick={() => navigate('/dashboard/startup/foundergpt')}
-                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all text-gray-500 hover:text-gray-300"
-                                        >
-                                            Founder GPT
-                                        </button>
-                                        <button 
-                                            onClick={() => navigate('/dashboard/startup/studio')}
-                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all bg-white/10 text-white shadow-sm"
-                                        >
-                                            Kasb Studio
-                                        </button>
-                                    </div>
-                                </div>
+                                {/* Unified Mobile View Switcher */}
+                                <MobileViewSwitcher currentView="studio" />
 
                                 <div>
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4 px-2 flex items-center gap-2">
@@ -560,7 +488,7 @@ export function KasbStudio() {
                                             {/* Tool Suggestion Card */}
                                             <div className="space-y-3">
                                                 <div className="p-5 bg-[#0a0a0a] border border-gray-800 rounded-xl flex items-start gap-4 shadow-xl">
-                                                    <ToolLogo toolName={parsed.tool || parsed.suggestedTool || "Tool"} />
+                                                    <StudioToolLogo toolName={parsed.tool || parsed.suggestedTool || "Tool"} />
                                                     <div className="flex-1">
                                                         <div className="flex items-center justify-between mb-1">
                                                             <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Recommended Tech Stack</h3>

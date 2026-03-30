@@ -35,8 +35,8 @@ const EmailConfirmed = lazyWithRetry(() => import("./pages/auth/EmailConfirmed")
 const Onboarding = lazyWithRetry(() => import("./pages/auth/Onboarding").then(m => ({ default: m.Onboarding })))
 const AuthCallback = lazyWithRetry(() => import("./pages/auth/AuthCallback").then(m => ({ default: m.AuthCallback })))
 const StartupPublicProfile = lazyWithRetry(() => import("./pages/dashboard/startup/StartupPublicProfile").then(m => ({ default: m.StartupPublicProfile })))
-const FounderGPT = lazyWithRetry(() => import("./pages/dashboard/FounderGPT").then(m => ({ default: m.FounderGPT })))
-const KasbStudio = lazyWithRetry(() => import("./pages/dashboard/KasbStudio").then(m => ({ default: m.KasbStudio })))
+const FounderGPT = lazyWithRetry(() => import("./pages/dashboard/FounderGPT"))
+const KasbStudio = lazyWithRetry(() => import("./pages/dashboard/KasbStudio"))
 const CustomChatbotRequest = lazyWithRetry(() => import("./pages/dashboard/CustomChatbotRequest").then(m => ({ default: m.CustomChatbotRequest })))
 
 function CatchAll() {
