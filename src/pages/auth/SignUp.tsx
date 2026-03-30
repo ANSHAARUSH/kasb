@@ -16,6 +16,7 @@ import { INDUSTRIES, EXPERTISE_AREAS, APP_URL } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { SEO } from "../../components/common/SEO"
 import { extractFullTextFromDocument } from "../../lib/documentExtraction"
+import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
 
 export function SignUp() {
     const { toast } = useToast()
@@ -108,7 +109,42 @@ export function SignUp() {
             if (details.problemSolving) setProblemSolving(details.problemSolving)
             if (details.state) setState(details.state)
             if (details.city) setCity(details.city)
-            if (details.founderName && !name) setName(details.founderName)
+                        if (details.founderName && !name) setName(details.founderName)
+
+            // Populate extended fields into questionnaire
+            const mappedQ: Record<string, Record<string, string>> = {}
+            IDEATION_CONFIG.forEach(sec => {
+                mappedQ[sec.id] = {}
+            })
+            
+            // Map AI extracted fields to questionnaire format
+            if (mappedQ.core_problem_solution) {
+                mappedQ.core_problem_solution.problem_statement = details.problemSolving || ''
+                mappedQ.core_problem_solution.solution_overview = details.solutionOverview || ''
+            }
+            if (mappedQ.market_customers) {
+                mappedQ.market_customers.target_customer = details.targetCustomer || ''
+                mappedQ.market_customers.market_size = details.marketSize || ''
+                mappedQ.market_customers.why_now = details.whyNow || ''
+            }
+            if (mappedQ.traction_gtm) {
+                mappedQ.traction_gtm.traction_revenue = details.tractionRevenue || ''
+                mappedQ.traction_gtm.gtm_plan = details.gtmPlan || ''
+            }
+            if (mappedQ.competition_business) {
+                mappedQ.competition_business.competitive_advantage = details.competitiveAdvantage || ''
+                mappedQ.competition_business.business_model = details.businessModel || ''
+            }
+            if (mappedQ.team) {
+                mappedQ.team.founder_details = details.whyYou ? (details.founderName + "\nWhy You: " + details.whyYou) : details.founderName || ''
+                mappedQ.team.why_you = details.whyYou || ''
+            }
+            if (mappedQ.funding_milestones) {
+                mappedQ.funding_milestones.funding_amount = details.fundingAsk || ''
+                mappedQ.funding_milestones.fund_allocation = details.useOfFunds || ''
+                mappedQ.funding_milestones.milestones_12m = details.milestones || ''
+            }
+            setQuestionnaire(mappedQ)
 
             toast('Pitch deck analyzed! Review the pre-filled details below.', 'success')
             setEntryMethod('pitchdeck')
