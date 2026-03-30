@@ -5,6 +5,7 @@ import { cn } from "../../lib/utils";
 import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
 import { useAuth } from "../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const PLACEHOLDERS = [
     "Build an MVP for my new SaaS idea...",
@@ -79,6 +80,7 @@ function ToolLogo({ toolName }: { toolName: string }) {
 }
 
 export function KasbStudio() {
+    const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -330,6 +332,24 @@ export function KasbStudio() {
                             </button>
 
                             <div className="flex-1 overflow-y-auto space-y-6">
+                                {/* Mobile View Switcher */}
+                                <div className="md:hidden px-2 mb-2">
+                                    <div className="flex p-1 bg-gray-900 rounded-2xl border border-gray-800">
+                                        <button 
+                                            onClick={() => navigate('/dashboard/foundergpt')}
+                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all text-gray-500 hover:text-gray-300"
+                                        >
+                                            Founder GPT
+                                        </button>
+                                        <button 
+                                            onClick={() => navigate('/dashboard/kasbstudio')}
+                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all bg-white/10 text-white shadow-sm"
+                                        >
+                                            Kasb Studio
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-4 px-2 flex items-center gap-2">
                                         <History className="h-3 w-3" />

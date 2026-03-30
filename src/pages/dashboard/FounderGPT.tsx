@@ -315,6 +315,24 @@ export function FounderGPT() {
                             </Button>
 
                             <div className="flex-1 overflow-y-auto space-y-6">
+                                {/* Mobile View Switcher */}
+                                <div className="md:hidden px-2 mb-2">
+                                    <div className="flex p-1 bg-gray-100 rounded-2xl border border-gray-200">
+                                        <button 
+                                            onClick={() => navigate('/dashboard/foundergpt')}
+                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all bg-white text-black shadow-sm"
+                                        >
+                                            Founder GPT
+                                        </button>
+                                        <button 
+                                            onClick={() => navigate('/dashboard/kasbstudio')}
+                                            className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600"
+                                        >
+                                            Kasb Studio
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div>
                                     <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 px-2 flex items-center gap-2">
                                         <History className="h-3 w-3" />
