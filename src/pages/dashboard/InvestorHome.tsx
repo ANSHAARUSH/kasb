@@ -547,6 +547,7 @@ export function InvestorHome() {
                 initial={false}
                 animate={{ 
                     height: isSummaryExpanded ? '100dvh' : 'auto',
+                    bottom: isSummaryExpanded ? 0 : 84,
                 }}
                 transition={{ 
                     type: "spring", 
@@ -555,7 +556,7 @@ export function InvestorHome() {
                     mass: 0.8
                 }}
                 className={cn(
-                    "fixed md:absolute bottom-[84px] md:bottom-0 left-0 right-0 px-4 md:px-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto",
+                    "fixed md:absolute left-0 right-0 px-4 md:px-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto",
                     isSummaryExpanded 
                         ? "h-[100dvh] pt-0" 
                         : "md:w-[600px] h-auto"
@@ -629,7 +630,7 @@ export function InvestorHome() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 20 }}
-                                className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0"
+                                className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0 overscroll-contain"
                             >
                                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full flex justify-center py-2 z-10">
                                     <button
