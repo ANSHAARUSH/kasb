@@ -194,7 +194,7 @@ export function StartupHome() {
 
     // ... render ... 
     return (
-        <div className="h-[calc(100vh-100px)] md:h-[calc(100vh-61px)] flex flex-col lg:flex-row overflow-hidden md:-mt-6 md:-mb-6">
+        <div className="h-[calc(100dvh-100px)] md:h-[calc(100vh-61px)] flex flex-col lg:flex-row overflow-hidden md:-mt-6 md:-mb-6">
             {/* Middle Panel: Feed */}
             <div className={cn(
                 "relative flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out",
@@ -320,7 +320,7 @@ export function StartupHome() {
                         mass: 0.8
                     }}
                     className={cn(
-                        "absolute bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100 pb-14 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden",
+                        "absolute bottom-20 md:bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100 pb-4 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden",
                         isSummaryExpanded 
                             ? "w-[calc(100%-2rem)] md:w-full rounded-t-[1.5rem] pt-4 border-x border-t border-gray-400" 
                             : "md:w-[600px] rounded-t-[2.5rem] pt-4 border border-gray-400 border-b-0",
