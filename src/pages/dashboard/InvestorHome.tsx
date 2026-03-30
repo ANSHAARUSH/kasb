@@ -650,7 +650,7 @@ export function InvestorHome() {
                                         <p className="italic text-gray-500">"{selectedStartup.problemSolving}"</p>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-4">
-                                        {detailStartup.tags.map(tag => (
+                                        {selectedStartup.tags.map(tag => (
                                             <span key={tag} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
                                                 {tag}
                                             </span>

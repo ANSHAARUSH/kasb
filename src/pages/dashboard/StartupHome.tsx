@@ -410,10 +410,10 @@ export function StartupHome() {
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-4">
                                         <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
-                                            {detailInvestor.title}
+                                            {selectedInvestor.title}
                                         </span>
                                         <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
-                                            {detailInvestor.city || detailInvestor.state || 'Remote'}
+                                            {selectedInvestor.city || selectedInvestor.state || 'Remote'}
                                         </span>
                                     </div>
                                 </div>
