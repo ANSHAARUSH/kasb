@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Menu, History, X, Search, Send, Loader2, Wrench, Code, Copy, Check, Trash2, ArrowUp } from "lucide-react";
+import { Sparkles, Menu, History, X, Search, Send, Loader2, Wrench, Code, Copy, Check, Trash2, ArrowUp, ChevronDown } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
@@ -88,6 +88,7 @@ export function KasbStudio() {
     const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
 
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+    const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -163,14 +164,11 @@ export function KasbStudio() {
     const [sessions, setSessions] = useState<ChatSession[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
-    // Initial load logic: fetch sessions, and if none selected, auto-load the most recent one
+    // Initial load logic: fetch sessions
     useEffect(() => {
         if (user) {
             getUserChatSessions(user.id, "kasb_studio").then((data) => {
                 setSessions(data);
-                if (data.length > 0 && !currentSessionId) {
-                    loadSession(data[0].id);
-                }
             });
         }
     }, [user]);
@@ -387,25 +385,81 @@ export function KasbStudio() {
                     onMouseMove={() => setIsHeaderVisible(true)}
                 />
 
-                <motion.header 
+                <motion.div 
                     initial={{ y: 0 }}
-                    animate={{ y: isHeaderVisible || isSidebarOpen ? 0 : "-100%" }}
+                    animate={{ y: isHeaderVisible || isSidebarOpen || isToolsOpen ? 0 : "-100%" }}
                     transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3 bg-black/80 backdrop-blur-md border-b border-gray-900 pointer-events-auto shadow-md"
+                    className="absolute top-0 left-0 right-0 z-50 pointer-events-auto"
                     onMouseEnter={() => setIsHeaderVisible(true)}
                 >
-                    <button 
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 transition-all active:scale-90"
-                    >
-                        <Menu className="h-4 w-4 text-gray-400" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                        <Sparkles className="h-3 w-3 text-indigo-400" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Studio Beta</span>
+                    <header className="flex flex-col relative bg-black/80 backdrop-blur-md border-b border-gray-900 shadow-md">
+                        <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3 z-10 relative">
+                            <button 
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 transition-all active:scale-90"
+                            >
+                                <Menu className="h-4 w-4 text-gray-400" />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="h-3 w-3 text-indigo-400" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Studio Beta</span>
+                            </div>
+                            <div className="w-8" /> {/* Spacer */}
+                        </div>
+
+                        <AnimatePresence>
+                            {isToolsOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden border-t border-gray-900 bg-[#0a0a0a] relative z-0"
+                                >
+                                    <div className="p-4 sm:p-6 max-h-[60vh] overflow-y-auto w-full">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 max-w-6xl mx-auto">
+                                            {Object.entries(TOOL_DOMAINS).map(([name, domain]) => (
+                                                <a 
+                                                    key={name}
+                                                    href={`https://${domain}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex flex-col items-center gap-3 p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group"
+                                                >
+                                                    <div className="h-12 w-12 rounded-xl bg-white flex items-center justify-center overflow-hidden p-1.5 shadow-lg group-hover:scale-110 transition-transform">
+                                                        <img 
+                                                            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=128`}
+                                                            alt={name}
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    </div>
+                                                    <div className="text-center">
+                                                        <p className="text-xs font-bold text-gray-200 capitalize">{name}</p>
+                                                        <p className="text-[9px] text-gray-500 font-mono mt-1">{domain}</p>
+                                                    </div>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </header>
+
+                    {/* Pull-down tab */}
+                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-max pointer-events-auto">
+                        <button 
+                            onClick={() => setIsToolsOpen(!isToolsOpen)}
+                            className="h-6 px-6 bg-black/80 backdrop-blur-md border border-t-0 border-gray-900 rounded-b-xl flex items-center justify-center text-gray-500 hover:text-white transition-colors cursor-pointer group shadow-md"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400 group-hover:text-white transition-colors">
+                                    {isToolsOpen ? 'Close AI Tools' : 'Supported AI Tools'}
+                                </span>
+                                <ChevronDown className={cn("h-4 w-4 transition-transform duration-300", isToolsOpen && "rotate-180")} />
+                            </div>
+                        </button>
                     </div>
-                    <div className="w-8" /> {/* Spacer */}
-                </motion.header>
+                </motion.div>
             </div>
 
             {/* Main Content */}
