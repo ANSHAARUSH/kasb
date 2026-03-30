@@ -526,7 +526,7 @@ export function InvestorHome() {
                         mass: 0.8
                     }}
                     className={cn(
-                        "absolute bottom-20 md:bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100 pb-4 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden",
+                        "fixed md:absolute bottom-[88px] md:bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100/95 backdrop-blur-md pb-4 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden border border-gray-400 rounded-t-[2.5rem]",
                         isSummaryExpanded 
                             ? "w-[calc(100%-2rem)] md:w-full rounded-t-[1.5rem] pt-4 border-x border-t border-gray-400" 
                             : "md:w-[600px] rounded-t-[2.5rem] pt-4 border border-gray-400 border-b-0",
