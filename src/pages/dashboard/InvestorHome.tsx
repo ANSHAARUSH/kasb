@@ -511,26 +511,33 @@ export function InvestorHome() {
                         <div className="h-20" />
                     </div>
                 </div>
+            </div>
 
-                {/* Expandable Bottom Search & Filter Bar */}
-                <motion.div 
-                    initial={false}
-                    animate={{ 
-                        height: isSummaryExpanded ? '100%' : 'auto',
-                        y: 0 
-                    }}
-                    transition={{ 
-                        type: "spring", 
-                        damping: 25,
-                        stiffness: 150,
-                        mass: 0.8
-                    }}
+            {/* Expandable Bottom Search & Filter Bar - MOVED TO COMPONENT ROOT */}
+            <motion.div 
+                initial={false}
+                animate={{ 
+                    height: isSummaryExpanded ? '100dvh' : 'auto',
+                }}
+                transition={{ 
+                    type: "spring", 
+                    damping: 25,
+                    stiffness: 150,
+                    mass: 0.8
+                }}
+                className={cn(
+                    "fixed md:absolute bottom-[84px] md:bottom-0 left-0 right-0 px-4 md:px-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto",
+                    isSummaryExpanded 
+                        ? "h-[100dvh] pt-0" 
+                        : "md:w-[600px] h-auto"
+                )}
+            >
+                <motion.div
                     className={cn(
-                        "fixed md:absolute bottom-[88px] md:bottom-0 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 z-40 px-4 bg-gray-100/95 backdrop-blur-md pb-4 md:pb-16 shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex flex-col overflow-hidden border border-gray-400 rounded-t-[2.5rem]",
+                        "w-full bg-gray-100/90 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.15)] flex flex-col h-full pointer-events-auto transition-colors duration-300",
                         isSummaryExpanded 
-                            ? "w-[calc(100%-2rem)] md:w-full rounded-t-[1.5rem] pt-4 border-x border-t border-gray-400" 
-                            : "md:w-[600px] rounded-t-[2.5rem] pt-4 border border-gray-400 border-b-0",
-                        "transition-colors duration-300"
+                            ? "rounded-t-0 p-0" 
+                            : "rounded-t-[2.5rem] border border-gray-400 p-4 border-b-0"
                     )}
                 >
                     <AnimatePresence>
@@ -543,13 +550,7 @@ export function InvestorHome() {
                             >
                                 <motion.button
                                     onClick={() => setIsSummaryExpanded(true)}
-                                    drag="y"
-                                    dragConstraints={{ top: 0, bottom: 0 }}
-                                    dragElastic={0.2}
-                                    onDragEnd={(_, info) => {
-                                        if (info.offset.y < -15) setIsSummaryExpanded(true);
-                                    }}
-                                    className="p-1.5 rounded-full bg-white/60 hover:bg-white border text-gray-500 border-gray-200 hover:border-gray-300 transition-all shadow-sm cursor-grab active:cursor-grabbing hover:-translate-y-0.5"
+                                    className="p-1.5 rounded-full bg-white/60 hover:bg-white border text-gray-500 border-gray-200 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
                                     title="Show Summary"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -594,24 +595,12 @@ export function InvestorHome() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 20 }}
-                                transition={{ 
-                                    type: "spring",
-                                    damping: 20,
-                                    stiffness: 120,
-                                    delay: 0.1
-                                }}
-                                className="flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0"
+                                className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0"
                             >
                                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-full flex justify-center py-2 z-10">
-                                    <motion.button
+                                    <button
                                         onClick={() => setIsSummaryExpanded(false)}
-                                        drag="y"
-                                        dragConstraints={{ top: 0, bottom: 0 }}
-                                        dragElastic={0.4}
-                                        onDragEnd={(_, info) => {
-                                            if (info.offset.y > 20) setIsSummaryExpanded(false);
-                                        }}
-                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full cursor-grab active:cursor-grabbing transition-colors"
+                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full transition-colors cursor-pointer"
                                     />
                                 </div>
                                 <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
@@ -626,7 +615,7 @@ export function InvestorHome() {
                                         <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Key Value Proposition</h5>
                                         <p className="italic text-gray-500">"{detailStartup.problemSolving}"</p>
                                     </div>
-                                    <div className="flex gap-2 mt-4">
+                                    <div className="flex flex-wrap gap-2 mt-4">
                                         {detailStartup.tags.map(tag => (
                                             <span key={tag} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
                                                 {tag}
@@ -638,7 +627,7 @@ export function InvestorHome() {
                         )}
                     </AnimatePresence>
                 </motion.div>
-            </div>
+            </motion.div>
 
 
             {/* Right Panel: Details (Desktop) */}
