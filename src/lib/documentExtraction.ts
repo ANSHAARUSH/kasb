@@ -196,7 +196,7 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
                     });
 
                     const response = await openai.chat.completions.create({
-                        model: 'llama-3.2-11b-vision-preview',
+                        model: 'meta-llama/llama-4-scout-17b-16e-instruct',
                         messages: [{
                             role: 'user',
                             content: [
