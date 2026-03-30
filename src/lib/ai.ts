@@ -803,6 +803,19 @@ export interface PitchDeckExtraction {
     state: string;
     city: string;
     founderName: string;
+    // Extended questions
+    solutionOverview: string;
+    targetCustomer: string;
+    marketSize: string;
+    whyNow: string;
+    tractionRevenue: string;
+    gtmPlan: string;
+    competitiveAdvantage: string;
+    businessModel: string;
+    whyYou: string;
+    fundingAsk: string;
+    useOfFunds: string;
+    milestones: string;
 }
 
 /**
@@ -849,7 +862,19 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
     "problemSolving": "A concise 1-2 sentence description of the problem the startup solves",
     "state": "Indian state where the startup is based, if mentioned",
     "city": "City where the startup is based, if mentioned",
-    "founderName": "Name of the founder or CEO, if mentioned"
+    "founderName": "Name of the founder or CEO, if mentioned",
+    "solutionOverview": "Description of the solution/product",
+    "targetCustomer": "Target market / customers",
+    "marketSize": "Market size / TAM",
+    "whyNow": "Why now? Market timing insights",
+    "tractionRevenue": "Traction, users, or revenue",
+    "gtmPlan": "Customer acquisition / go-to-market plan",
+    "competitiveAdvantage": "Competitive advantage / moat",
+    "businessModel": "Business model / how they make money",
+    "whyYou": "Why this team / founder advantages",
+    "fundingAsk": "Funding ask / raise amount",
+    "useOfFunds": "Planned use of funds",
+    "milestones": "Future milestones / roadmap"
 }`;
 
     try {
@@ -869,7 +894,7 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
         console.log('[PitchDeck AI] Parsed result:', result);
 
         // Sanitize: ensure all fields are strings
-        const sanitized = {
+        const sanitized: PitchDeckExtraction = {
             companyName: String(result.companyName || ''),
             industry: String(result.industry || ''),
             stage: String(result.stage || ''),
@@ -878,6 +903,18 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
             state: String(result.state || ''),
             city: String(result.city || ''),
             founderName: String(result.founderName || ''),
+            solutionOverview: String(result.solutionOverview || ''),
+            targetCustomer: String(result.targetCustomer || ''),
+            marketSize: String(result.marketSize || ''),
+            whyNow: String(result.whyNow || ''),
+            tractionRevenue: String(result.tractionRevenue || ''),
+            gtmPlan: String(result.gtmPlan || ''),
+            competitiveAdvantage: String(result.competitiveAdvantage || ''),
+            businessModel: String(result.businessModel || ''),
+            whyYou: String(result.whyYou || ''),
+            fundingAsk: String(result.fundingAsk || ''),
+            useOfFunds: String(result.useOfFunds || ''),
+            milestones: String(result.milestones || ''),
         };
         
         console.log('[PitchDeck AI] Sanitized output:', sanitized);

@@ -174,10 +174,34 @@ export function StartupCard({ startup, onClick, onDoubleClick, isSelected, isSav
                 </div>
 
                 {/* Middle Row: Problem Statement */}
-                <div className="flex-1 flex items-center py-1">
+                <div className="flex-1 flex flex-col items-center py-1 gap-3">
                     <p className="text-xs text-gray-500 font-medium leading-tight text-center w-full px-2 italic line-clamp-2">
                         "{startup.problemSolving}"
                     </p>
+                    
+                    {/* Extended Pitch Details */}
+                    {startup.questionnaire && (
+                        <div className="w-full grid grid-cols-2 gap-1.5 px-2">
+                            {startup.questionnaire.market_customers?.market_size && (
+                                <div className="bg-gray-50 rounded-lg p-1.5 border border-gray-100/50">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Market Size</p>
+                                    <p className="text-[10px] font-semibold text-gray-700 truncate">{startup.questionnaire.market_customers.market_size}</p>
+                                </div>
+                            )}
+                            {startup.questionnaire.funding_milestones?.funding_amount && (
+                                <div className="bg-emerald-50 rounded-lg p-1.5 border border-emerald-100/50">
+                                    <p className="text-[9px] font-bold text-emerald-600/70 uppercase">Funding Ask</p>
+                                    <p className="text-[10px] font-bold text-emerald-800 truncate">{startup.questionnaire.funding_milestones.funding_amount}</p>
+                                </div>
+                            )}
+                            {startup.questionnaire.traction_gtm?.traction_revenue && (
+                                <div className="bg-indigo-50 rounded-lg p-1.5 border border-indigo-100/50 col-span-2">
+                                    <p className="text-[9px] font-bold text-indigo-600/70 uppercase">Traction</p>
+                                    <p className="text-[10px] font-semibold text-indigo-900 truncate">{startup.questionnaire.traction_gtm.traction_revenue}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Bottom Row: Completion % and CTAs */}

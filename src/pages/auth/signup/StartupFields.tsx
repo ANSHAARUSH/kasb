@@ -21,6 +21,8 @@ interface StartupFieldsProps {
     setStage: (val: string) => void
     teamSize: string
     setTeamSize: (val: string) => void
+    questionnaire?: Record<string, Record<string, string>>
+    setQuestionnaire?: (val: Record<string, Record<string, string>>) => void
 }
 
 export function StartupFields({
@@ -42,7 +44,9 @@ export function StartupFields({
     stage,
     setStage,
     teamSize,
-    setTeamSize
+    setTeamSize,
+    questionnaire,
+    setQuestionnaire
 }: StartupFieldsProps) {
     return (
         <div className="space-y-4">
@@ -186,6 +190,14 @@ export function StartupFields({
                     AI will format this as: "helps (who) achieves (outcome) by (unique method)"
                 </p>
             </div>
+
+            {/* Render extended detailed fields below */}
+            {questionnaire && setQuestionnaire && (
+                <StartupExtFields 
+                    questionnaire={questionnaire} 
+                    setQuestionnaire={setQuestionnaire} 
+                />
+            )}
         </div>
     )
 }
@@ -193,3 +205,4 @@ export function StartupFields({
 // Note: I need to import motion for the custom industry field.
 import { motion } from "framer-motion"
 import { Sparkles } from "lucide-react"
+import { StartupExtFields } from "./StartupExtFields"

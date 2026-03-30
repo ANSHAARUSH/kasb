@@ -1,7 +1,5 @@
 import { IDEATION_CONFIG } from './questionnaires/ideation'
-import { MVP_PRESEED_CONFIG } from './questionnaires/mvp_preseed'
-import { SEED_CONFIG } from './questionnaires/seed'
-import { SERIES_A_CONFIG } from './questionnaires/series_a'
+
 import type { Question, Section, StageConfig, QuestionType } from './questionnaires/types'
 
 export type { Question, Section, StageConfig, QuestionType }
@@ -11,10 +9,10 @@ export type { Question, Section, StageConfig, QuestionType }
 
 export const QUESTIONNAIRE_CONFIG: StageConfig = {
     'Ideation': IDEATION_CONFIG,
-    'Pre-seed': MVP_PRESEED_CONFIG,
-    'MVP': MVP_PRESEED_CONFIG,
-    'Seed': SEED_CONFIG,
-    'Series A+': SERIES_A_CONFIG
+    'Pre-seed': IDEATION_CONFIG,
+    'MVP': IDEATION_CONFIG,
+    'Seed': IDEATION_CONFIG,
+    'Series A+': IDEATION_CONFIG
 }
 
 // Fallback for stages not explicitly matched

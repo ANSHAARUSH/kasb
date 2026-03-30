@@ -68,6 +68,7 @@ export function SignUp() {
     const [problemSolving, setProblemSolving] = useState('')
     const [stage, setStage] = useState('')
     const [teamSize, setTeamSize] = useState('')
+    const [questionnaire, setQuestionnaire] = useState<Record<string, Record<string, string>>>({})
     const [isRefining, setIsRefining] = useState(false)
 
     // Investor Specific
@@ -165,6 +166,7 @@ export function SignUp() {
                 metadata.stage = stage
                 metadata.traction = teamSize ? `${teamSize} employees` : ''
                 metadata.problem_solving = problemSolving
+                metadata.questionnaire = questionnaire
             } else {
                 metadata.name = name // align with trigger expectation
                 metadata.investor_type = investorType
