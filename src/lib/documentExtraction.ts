@@ -175,6 +175,34 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
             const zip = await JSZip.loadAsync(arrayBuffer);
             let pptxText = '';
 
+            // Helper: extract all text content from an XML string
+            const extractAllText = (xmlString: string): string => {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+                
+                // Get text from a:t tags (standard text elements)
+                const aTextNodes = xmlDoc.getElementsByTagName('a:t');
+                let text = '';
+                for (let i = 0; i < aTextNodes.length; i++) {
+                    text += aTextNodes[i].textContent + ' ';
+                }
+                
+                // Also try common alternative text tags
+                const altTags = ['a:fld', 'p:txBody', 'c:v', 'a:r'];
+                for (const tag of altTags) {
+                    const nodes = xmlDoc.getElementsByTagName(tag);
+                    for (let i = 0; i < nodes.length; i++) {
+                        const nodeText = nodes[i].textContent?.trim();
+                        if (nodeText && !text.includes(nodeText)) {
+                            text += nodeText + ' ';
+                        }
+                    }
+                }
+                
+                return text.trim();
+            };
+
+            // 1. Extract from slide content
             const slideFiles = Object.keys(zip.files)
                 .filter(name => name.startsWith('ppt/slides/slide') && name.endsWith('.xml'))
                 .sort((a, b) => {
@@ -185,24 +213,80 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
 
             for (const slidePath of slideFiles) {
                 const xmlText = await zip.files[slidePath].async('text');
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                const textNodes = xmlDoc.getElementsByTagName('a:t');
-                let slideText = '';
-                for (let i = 0; i < textNodes.length; i++) {
-                    slideText += textNodes[i].textContent + ' ';
+                const slideText = extractAllText(xmlText);
+                if (slideText) {
+                    pptxText += `--- Slide ${slidePath.replace(/[^\d]/g, '')} ---\n${slideText}\n\n`;
                 }
-                pptxText += `--- Slide ${slidePath.replace(/[^\d]/g, '')} ---\n${slideText}\n\n`;
             }
 
+            // 2. Extract from speaker notes (often contain detailed content)
+            const notesFiles = Object.keys(zip.files)
+                .filter(name => name.startsWith('ppt/notesSlides/') && name.endsWith('.xml'))
+                .sort();
+
+            for (const notePath of notesFiles) {
+                const xmlText = await zip.files[notePath].async('text');
+                const noteText = extractAllText(xmlText);
+                if (noteText && noteText.length > 5) {
+                    pptxText += `--- Notes: ${notePath.replace(/[^\d]/g, '')} ---\n${noteText}\n\n`;
+                }
+            }
+
+            // 3. Extract from document properties (title, author, subject)
+            const corePropsFile = zip.files['docProps/core.xml'];
+            if (corePropsFile) {
+                try {
+                    const coreXml = await corePropsFile.async('text');
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(coreXml, 'text/xml');
+                    const props: string[] = [];
+                    
+                    const titleEl = doc.getElementsByTagName('dc:title')[0];
+                    if (titleEl?.textContent) props.push(`Title: ${titleEl.textContent}`);
+                    
+                    const creatorEl = doc.getElementsByTagName('dc:creator')[0];
+                    if (creatorEl?.textContent) props.push(`Author: ${creatorEl.textContent}`);
+                    
+                    const subjectEl = doc.getElementsByTagName('dc:subject')[0];
+                    if (subjectEl?.textContent) props.push(`Subject: ${subjectEl.textContent}`);
+                    
+                    const descEl = doc.getElementsByTagName('dc:description')[0];
+                    if (descEl?.textContent) props.push(`Description: ${descEl.textContent}`);
+                    
+                    if (props.length > 0) {
+                        pptxText = `--- Document Properties ---\n${props.join('\n')}\n\n` + pptxText;
+                    }
+                } catch (e) {
+                    console.warn('[PitchDeck] Could not parse doc properties:', e);
+                }
+            }
+
+            // 4. Extract from app properties (company name, etc.)
+            const appPropsFile = zip.files['docProps/app.xml'];
+            if (appPropsFile) {
+                try {
+                    const appXml = await appPropsFile.async('text');
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(appXml, 'text/xml');
+                    
+                    const companyEl = doc.getElementsByTagName('Company')[0];
+                    if (companyEl?.textContent) {
+                        pptxText = `Company: ${companyEl.textContent}\n` + pptxText;
+                    }
+                } catch (e) {
+                    console.warn('[PitchDeck] Could not parse app properties:', e);
+                }
+            }
+
+            console.log(`[PitchDeck] PPTX full-text: ${pptxText.length} chars from ${slideFiles.length} slides, ${notesFiles.length} notes`);
+
             if (pptxText.trim().length > 50) {
-                console.log(`[PitchDeck] PPTX full-text: ${pptxText.length} chars from ${slideFiles.length} slides`);
                 return pptxText;
             }
-            throw new Error('PPTX text extraction returned insufficient content');
+            throw new Error('PPTX: Your pitch deck appears to be mostly images with very little text content. Please try uploading a PDF version or enter details manually.');
         } catch (err) {
             console.error('[PitchDeck] PPTX text extraction failed:', err);
-            throw new Error(`Could not extract text from PPTX: ${file.name}`);
+            throw new Error(err instanceof Error ? err.message : `Could not extract text from PPTX: ${file.name}`);
         }
     }
 
