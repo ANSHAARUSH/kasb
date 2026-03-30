@@ -62,7 +62,7 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
         if (options.vision && options.file) {
             const base64 = await fileToBase64(options.file);
             const response = await openai.chat.completions.create({
-                model: options.model || "llama-3.2-90b-vision-preview",
+                model: options.model || "llama-3.2-11b-vision-preview",
                 messages: [
                     {
                         role: "user",
