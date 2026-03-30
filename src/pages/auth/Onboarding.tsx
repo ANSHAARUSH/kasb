@@ -104,7 +104,7 @@ export function Onboarding() {
             const extractedText = await extractFullTextFromDocument(file)
 
             // 2. Use the universal system API key
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
             if (!apiKey) {
                 throw new Error('System AI key is not configured. Please use manual entry.')
             }

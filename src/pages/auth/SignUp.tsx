@@ -90,7 +90,7 @@ export function SignUp() {
 
         try {
             const extractedText = await extractFullTextFromDocument(file)
-            const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
             if (!apiKey) throw new Error('System AI key is not configured. Please use manual entry.')
 
             const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
