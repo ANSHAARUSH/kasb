@@ -58,6 +58,10 @@ export function StartupHome() {
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
     const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
 
+    const selectedInvestor = useMemo(() => 
+        investors.find(i => i.id === selectedId) || null,
+    [investors, selectedId])
+
     useEffect(() => {
         if (!detailInvestor) {
             setIsSummaryExpanded(false)
@@ -344,7 +348,7 @@ export function StartupHome() {
                     )}
                 >
                     <AnimatePresence>
-                        {detailInvestor && !isSummaryExpanded && (
+                        {selectedInvestor && !isSummaryExpanded && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                                 animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
@@ -357,6 +361,11 @@ export function StartupHome() {
                                     title="Show Summary"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    drag="y"
+                                    dragConstraints={{ top: 0, bottom: 0 }}
+                                    onDragEnd={(_, info) => {
+                                        if (info.offset.y < -20) setIsSummaryExpanded(true);
+                                    }}
                                 >
                                     <ChevronUp className="h-4 w-4" />
                                 </motion.button>
@@ -374,7 +383,7 @@ export function StartupHome() {
                     </div>
 
                     <AnimatePresence>
-                        {isSummaryExpanded && detailInvestor && (
+                        {isSummaryExpanded && selectedInvestor && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -389,15 +398,15 @@ export function StartupHome() {
                                 </div>
                                 <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
                                     <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                                    {detailInvestor.name} Summary
+                                    {selectedInvestor.name} Summary
                                 </h4>
                                 <div className="prose prose-sm font-medium text-gray-600 max-w-none">
                                     <p className="leading-relaxed text-base">
-                                        {detailInvestor.bio || `${detailInvestor.name} is an active investor specialize in ${detailInvestor.expertise.join(", ")}.`}
+                                        {selectedInvestor.bio || `${selectedInvestor.name} is an active investor specialize in ${selectedInvestor.expertise.join(", ")}.`}
                                     </p>
                                     <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
                                         <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Expertise & Focus</h5>
-                                        <p className="text-gray-500">{detailInvestor.expertise.join(" • ")}</p>
+                                        <p className="text-gray-500">{selectedInvestor.expertise.join(" • ")}</p>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-4">
                                         <span className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">

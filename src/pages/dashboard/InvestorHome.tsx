@@ -33,6 +33,10 @@ export function InvestorHome() {
     const [detailStartup, setDetailStartup] = useState<Startup | null>(null)
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
     const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
+
+    const selectedStartup = useMemo(() => 
+        startups.find(s => s.id === selectedId) || null,
+    [startups, selectedId])
     const { startups, loading: startupsLoading } = useStartups()
     // const [savedStartupIds, setSavedStartupIds] = useState<string[]>([]) // Replaced by hook
     const { savedIds: savedStartupIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
@@ -566,7 +570,7 @@ export function InvestorHome() {
                     )}
                 >
                     <AnimatePresence>
-                        {detailStartup && !isSummaryExpanded && (
+                        {selectedStartup && !isSummaryExpanded && (
                             <motion.div
                                 initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                                 animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
@@ -579,6 +583,11 @@ export function InvestorHome() {
                                     title="Show Summary"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
+                                    drag="y"
+                                    dragConstraints={{ top: 0, bottom: 0 }}
+                                    onDragEnd={(_, info) => {
+                                        if (info.offset.y < -20) setIsSummaryExpanded(true);
+                                    }}
                                 >
                                     <ChevronUp className="h-4 w-4" />
                                 </motion.button>
@@ -615,7 +624,7 @@ export function InvestorHome() {
                     </div>
 
                     <AnimatePresence>
-                        {isSummaryExpanded && detailStartup && (
+                        {isSummaryExpanded && selectedStartup && (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -630,15 +639,15 @@ export function InvestorHome() {
                                 </div>
                                 <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
                                     <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                                    {detailStartup.name} Summary
+                                    {selectedStartup.name} Summary
                                 </h4>
                                 <div className="prose prose-sm font-medium text-gray-600 max-w-none">
                                     <p className="leading-relaxed text-base">
-                                        {detailStartup.aiSummary || detailStartup.description || `${detailStartup.name} is building the future of ${detailStartup.tags[0] || 'technology'} by ${detailStartup.problemSolving.toLowerCase()}`}
+                                        {selectedStartup.aiSummary || selectedStartup.description || `${selectedStartup.name} is building the future of ${selectedStartup.tags[0] || 'technology'} by ${selectedStartup.problemSolving.toLowerCase()}`}
                                     </p>
                                     <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
                                         <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Key Value Proposition</h5>
-                                        <p className="italic text-gray-500">"{detailStartup.problemSolving}"</p>
+                                        <p className="italic text-gray-500">"{selectedStartup.problemSolving}"</p>
                                     </div>
                                     <div className="flex flex-wrap gap-2 mt-4">
                                         {detailStartup.tags.map(tag => (
