@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, Loader2, User, Bot, Flame, Trash2 } from "lucide-react"
 import { cn } from "../../lib/utils"
@@ -319,13 +319,13 @@ export function FounderGPT() {
                                 <div className="md:hidden px-2 mb-2">
                                     <div className="flex p-1 bg-gray-100 rounded-2xl border border-gray-200">
                                         <button 
-                                            onClick={() => navigate('/dashboard/foundergpt')}
+                                            onClick={() => navigate('/dashboard/startup/foundergpt')}
                                             className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all bg-white text-black shadow-sm"
                                         >
                                             Founder GPT
                                         </button>
                                         <button 
-                                            onClick={() => navigate('/dashboard/kasbstudio')}
+                                            onClick={() => navigate('/dashboard/startup/studio')}
                                             className="flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all text-gray-400 hover:text-gray-600"
                                         >
                                             Kasb Studio
