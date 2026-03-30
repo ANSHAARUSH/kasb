@@ -684,6 +684,8 @@ export function Onboarding() {
                                                         setStage={setStage}
                                                         teamSize={teamSize}
                                                         setTeamSize={setTeamSize}
+                                                        questionnaire={questionnaire}
+                                                        setQuestionnaire={setQuestionnaire}
                                                     />
                                                 ) : (
                                                     <InvestorFields

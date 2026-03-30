@@ -522,6 +522,8 @@ export function SignUp() {
                                                     setStage={setStage}
                                                     teamSize={teamSize}
                                                     setTeamSize={setTeamSize}
+                                                    questionnaire={questionnaire}
+                                                    setQuestionnaire={setQuestionnaire}
                                                 />
                                             )}
                                         </div>
