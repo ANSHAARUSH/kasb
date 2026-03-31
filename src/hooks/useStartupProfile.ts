@@ -27,6 +27,8 @@ export interface StartupProfileData {
     ai_summary?: string
     summary_status?: 'draft' | 'final'
     last_active_at?: string
+    state?: string
+    city?: string
     tier?: string
 }
 

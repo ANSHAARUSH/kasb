@@ -20,6 +20,7 @@ import { InvestorFilterPanel, type InvestorFilterState } from "../../components/
 import { parseRevenue } from "../../lib/utils"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { isProfileComplete } from "../../lib/questionnaire"
+import { scoreInvestorForStartup } from "../../lib/feedAlgorithm"
 
 export default function StartupHome() {
     // ... hooks ...
@@ -144,18 +145,43 @@ export default function StartupHome() {
     }), [investors, debouncedSearchQuery, filters])
 
     const sortedInvestors = useMemo(() => {
-        let base = [...baseFilteredInvestors]
+        const base = [...baseFilteredInvestors]
         const tier = subscriptionManager.getTier()
+        const isPaid = tier !== 'discovery'
+
+        // Extract startup context for relevance scoring
+        const myTags = profileStartup?.tags || []
+        const myIndustry = profileStartup?.industry || ''
+        const myState = profileStartup?.state
+        const myCity = profileStartup?.city
 
         if (activeFeed === 'top-investors') {
+            // Top investors tab: sort by investment count
             base.sort((a, b) => (b.investments || 0) - (a.investments || 0))
-        } else if (tier === 'discovery') {
+        } else if (!isPaid) {
             // Randomized feed for free plan
             base.sort(() => Math.random() - 0.5)
+        } else {
+            // Paid Discover: algorithmic sort
+            const scored = base.map(inv => ({
+                investor: inv,
+                score: scoreInvestorForStartup(inv, myTags, myIndustry, myState, myCity).total
+            }))
+            scored.sort((a, b) => b.score - a.score)
+
+            // Deprioritize saved investors (push to bottom, but keep visible)
+            if (savedInvestorIds.length > 0) {
+                const savedSet = new Set(savedInvestorIds)
+                const unsaved = scored.filter(s => !savedSet.has(s.investor.id))
+                const saved = scored.filter(s => savedSet.has(s.investor.id))
+                return [...unsaved, ...saved].map(s => s.investor)
+            }
+
+            return scored.map(s => s.investor)
         }
 
         return base
-    }, [baseFilteredInvestors, activeFeed])
+    }, [baseFilteredInvestors, activeFeed, profileStartup, savedInvestorIds])
 
     const filteredInvestors = sortedInvestors
 

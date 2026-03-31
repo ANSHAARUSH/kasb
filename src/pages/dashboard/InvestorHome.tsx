@@ -24,6 +24,7 @@ import { subscriptionManager } from "../../lib/subscriptionManager"
 import type { Investor } from "../../data/mockData"
 import { useRecommendations } from "../../hooks/useRecommendations"
 import { isInvestorProfileComplete } from "../../lib/questionnaire"
+import { scoreStartupForInvestor } from "../../lib/feedAlgorithm"
 
 export default function InvestorHome() {
     const navigate = useNavigate()
@@ -213,21 +214,34 @@ export default function InvestorHome() {
 
     const sortedStartups = useMemo(() => {
         const tier = subscriptionManager.getTier()
+        const isPaid = tier !== 'explore'
 
-        return filteredStartups.map(startup => {
+        // Extract investor context for relevance scoring
+        const investorExpertise = investor?.expertise || []
+        const investorIndustryFocus = investor?.profile_details?.investment_preferences?.industry_focus || []
+        const investorState = investor?.state
+        const investorCity = investor?.city
+
+        const enriched = filteredStartups.map(startup => {
             const aiRec = recommendationMap.get(startup.id)
+            const algoScore = isPaid
+                ? scoreStartupForInvestor(startup, investorExpertise, investorIndustryFocus, investorState, investorCity).total
+                : 0
             return {
                 ...startup,
                 isRecommended: !!aiRec,
-                aiRecommendation: aiRec
+                aiRecommendation: aiRec,
+                _algoScore: algoScore
             }
-        }).sort((a, b) => {
-            // Randomized feed for free plan
-            if (tier === 'explore' && activeFeed === 'discover') {
+        })
+
+        enriched.sort((a, b) => {
+            // Randomized feed for free plan on discover tab
+            if (!isPaid && activeFeed === 'discover') {
                 return Math.random() - 0.5;
             }
 
-            // High Impact Sort
+            // High Impact Sort (uses impact points, not the algorithm)
             if (activeFeed === 'high-impact') {
                 const pointDiff = (b.impactPoints || 0) - (a.impactPoints || 0);
                 if (pointDiff !== 0) return pointDiff;
@@ -238,18 +252,29 @@ export default function InvestorHome() {
                 return valB - valA;
             }
 
-            // Default Sort (Discover) - AI recommended first
+            // Paid Discover: AI recommended first
             if (a.isRecommended && !b.isRecommended) return -1;
             if (!a.isRecommended && b.isRecommended) return 1;
 
-            // Then by AI match score
+            // Then by AI match score if both recommended
             if (a.aiRecommendation && b.aiRecommendation) {
                 return b.aiRecommendation.score - a.aiRecommendation.score
             }
 
-            return 0;
+            // Then by algorithmic score for non-recommended items
+            return b._algoScore - a._algoScore;
         });
-    }, [filteredStartups, recommendationMap, activeFeed]);
+
+        // Deprioritize saved entities (push them to bottom, but keep them visible)
+        if (isPaid && activeFeed === 'discover' && savedStartupIds.length > 0) {
+            const savedSet = new Set(savedStartupIds)
+            const unsaved = enriched.filter(s => !savedSet.has(s.id))
+            const saved = enriched.filter(s => savedSet.has(s.id))
+            return [...unsaved, ...saved]
+        }
+
+        return enriched
+    }, [filteredStartups, recommendationMap, activeFeed, investor, savedStartupIds]);
 
     const displayStartups = sortedStartups
 
