@@ -97,7 +97,7 @@ export function useStartups() {
                     const visibleStartups = mappedStartups.filter(s => s.showInFeed).map(s => {
                         try {
                             const scoreResult = calculateImpactScore(s);
-                            const completionPercentage = calculateStartupProgress(s.metrics.stage, s.questionnaire);
+                            const completionPercentage = calculateStartupProgress(s);
                             return {
                                 ...s,
                                 impactPoints: scoreResult?.total || 100,

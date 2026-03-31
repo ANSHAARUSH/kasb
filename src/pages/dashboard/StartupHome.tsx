@@ -250,7 +250,7 @@ export default function StartupHome() {
                 <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-40 md:pb-32 custom-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Incomplete Warning */}
-                        {profileStartup && !isProfileComplete(profileStartup.stage, profileStartup.questionnaire) && (
+                        {profileStartup && !isProfileComplete(profileStartup) && (
                             <div className="max-w-2xl mx-auto p-6 rounded-3xl bg-amber-50 border-2 border-amber-200 shadow-sm mb-6">
                                 <div className="flex items-start gap-4">
                                     <div className="p-2 bg-amber-100 rounded-xl">
