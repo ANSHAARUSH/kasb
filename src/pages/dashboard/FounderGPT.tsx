@@ -506,7 +506,7 @@ export default function FounderGPT() {
                 ) : (
                     /* Chat View */
                     <>
-                        <div className="flex-1 overflow-y-auto space-y-6 py-4">
+                        <div className="flex-1 overflow-y-auto space-y-6 py-4 custom-scrollbar">
                             <AnimatePresence initial={false}>
                                 {messages.map((msg) => (
                                     <motion.div

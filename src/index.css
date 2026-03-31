@@ -51,15 +51,16 @@
   @apply animate-pulse bg-gray-200 rounded-lg;
 }
 
-/* Custom Scrollbar Styling */
+/* Custom Scrollbar Styling - Premium Dark/Indigo */
 @layer utilities {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+    scrollbar-color: rgba(88, 86, 214, 0.2) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
+    width: 5px;
+    height: 5px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -67,11 +68,17 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 20px;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 100px;
+    transition: all 0.3s ease;
   }
 
   .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.4);
+    background: rgba(88, 86, 214, 0.4); /* Indigo accent on hover */
+  }
+
+  /* Make it even more subtle when not hovering the container */
+  .custom-scrollbar:not(:hover)::-webkit-scrollbar-thumb {
+    background: transparent;
   }
 }
