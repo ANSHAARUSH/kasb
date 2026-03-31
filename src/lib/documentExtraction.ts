@@ -1,10 +1,15 @@
 import * as mammoth from "mammoth";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
-import * as pdfjsLib from 'pdfjs-dist';
+let _pdfjsLib: typeof import('pdfjs-dist') | null = null;
+import OpenAI from "openai";
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+async function getPdfjsLib() {
+    if (_pdfjsLib) return _pdfjsLib;
+    _pdfjsLib = await import('pdfjs-dist');
+    _pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${_pdfjsLib.version}/pdf.worker.min.js`;
+    return _pdfjsLib;
+}
 
 /**
  * Enhanced extraction utility that handles multiple file types.
@@ -36,6 +41,7 @@ export async function extractDocumentContent(file: File): Promise<{ type: 'image
         // Step 2: Fall back to text extraction
         try {
             const arrayBuffer = await file.arrayBuffer();
+            const pdfjsLib = await getPdfjsLib();
             const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
             const pdf = await loadingTask.promise;
             let fullText = '';
@@ -143,6 +149,7 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
     if (mimeType === 'application/pdf' || fileType === 'pdf') {
         try {
             const arrayBuffer = await file.arrayBuffer();
+            const pdfjsLib = await getPdfjsLib();
             const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
             const pdf = await loadingTask.promise;
             let fullText = '';
@@ -188,7 +195,6 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
                         break;
                     }
 
-                    const { default: OpenAI } = await import('openai');
                     const openai = new OpenAI({
                         apiKey,
                         baseURL: 'https://api.groq.com/openai/v1',
@@ -378,6 +384,7 @@ export async function extractFullTextFromDocument(file: File): Promise<string> {
  */
 async function convertPdfPageToImage(pdfFile: File, pageNum: number = 1): Promise<File> {
     const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdfjsLib = await getPdfjsLib();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(pageNum);

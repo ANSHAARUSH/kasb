@@ -33,7 +33,7 @@ interface Conversation {
     unread: number
 }
 
-export function MessagesPage() {
+export default function MessagesPage() {
     const navigate = useNavigate()
     const { user } = useAuth()
     const { toast } = useToast()

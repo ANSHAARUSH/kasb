@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 
-export function UpdatePassword() {
+export default function UpdatePassword() {
     const navigate = useNavigate()
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)

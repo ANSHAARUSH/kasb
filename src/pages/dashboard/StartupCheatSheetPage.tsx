@@ -148,7 +148,7 @@ const FOUNDER_TOPICS = [
 
 type Topic = typeof FOUNDER_TOPICS[number]
 
-export function StartupCheatSheetPage() {
+export default function StartupCheatSheetPage() {
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
     const [resourceInvestors, setResourceInvestors] = useState<Investor[]>([])
     const [isLoadingResources, setIsLoadingResources] = useState(false)

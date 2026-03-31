@@ -16,7 +16,7 @@ import { subscriptionManager } from "../../lib/subscriptionManager"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
 
-export function HistoryPage() {
+export default function HistoryPage() {
     const { user } = useAuth()
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<'history' | 'future'>('future')

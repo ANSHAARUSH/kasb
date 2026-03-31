@@ -4,7 +4,7 @@ import { CheckCircle2 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
 
-export function EmailConfirmed() {
+export default function EmailConfirmed() {
     return (
         <div className="min-h-screen bg-gray-50/50 flex items-center justify-center p-4">
             <motion.div

@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { SEO } from "../../../components/common/SEO"
 
-export function StartupPublicProfile() {
+export default function StartupPublicProfile() {
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const [startup, setStartup] = useState<StartupProfileData | null>(null)

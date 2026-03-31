@@ -18,7 +18,7 @@ import { LoadingScreen } from "../../components/ui/LoadingScreen"
 import { extractFullTextFromDocument } from "../../lib/documentExtraction"
 import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
 
-export function Onboarding() {
+export default function Onboarding() {
     const { user, loading: authLoading, refreshUser } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()

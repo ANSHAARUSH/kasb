@@ -3,7 +3,7 @@ import { Navbar } from "../components/layout/Navbar"
 import { Footer } from "../components/layout/Footer"
 import { SEO } from "../components/common/SEO"
 
-export function PricingPage() {
+export default function PricingPage() {
     return (
         <div className="min-h-screen bg-white">
             <SEO

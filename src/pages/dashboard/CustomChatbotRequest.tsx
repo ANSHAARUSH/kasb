@@ -7,7 +7,7 @@ import { useAuth } from "../../context/AuthContext"
 import { supabase } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 
-export function CustomChatbotRequest() {
+export default function CustomChatbotRequest() {
     const navigate = useNavigate()
     const { user } = useAuth()
     const { toast } = useToast()

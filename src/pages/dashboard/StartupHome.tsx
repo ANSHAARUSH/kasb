@@ -21,7 +21,7 @@ import { parseRevenue } from "../../lib/utils"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { isProfileComplete } from "../../lib/questionnaire"
 
-export function StartupHome() {
+export default function StartupHome() {
     // ... hooks ...
 
     const [filters, setFilters] = useState<InvestorFilterState>({

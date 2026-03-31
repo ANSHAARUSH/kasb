@@ -6,7 +6,7 @@ import { Link } from "react-router-dom"
 import { supabase } from "../../lib/supabase"
 import { ArrowLeft, Mail } from "lucide-react"
 
-export function ForgotPassword() {
+export default function ForgotPassword() {
     const [email, setEmail] = useState('')
     const [loading, setLoading] = useState(false)
     const [submitted, setSubmitted] = useState(false)

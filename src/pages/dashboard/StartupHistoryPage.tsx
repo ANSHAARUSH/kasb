@@ -18,7 +18,7 @@ import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
 
 
-export function StartupHistoryPage() {
+export default function StartupHistoryPage() {
    const { user } = useAuth()
    const { toast } = useToast()
    const [activeTab, setActiveTab] = useState<'history' | 'future'>('future')

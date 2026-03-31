@@ -1,7 +1,7 @@
 import { PricingView } from "../../components/dashboard/PricingView"
 import { useAuth } from "../../context/AuthContext"
 
-export function DashboardPricing() {
+export default function DashboardPricing() {
     const { role } = useAuth()
 
     return (

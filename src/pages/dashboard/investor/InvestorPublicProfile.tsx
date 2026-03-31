@@ -7,7 +7,7 @@ import { ArrowLeft } from "lucide-react"
 import type { InvestorProfileData } from "../../../hooks/useInvestorProfile"
 import { SEO } from "../../../components/common/SEO"
 
-export function InvestorPublicProfile() {
+export default function InvestorPublicProfile() {
     const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const [investor, setInvestor] = useState<InvestorProfileData | null>(null)

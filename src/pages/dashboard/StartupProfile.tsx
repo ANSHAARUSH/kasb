@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { useRef } from "react"
 
-export function StartupProfile() {
+export default function StartupProfile() {
     const { startup, loading, saving, updateProfile, requestReview } = useStartupProfile()
     const { user, signOut } = useAuth()
     const { toast } = useToast()

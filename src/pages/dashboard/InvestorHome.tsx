@@ -25,7 +25,7 @@ import type { Investor } from "../../data/mockData"
 import { useRecommendations } from "../../hooks/useRecommendations"
 import { isInvestorProfileComplete } from "../../lib/questionnaire"
 
-export function InvestorHome() {
+export default function InvestorHome() {
     const navigate = useNavigate()
     // const { user } = useAuth()
 

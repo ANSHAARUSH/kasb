@@ -101,7 +101,7 @@ const TOPICS: CheatSheetField[] = [
     }
 ]
 
-export function CheatSheetPage() {
+export default function CheatSheetPage() {
     const [selectedField, setSelectedField] = useState<CheatSheetField | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [isGenerating, setIsGenerating] = useState(false)

@@ -42,7 +42,7 @@ import {
     ResponsiveContainer
 } from "recharts"
 
-export function AnalyticsPage() {
+export default function AnalyticsPage() {
     const navigate = useNavigate()
     const { user } = useAuth()
     const [stats, setStats] = useState({

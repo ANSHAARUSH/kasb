@@ -18,7 +18,7 @@ import { SEO } from "../../components/common/SEO"
 import { extractFullTextFromDocument } from "../../lib/documentExtraction"
 import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
 
-export function SignUp() {
+export default function SignUp() {
     const { toast } = useToast()
     const [role, setRole] = useState<'investor' | 'startup'>('startup')
     const [selectedIndustry, setSelectedIndustry] = useState<string>('')

@@ -6,7 +6,7 @@ import { useAuth } from "../context/AuthContext"
 import { useEffect } from "react"
 import { SEO } from "../components/common/SEO"
 
-export function Landing() {
+export default function Landing() {
     const { user, loading } = useAuth()
     const navigate = useNavigate()
 

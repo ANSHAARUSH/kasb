@@ -11,7 +11,7 @@ import { useAuth } from "../../context/AuthContext"
 import { isInvestorProfileComplete } from "../../lib/questionnaire"
 import { cn } from "../../lib/utils"
 
-export function InvestorProfile() {
+export default function InvestorProfile() {
     const { signOut } = useAuth()
     const {
         investor,

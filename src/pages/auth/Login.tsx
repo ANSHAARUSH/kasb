@@ -8,7 +8,7 @@ import { Eye, EyeOff } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 import { SEO } from "../../components/common/SEO"
 
-export function Login() {
+export default function Login() {
     const navigate = useNavigate()
     const { user, role, loading: authLoading, signInWithGoogle } = useAuth() // Use global auth state
     const [loading, setLoading] = useState(false)

@@ -102,7 +102,7 @@ interface Investor {
     founder_community?: string
 }
 
-export function AdminDashboard() {
+export default function AdminDashboard() {
     const { signOut } = useAuth()
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState<AdminTab>('overview')
