@@ -282,7 +282,7 @@ export default function InvestorHome() {
     if (loading) {
         return (
             <div className="flex h-[calc(100vh-100px)] overflow-hidden">
-                <div className="flex-1 p-6 space-y-6 overflow-y-auto no-scrollbar">
+                <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
                     <div className="h-12 w-full skeleton mb-6" />
                     {[1, 2, 3].map(i => (
                         <div key={i} className="h-[500px] w-full skeleton rounded-3xl" />
@@ -313,7 +313,7 @@ export default function InvestorHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-40 md:pb-32 no-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 pb-40 md:pb-32 custom-scrollbar">
                     <div className="max-w-2xl mx-auto space-y-4">
                         {/* Profile Incomplete Warning */}
                         {investor && !isInvestorProfileComplete(investor) && (

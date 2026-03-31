@@ -67,12 +67,12 @@ export function DashboardLayout() {
     }
 
     return (
-        <div className="min-h-screen bg-white flex flex-col md:flex-row">
+        <div className="h-screen overflow-hidden bg-white flex flex-col md:flex-row">
             {/* Desktop Sidebar */}
             <SideNav />
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 md:pl-64">
+            <div className="flex-1 flex flex-col min-w-0 md:pl-64 overflow-hidden">
                 {/* Mobile Header */}
                 <header className="sticky top-0 z-40 flex items-center bg-black border-b border-white/10 px-4 sm:px-6 py-4">
                     <div className="flex-1 md:hidden">
@@ -90,8 +90,8 @@ export function DashboardLayout() {
                     </div>
                 </header>
 
-                <main className="flex-1 p-0 md:py-6 pb-24 md:pb-6">
-                    <div className="w-full md:max-w-7xl md:mx-auto">
+                <main className="flex-1 p-0 md:py-6 pb-24 md:pb-6 overflow-hidden">
+                    <div className="w-full h-full md:max-w-7xl md:mx-auto">
                         {/* Temporarily disabled KYC requirement */}
                         {/* kycStatus === 'verified' ? (
                             <Outlet />
