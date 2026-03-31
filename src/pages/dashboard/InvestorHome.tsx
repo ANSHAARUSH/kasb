@@ -34,10 +34,10 @@ export default function InvestorHome() {
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
     const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
 
+    const { startups, loading: startupsLoading } = useStartups()
     const selectedStartup = useMemo(() => 
         startups.find(s => s.id === selectedId) || null,
     [startups, selectedId])
-    const { startups, loading: startupsLoading } = useStartups()
     // const [savedStartupIds, setSavedStartupIds] = useState<string[]>([]) // Replaced by hook
     const { savedIds: savedStartupIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
         tableName: 'future_plans',
