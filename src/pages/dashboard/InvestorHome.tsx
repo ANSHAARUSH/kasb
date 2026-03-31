@@ -540,135 +540,135 @@ export default function InvestorHome() {
                         <div className="h-20" />
                     </div>
                 </div>
-            </div>
 
-            {/* Expandable Bottom Search & Filter Bar - MOVED TO COMPONENT ROOT */}
-            <motion.div 
-                initial={false}
-                animate={{ 
-                    height: isSummaryExpanded ? '100dvh' : 'auto',
-                    bottom: isSummaryExpanded ? 0 : 84,
-                }}
-                transition={{ 
-                    type: "spring", 
-                    damping: 25,
-                    stiffness: 150,
-                    mass: 0.8
-                }}
-                className={cn(
-                    "fixed md:absolute left-0 right-0 px-4 md:px-0 md:left-1/2 md:right-auto md:-translate-x-1/2 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto",
-                    isSummaryExpanded 
-                        ? "h-[100dvh] pt-0" 
-                        : "md:w-[600px] h-auto"
-                )}
-            >
-                <motion.div
+                {/* Expandable Bottom Search & Filter Bar */}
+                <motion.div 
+                    initial={false}
+                    animate={{ 
+                        height: isSummaryExpanded ? '100dvh' : 'auto',
+                        bottom: isSummaryExpanded ? 0 : 84,
+                    }}
+                    transition={{ 
+                        type: "spring", 
+                        damping: 25,
+                        stiffness: 150,
+                        mass: 0.8
+                    }}
                     className={cn(
-                        "w-full bg-gray-100/90 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.15)] flex flex-col h-full pointer-events-auto transition-colors duration-300",
+                        "fixed md:absolute left-0 right-0 px-4 md:px-0 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto md:pb-6",
                         isSummaryExpanded 
-                            ? "rounded-t-0 p-0" 
-                            : "rounded-t-[2.5rem] border border-gray-400 p-4 border-b-0"
+                            ? "h-[100dvh] pt-0" 
+                            : "md:w-[600px] md:mx-auto h-auto"
                     )}
                 >
-                    <AnimatePresence>
-                        {selectedStartup && !isSummaryExpanded && (
-                            <motion.div
-                                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
-                                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                                className="flex justify-center shrink-0"
-                            >
-                                <motion.button
-                                    onClick={() => setIsSummaryExpanded(true)}
-                                    className="p-1.5 rounded-full bg-white/60 hover:bg-white border text-gray-500 border-gray-200 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
-                                    title="Show Summary"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    drag="y"
-                                    dragConstraints={{ top: 0, bottom: 0 }}
-                                    onDragEnd={(_, info) => {
-                                        if (info.offset.y < -20) setIsSummaryExpanded(true);
-                                    }}
-                                >
-                                    <ChevronUp className="h-4 w-4" />
-                                </motion.button>
-                            </motion.div>
+                    <motion.div
+                        className={cn(
+                            "w-full bg-gray-100/90 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.15)] flex flex-col h-full pointer-events-auto transition-colors duration-300",
+                            isSummaryExpanded 
+                                ? "rounded-t-0 p-0" 
+                                : "rounded-t-[2.5rem] md:rounded-[2.5rem] border border-gray-400 p-4"
                         )}
-                    </AnimatePresence>
-
-                    <div className="max-w-md mx-auto flex w-full items-center gap-2 shrink-0 relative z-10">
-                        <div className="flex-1">
-                            <SearchInput
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                placeholder="Search startups..."
-                                className="w-full !relative !bottom-0 !px-0 !pb-0"
-                            />
-                        </div>
-                        <Button
-                            variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
-                            className={cn(
-                                "h-12 w-12 rounded-2xl shadow-lg border-0 shrink-0 bg-white text-black transition-all hover:scale-105 active:scale-95",
-                                (showFilters || activeFilterCount > 0) && "bg-indigo-600 text-white border-indigo-600"
-                            )}
-                            onClick={() => setShowFilters(!showFilters)}
-                        >
-                            <div className="relative">
-                                <SlidersHorizontal className="h-5 w-5" />
-                                {activeFilterCount > 0 && (
-                                    <span className="absolute -top-3 -right-3 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-md ring-2 ring-white">
-                                        {activeFilterCount}
-                                    </span>
-                                )}
-                            </div>
-                        </Button>
-                    </div>
-
-                    <AnimatePresence>
-                        {isSummaryExpanded && selectedStartup && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 20 }}
-                                className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0 overscroll-contain"
-                            >
-                                <div className="absolute top-0 left-0 w-full flex justify-center py-4 z-10">
+                    >
+                        <AnimatePresence>
+                            {selectedStartup && !isSummaryExpanded && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
+                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    className="flex justify-center shrink-0"
+                                >
                                     <motion.button
-                                        onClick={() => setIsSummaryExpanded(false)}
+                                        onClick={() => setIsSummaryExpanded(true)}
+                                        className="p-1.5 rounded-full bg-white/60 hover:bg-white border text-gray-500 border-gray-200 hover:border-gray-300 transition-all shadow-sm cursor-pointer"
+                                        title="Show Summary"
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         drag="y"
                                         dragConstraints={{ top: 0, bottom: 0 }}
-                                        dragElastic={0.4}
                                         onDragEnd={(_, info) => {
-                                            if (info.offset.y > 40) setIsSummaryExpanded(false);
+                                            if (info.offset.y < -20) setIsSummaryExpanded(true);
                                         }}
-                                        className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full cursor-grab active:cursor-grabbing transition-colors"
-                                    />
+                                    >
+                                        <ChevronUp className="h-4 w-4" />
+                                    </motion.button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        <div className="max-w-md mx-auto flex w-full items-center gap-2 shrink-0 relative z-10">
+                            <div className="flex-1">
+                                <SearchInput
+                                    value={searchQuery}
+                                    onChange={setSearchQuery}
+                                    placeholder="Search startups..."
+                                    className="w-full !relative !bottom-0 !px-0 !pb-0"
+                                />
+                            </div>
+                            <Button
+                                variant={showFilters || activeFilterCount > 0 ? "default" : "outline"}
+                                className={cn(
+                                    "h-12 w-12 rounded-2xl shadow-lg border-0 shrink-0 bg-white text-black transition-all hover:scale-105 active:scale-95",
+                                    (showFilters || activeFilterCount > 0) && "bg-indigo-600 text-white border-indigo-600"
+                                )}
+                                onClick={() => setShowFilters(!showFilters)}
+                            >
+                                <div className="relative">
+                                    <SlidersHorizontal className="h-5 w-5" />
+                                    {activeFilterCount > 0 && (
+                                        <span className="absolute -top-3 -right-3 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-bold text-white shadow-md ring-2 ring-white">
+                                            {activeFilterCount}
+                                        </span>
+                                    )}
                                 </div>
-                                <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                                    {selectedStartup.name} Summary
-                                </h4>
-                                <div className="prose prose-sm font-medium text-gray-600 max-w-none">
-                                    <p className="leading-relaxed text-base">
-                                        {selectedStartup.aiSummary || selectedStartup.description || `${selectedStartup.name} is building the future of ${selectedStartup.tags[0] || 'technology'} by ${selectedStartup.problemSolving.toLowerCase()}`}
-                                    </p>
-                                    <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
-                                        <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Key Value Proposition</h5>
-                                        <p className="italic text-gray-500">"{selectedStartup.problemSolving}"</p>
+                            </Button>
+                        </div>
+
+                        <AnimatePresence>
+                            {isSummaryExpanded && selectedStartup && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 20 }}
+                                    className="flex flex-col bg-white rounded-t-3xl shadow-sm border-t border-gray-200 p-6 sm:p-8 mt-6 flex-1 overflow-y-auto min-h-0 relative z-0 overscroll-contain"
+                                >
+                                    <div className="absolute top-0 left-0 w-full flex justify-center py-4 z-10">
+                                        <motion.button
+                                            onClick={() => setIsSummaryExpanded(false)}
+                                            drag="y"
+                                            dragConstraints={{ top: 0, bottom: 0 }}
+                                            dragElastic={0.4}
+                                            onDragEnd={(_, info) => {
+                                                if (info.offset.y > 40) setIsSummaryExpanded(false);
+                                            }}
+                                            className="h-1.5 w-16 bg-gray-300 hover:bg-gray-400 rounded-full cursor-grab active:cursor-grabbing transition-colors"
+                                        />
                                     </div>
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {selectedStartup.tags.map(tag => (
-                                            <span key={tag} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
-                                                {tag}
-                                            </span>
-                                        ))}
+                                    <h4 className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-4 mt-6 flex items-center gap-2">
+                                        <span className="h-2.5 w-2.5 rounded-full bg-indigo-500 animate-pulse" />
+                                        {selectedStartup.name} Summary
+                                    </h4>
+                                    <div className="prose prose-sm font-medium text-gray-600 max-w-none">
+                                        <p className="leading-relaxed text-base">
+                                            {selectedStartup.aiSummary || selectedStartup.description || `${selectedStartup.name} is building the future of ${selectedStartup.tags[0] || 'technology'} by ${selectedStartup.problemSolving.toLowerCase()}`}
+                                        </p>
+                                        <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
+                                            <h5 className="text-xs font-bold text-gray-900 uppercase tracking-wide mb-2">Key Value Proposition</h5>
+                                            <p className="italic text-gray-500">"{selectedStartup.problemSolving}"</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            {selectedStartup.tags.map(tag => (
+                                                <span key={tag} className="px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-bold text-gray-400 uppercase">
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+            </div>
 
 
             {/* Right Panel: Details (Desktop) */}
