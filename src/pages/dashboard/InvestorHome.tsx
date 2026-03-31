@@ -545,8 +545,7 @@ export default function InvestorHome() {
                 <motion.div 
                     initial={false}
                     animate={{ 
-                        height: isSummaryExpanded ? '100dvh' : 'auto',
-                        bottom: isSummaryExpanded ? 0 : 84,
+                        height: isSummaryExpanded ? '100dvh' : 'auto'
                     }}
                     transition={{ 
                         type: "spring", 
@@ -555,10 +554,10 @@ export default function InvestorHome() {
                         mass: 0.8
                     }}
                     className={cn(
-                        "fixed md:absolute left-0 right-0 px-4 md:px-0 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto md:pb-6",
+                        "fixed md:absolute left-0 right-0 px-4 md:px-0 z-[45] flex flex-col overflow-hidden pointer-events-none md:pointer-events-auto",
                         isSummaryExpanded 
-                            ? "h-[100dvh] pt-0" 
-                            : "md:w-[600px] md:mx-auto h-auto"
+                            ? "h-[100dvh] pt-0 bottom-0" 
+                            : "md:w-[600px] md:mx-auto h-auto bottom-[84px] md:bottom-0"
                     )}
                 >
                     <motion.div
@@ -566,7 +565,7 @@ export default function InvestorHome() {
                             "w-full bg-gray-100/90 backdrop-blur-xl shadow-[0_-8px_30px_rgb(0,0,0,0.15)] flex flex-col h-full pointer-events-auto transition-colors duration-300",
                             isSummaryExpanded 
                                 ? "rounded-t-0 p-0" 
-                                : "rounded-t-[2.5rem] md:rounded-[2.5rem] border border-gray-400 p-4"
+                                : "rounded-t-[2.5rem] border border-gray-400 p-4 border-b-0"
                         )}
                     >
                         <AnimatePresence>
