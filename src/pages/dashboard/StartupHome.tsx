@@ -179,7 +179,7 @@ export default function StartupHome() {
     if (loading) {
         return (
             <div className="flex h-[calc(100vh-100px)] overflow-hidden">
-                <div className="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                <div className="flex-1 p-6 space-y-6 overflow-y-auto no-scrollbar">
                     <div className="h-10 w-48 skeleton mb-6" />
                     <div className="grid gap-4 md:grid-cols-2">
                         {[1, 2, 3, 4, 5, 6].map(i => (
@@ -213,7 +213,7 @@ export default function StartupHome() {
                 </div>
 
                 {/* Scrollable Feed List */}
-                <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-40 md:pb-32 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-6 pt-6 sm:px-6 md:px-4 md:pt-6 pb-40 md:pb-32 no-scrollbar">
                     <div className="max-w-4xl mx-auto space-y-6">
                         {/* Profile Incomplete Warning */}
                         {profileStartup && !isProfileComplete(profileStartup.stage, profileStartup.questionnaire) && (
