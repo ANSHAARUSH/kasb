@@ -163,10 +163,18 @@ export default function StartupHome() {
             base.sort(() => Math.random() - 0.5)
         } else {
             // Paid Discover: algorithmic sort
-            const scored = base.map(inv => ({
-                investor: inv,
-                score: scoreInvestorForStartup(inv, myTags, myIndustry, myState, myCity).total
-            }))
+            const scored = base.map(inv => {
+                const scoreResult = scoreInvestorForStartup(inv, myTags, myIndustry, myState, myCity);
+                
+                if (activeFeed === 'discover') {
+                    console.log(`[Algo Feed] Investor: ${inv.name} | Total Score: ${scoreResult.total.toFixed(2)}`, scoreResult.breakdown);
+                }
+
+                return {
+                    investor: inv,
+                    score: scoreResult.total
+                }
+            })
             scored.sort((a, b) => b.score - a.score)
 
             // Deprioritize saved investors (push to bottom, but keep visible)

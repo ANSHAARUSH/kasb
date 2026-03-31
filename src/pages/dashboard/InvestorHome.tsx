@@ -224,14 +224,19 @@ export default function InvestorHome() {
 
         const enriched = filteredStartups.map(startup => {
             const aiRec = recommendationMap.get(startup.id)
-            const algoScore = isPaid
-                ? scoreStartupForInvestor(startup, investorExpertise, investorIndustryFocus, investorState, investorCity).total
-                : 0
+            const scoreResult = isPaid
+                ? scoreStartupForInvestor(startup, investorExpertise, investorIndustryFocus, investorState, investorCity)
+                : { total: 0, breakdown: {} }
+            
+            if (isPaid && activeFeed === 'discover') {
+                console.log(`[Algo Feed] Startup: ${startup.name} | Total Score: ${scoreResult.total.toFixed(2)}`, scoreResult.breakdown);
+            }
+
             return {
                 ...startup,
                 isRecommended: !!aiRec,
                 aiRecommendation: aiRec,
-                _algoScore: algoScore
+                _algoScore: scoreResult.total
             }
         })
 
