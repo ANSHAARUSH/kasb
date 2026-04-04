@@ -4,11 +4,11 @@ import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { supabase, getClosedDeals, getUserSetting, getGlobalConfig } from "../../lib/supabase"
+import { supabase, getClosedDeals } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
-import { compareInvestors, type ComparisonResult } from "../../lib/ai"
+import { compareInvestors, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
@@ -187,27 +187,14 @@ export default function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         // Priority: Groq -> Env -> DB Global -> DB User
-         const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
-         let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
+         const config = await resolveAIConfig(user?.id);
 
-         if (!apiKey) {
-            const globalKey = await getGlobalConfig('ai_api_key')
-            if (globalKey) apiKey = globalKey
-         }
-
-         if (!apiKey && user) {
-            const storedKey = await getUserSetting(user.id, 'ai_api_key')
-            if (storedKey) apiKey = storedKey
-         }
-
-         if (!apiKey) {
+         if (!config) {
             toast("AI features are not setup. Please contact the administrator.", "error")
             return
          }
 
-         const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
-         const result = await compareInvestors(val1, val2, apiKey, baseUrl)
+         const result = await compareInvestors(val1, val2, config)
 
          // Track successful comparison
          subscriptionManager.trackCompare(val1.id, val2.id)

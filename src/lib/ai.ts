@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { supabase } from "./supabase";
+import { supabase, getGlobalConfig, getUserSetting } from "./supabase";
 
 // Initial Persistence Load
 const loadCache = (key: string) => {
@@ -31,6 +31,59 @@ function generateCacheKey(data: any, criteria: string[], reasoning?: string): st
 import type { Startup } from "../data/mockData";
 import { extractDocumentContent } from "./documentExtraction";
 import type { AnalysisResult } from "./documentIntelligence";
+
+/**
+ * Centralized logic to resolve the best available AI API key and its corresponding base URL.
+ * Priority: Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
+ */
+export async function resolveAIConfig(userId?: string) {
+    // 1. Check Environment Variables
+    const envGroq = import.meta.env.VITE_GROQ_API_KEY;
+    const envGemini = import.meta.env.VITE_GEMINI_API_KEY;
+    const envOpenAI = import.meta.env.VITE_OPENAI_API_KEY;
+
+    let apiKey = '';
+    const isValid = (key: any) => key && typeof key === 'string' && !key.includes('your_') && !key.includes('here');
+
+    if (isValid(envGroq)) apiKey = envGroq;
+    else if (isValid(envGemini)) apiKey = envGemini;
+    else if (isValid(envOpenAI)) apiKey = envOpenAI;
+
+    // 2. Check Supabase Global Config
+    if (!apiKey) {
+        const globalKey = await getGlobalConfig('ai_api_key');
+        if (isValid(globalKey)) apiKey = globalKey as string;
+    }
+
+    // 3. Check User Settings
+    if (!apiKey && userId) {
+        const userKey = await getUserSetting(userId, 'ai_api_key');
+        if (isValid(userKey)) apiKey = userKey as string;
+    }
+
+    if (!apiKey) return null;
+
+    // Determine Provider and Base URL based on key prefix
+    let type: 'openai' | 'gemini' = 'openai';
+    let baseUrl = import.meta.env.VITE_OPENAI_BASE_URL || undefined;
+
+    if (apiKey.startsWith('AIza')) {
+        type = 'gemini';
+    } else if (apiKey.startsWith('gsk_')) {
+        type = 'openai';
+        // Force Groq if using a Groq key and no custom base URL is explicitly intended for it
+        if (!baseUrl || baseUrl.includes('openai.com')) {
+            baseUrl = "https://api.groq.com/openai/v1";
+        }
+    } else if (apiKey.startsWith('sk-')) {
+        type = 'openai';
+        if (!baseUrl) {
+            baseUrl = "https://api.openai.com/v1";
+        }
+    }
+
+    return { apiKey, type, baseUrl };
+}
 
 /**
  * Helper to get a Groq (OpenAI-compatible) or Gemini client
@@ -294,7 +347,10 @@ async function getCachedOrFetch<T>(
     return result;
 }
 
-export async function compareStartups(startup1: Startup, startup2: Startup, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
+export async function compareStartups(startup1: Startup, startup2: Startup, apiKeyOrConfig: string | { apiKey: string; baseUrl?: string }, maybeBaseUrl?: string): Promise<ComparisonResult> {
+    const apiKey = typeof apiKeyOrConfig === 'string' ? apiKeyOrConfig : apiKeyOrConfig.apiKey;
+    const baseUrl = typeof apiKeyOrConfig === 'string' ? maybeBaseUrl : apiKeyOrConfig.baseUrl;
+
     if (!apiKey) {
         throw new Error("AI services are not configured. Please ensure API key is set.");
     }
@@ -337,7 +393,10 @@ export async function compareStartups(startup1: Startup, startup2: Startup, apiK
         }
     });
 }
-export async function compareInvestors(investor1: any, investor2: any, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
+export async function compareInvestors(investor1: any, investor2: any, apiKeyOrConfig: string | { apiKey: string; baseUrl?: string }, maybeBaseUrl?: string): Promise<ComparisonResult> {
+    const apiKey = typeof apiKeyOrConfig === 'string' ? apiKeyOrConfig : apiKeyOrConfig.apiKey;
+    const baseUrl = typeof apiKeyOrConfig === 'string' ? maybeBaseUrl : apiKeyOrConfig.baseUrl;
+
     if (!apiKey) {
         throw new Error("API Key is missing for investor comparison.");
     }
