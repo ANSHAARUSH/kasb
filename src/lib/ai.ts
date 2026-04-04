@@ -1909,3 +1909,286 @@ Return ONLY valid JSON, no markdown:
     }
 }
 
+// ========================
+// STANDALONE DOCUMENT REVIEW AI
+// ========================
+// This is completely independent from Kasb Studio.
+// Uses the user's custom 11-step review prompt.
+
+export interface DocumentReviewResult {
+    content_type: string;
+    target_audience: string;
+    goal: string;
+    summary: string;
+    scores: {
+        clarity: string;
+        persuasiveness: string;
+        structure: string;
+        professionalism: string;
+        uniqueness: string;
+        emotional_impact: string;
+        credibility: string;
+        cta_strength: string;
+        appeal: string;
+        overall: string;
+    };
+    first_impression: string;
+    analysis: {
+        hook: string;
+        value_proposition: string;
+        clarity: string;
+        structure: string;
+        persuasion: string;
+        differentiation: string;
+        trust_signals: string;
+        cta: string;
+    };
+    critical_flaws: string[];
+    line_improvements: Array<{ original: string; improved: string }>;
+    improved_version: string;
+    variations: {
+        short_version: string;
+        premium_version: string;
+    };
+    advanced_suggestions: string[];
+    final_verdict: string;
+}
+
+export async function reviewStartupDocument(
+    content: string | File,
+    additionalPrompt?: string
+): Promise<DocumentReviewResult> {
+    const config = await resolveAIConfig();
+    if (!config) throw new Error("No AI API key configured. Please add an API key.");
+
+    let textContent: string;
+
+    if (content instanceof File) {
+        const extraction = await extractDocumentContent(content);
+        if (extraction.type === 'unsupported') {
+            throw new Error("Unsupported file format. Please use PDF, DOCX, TXT, or image files.");
+        }
+        if (extraction.type === 'image') {
+            // For images, use vision inference directly
+            const prompt = buildReviewPrompt("[Image content — analyze visually]", additionalPrompt);
+            const raw = await runInference(config.apiKey, prompt, { vision: true, file: extraction.content as File, baseUrl: config.baseUrl });
+            return extractJSON<DocumentReviewResult>(raw);
+        }
+        textContent = extraction.content as string;
+    } else {
+        textContent = content;
+    }
+
+    if (!textContent.trim()) throw new Error("Please provide content to review.");
+
+    const prompt = buildReviewPrompt(textContent, additionalPrompt);
+    const raw = await runInference(config.apiKey, prompt, { baseUrl: config.baseUrl });
+    return extractJSON<DocumentReviewResult>(raw);
+}
+
+function buildReviewPrompt(userInput: string, additionalContext?: string): string {
+    return `
+You are an elite startup advisor, investor, and communication expert.
+
+You specialize in analyzing:
+- Cold emails
+- Pitch decks (text content)
+- Startup proposals
+- Business communication intended for clients, investors, or partners
+
+Your goal is to give a brutally honest, highly practical review that improves the user's chances of success in real-world scenarios.
+
+--------------------------------------------------
+
+STEP 1: IDENTIFY CONTEXT
+
+- Determine the type of content:
+  (Cold Email / Pitch Deck / Sales Message / Landing Page Copy / Other)
+- Identify target audience (Investor / Client / General / Unknown)
+- Identify the goal (Raise funds / Get reply / Sell product / Build interest)
+
+--------------------------------------------------
+
+STEP 2: QUICK SUMMARY
+
+Provide a 2-3 line summary of what the content is trying to communicate.
+
+--------------------------------------------------
+
+STEP 3: SCORING (Rate out of 10)
+
+Give scores with 1-line justification for each:
+
+- Clarity
+- Persuasiveness
+- Structure & Flow
+- Professionalism
+- Uniqueness / Differentiation
+- Emotional Impact
+- Credibility / Trustworthiness
+- Call-to-Action Strength
+- Investor/Client Appeal
+
+Also provide:
+- Overall Score (average)
+
+--------------------------------------------------
+
+STEP 4: FIRST IMPRESSION (CRITICAL)
+
+Answer:
+- What is the immediate reaction of a busy investor/client in the first 5 seconds?
+- Would they continue reading? Why or why not?
+
+--------------------------------------------------
+
+STEP 5: DEEP ANALYSIS
+
+Break this into sections:
+
+1. HOOK / OPENING
+- Is it attention-grabbing?
+- If weak, explain why
+
+2. VALUE PROPOSITION
+- Is it clear what problem is being solved?
+- Is the solution compelling?
+
+3. CLARITY & SIMPLICITY
+- Identify confusing or vague parts
+
+4. STRUCTURE
+- Logical flow or messy?
+
+5. PERSUASION
+- Is it convincing or generic?
+
+6. DIFFERENTIATION
+- Does it stand out or sound like every other pitch?
+
+7. TRUST SIGNALS
+- Are there proof points, metrics, credibility markers?
+
+8. CALL TO ACTION
+- Is it clear what the reader should do next?
+
+--------------------------------------------------
+
+STEP 6: CRITICAL FLAWS (BRUTAL MODE)
+
+List the top 5 biggest mistakes or weaknesses.
+Be direct, sharp, and honest.
+
+--------------------------------------------------
+
+STEP 7: LINE-BY-LINE IMPROVEMENTS
+
+- Pick specific lines or sections
+- Rewrite them in a stronger, clearer, more persuasive way
+
+--------------------------------------------------
+
+STEP 8: FULL IMPROVED VERSION
+
+Rewrite the entire content to make it:
+- Clear
+- Concise
+- Highly persuasive
+- Professional
+- Outcome-driven
+
+Keep the original intent but significantly improve quality.
+
+--------------------------------------------------
+
+STEP 9: ALTERNATIVE VARIATIONS
+
+Generate 2 alternative versions:
+1. Short & Punchy Version (concise, high impact)
+2. Premium Version (polished, high-end, investor-grade)
+
+--------------------------------------------------
+
+STEP 10: ADVANCED SUGGESTIONS
+
+Give strategic advice such as:
+- What to add (metrics, storytelling, traction)
+- What to remove (fluff, jargon)
+- Positioning improvements
+- Tone adjustments based on audience
+
+--------------------------------------------------
+
+STEP 11: FINAL VERDICT
+
+- Would this succeed in the real world? (Yes / Maybe / No)
+- Explain why in 2-3 lines
+
+--------------------------------------------------
+
+OUTPUT FORMAT (STRICT)
+
+Return the response in this exact structured format:
+
+{
+  "content_type": "",
+  "target_audience": "",
+  "goal": "",
+  "summary": "",
+  "scores": {
+    "clarity": "",
+    "persuasiveness": "",
+    "structure": "",
+    "professionalism": "",
+    "uniqueness": "",
+    "emotional_impact": "",
+    "credibility": "",
+    "cta_strength": "",
+    "appeal": "",
+    "overall": ""
+  },
+  "first_impression": "",
+  "analysis": {
+    "hook": "",
+    "value_proposition": "",
+    "clarity": "",
+    "structure": "",
+    "persuasion": "",
+    "differentiation": "",
+    "trust_signals": "",
+    "cta": ""
+  },
+  "critical_flaws": [],
+  "line_improvements": [
+    {
+      "original": "",
+      "improved": ""
+    }
+  ],
+  "improved_version": "",
+  "variations": {
+    "short_version": "",
+    "premium_version": ""
+  },
+  "advanced_suggestions": [],
+  "final_verdict": ""
+}
+
+--------------------------------------------------
+
+TONE GUIDELINES:
+
+- Be sharp, practical, and insightful
+- Avoid generic advice
+- No fluff, no motivational talk
+- Think like a top VC or founder reviewing hundreds of pitches
+- Prioritize real-world effectiveness over politeness
+
+--------------------------------------------------
+
+${additionalContext ? `ADDITIONAL USER INSTRUCTIONS:\n${additionalContext}\n\n--------------------------------------------------\n\n` : ''}CONTENT TO REVIEW:
+"""
+${userInput}
+"""
+`;
+}
