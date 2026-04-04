@@ -13,6 +13,7 @@ import { InvestorComparisonView } from "../../components/dashboard/InvestorCompa
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
+import { QuickFillPanel } from "../../components/dashboard/QuickFillPanel"
 import { ensureArray } from "../../lib/utils"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
@@ -32,6 +33,8 @@ export default function StartupHistoryPage() {
    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
    const [searchQuery, setSearchQuery] = useState("")
+   const [isQuickFillOpen, setIsQuickFillOpen] = useState(false)
+   const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
    const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
    useEffect(() => {
@@ -281,6 +284,17 @@ export default function StartupHistoryPage() {
                         onClick={() => handleSelect(investor.id)}
                         onDoubleClick={() => setDetailInvestor(investor)}
                         onToggleSave={handleRemove}
+                        onWebsiteClick={(inv) => {
+                           setIsQuickFillOpen(true);
+                           setRedirectTarget(inv.name);
+                           toast(`Quick-Fill Assistant opened! Openning ${inv.name} in 2 seconds...`, "success");
+                           
+                           setTimeout(() => {
+                              const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                              setRedirectTarget(null);
+                           }, 2000);
+                        }}
                      />
                   </div>
                ))}
@@ -375,7 +389,14 @@ export default function StartupHistoryPage() {
                />
             </div>
          </div>
+
+         {/* Floating Assistant */}
+         <QuickFillPanel 
+            isOpen={isQuickFillOpen} 
+            onClose={() => setIsQuickFillOpen(false)} 
+            isRedirecting={!!redirectTarget}
+            redirectTarget={redirectTarget || ''}
+         />
       </div>
    )
 }
-
