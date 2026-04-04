@@ -112,6 +112,8 @@ export default function StartupHome() {
                 if (t === "Venture Capital") return typeText.includes("vc") || typeText.includes("venture");
                 if (t === "Syndicate") return typeText.includes("syndicate");
                 if (t === "Family Office") return typeText.includes("family office");
+                if (t === "Government Grants") return typeText.includes("grant") || typeText.includes("government");
+                if (t === "Accelerators") return typeText.includes("accelerator");
                 return false;
             })
             if (!matchesType) return false
@@ -275,20 +277,19 @@ export default function StartupHome() {
 
                             <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
                                 <Button
-                                    variant="outline"
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className={cn("gap-2 shadow-sm rounded-xl", showFilters ? "bg-black text-white hover:bg-black/90" : "")}
+                                    className={cn("gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 border-0", showFilters ? "ring-2 ring-offset-2 ring-gray-900" : "")}
                                 >
                                     <Filter className="h-4 w-4" />
                                     Filter
                                     {(filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
-                                        <span className="ml-1 bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                                        <span className="ml-1 bg-white text-black px-1.5 py-0.5 rounded-full text-[10px] font-bold">
                                             {filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)}
                                         </span>
                                     )}
                                 </Button>
                                 <Link to="/dashboard/startup/analytics">
-                                    <Button variant="outline" className="gap-2 shadow-sm rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 h-10">
+                                    <Button className="gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 h-10 border-0">
                                         <BarChart3 className="h-4 w-4" />
                                         <span className="text-sm">Analytics</span>
                                     </Button>

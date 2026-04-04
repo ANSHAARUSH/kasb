@@ -1,11 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Menu, History, X, Search, Send, Loader2, Code, Copy, Check, Trash2, ArrowUp, ChevronDown } from "lucide-react";
+import { 
+  Sparkles, 
+  Menu, 
+  History, 
+  X, 
+  Search, 
+  Send, 
+  Loader2, 
+  Code, 
+  Copy, 
+  Check, 
+  Trash2, 
+  ArrowUp, 
+  ChevronDown,
+  Eye,
+  FileText,
+  Zap
+} from "lucide-react";
 import { cn } from "../../lib/utils";
 import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { reviewPitchDeck } from "../../lib/ai";
+import { CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
+
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher";
 import { StudioToolLogo, TOOL_DOMAINS } from "../../components/studio/StudioToolLogo";
 
@@ -20,17 +39,161 @@ const PLACEHOLDERS = [
     "Script a 60-second explainer video..."
 ];
 
-// Tool naming and lookup moved to StudioToolLogo.tsx
+const REVIEW_PLACEHOLDERS = [
+    "Review my pitch deck and give me a score...",
+    "Analyze this cold email for VC outreach...",
+    "What are the biggest risks in this deck?",
+    "Review my valuation logic...",
+    "Is this problem statement compelling enough?",
+    "Check for inconsistencies in our projections..."
+];
+
+function ScorecardResult({ scorecard, theme }: { scorecard: any, theme: any }) {
+    const categories = [
+        { key: 'market_opportunity', label: 'Market Opportunity', color: 'bg-blue-500' },
+        { key: 'product_solution', label: 'Product & Solution', color: 'bg-purple-500' },
+        { key: 'business_model', label: 'Business Model', color: 'bg-green-500' },
+        { key: 'team', label: 'Team & Execution', color: 'bg-orange-500' },
+        { key: 'financials', label: 'Financials & Ask', color: 'bg-pink-500' },
+    ];
+
+    return (
+        <div className="space-y-6 w-full max-w-2xl mx-auto py-8 px-4">
+            <div className={cn("p-8 rounded-3xl border shadow-2xl relative overflow-hidden", theme.card)}>
+                <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h2 className="text-3xl font-black tracking-tighter mb-1">Investor Scorecard</h2>
+                            <p className={cn("text-xs font-bold uppercase tracking-widest", theme.textSubtle)}>AI-Driven Analysis</p>
+                        </div>
+                        <div className="h-16 w-16 rounded-2xl bg-black flex items-center justify-center text-white border border-white/20 shadow-xl">
+                            <span className="text-2xl font-black">{scorecard.total_score}</span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        {categories.map((cat) => (
+                            <div key={cat.key} className="space-y-2">
+                                <div className="flex justify-between items-end">
+                                    <span className="text-[10px] font-black uppercase tracking-wider">{cat.label}</span>
+                                    <span className="text-sm font-black">{scorecard.scores[cat.key]}/20</span>
+                                </div>
+                                <div className="h-2 w-full bg-gray-200/50 rounded-full overflow-hidden">
+                                    <motion.div 
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${(scorecard.scores[cat.key] / 20) * 100}%` }}
+                                        className={cn("h-full rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]", cat.color)}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-10 p-5 rounded-2xl bg-black/5 border border-black/5">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                            <Zap className="h-3 w-3 text-orange-500" />
+                            Verdict
+                        </h4>
+                        <p className="text-sm font-medium leading-relaxed italic">"{scorecard.verdict}"</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className={cn("p-6 rounded-2xl border", theme.card, "bg-green-50/50 border-green-100")}>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-green-600 mb-4 flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Strengths
+                    </h4>
+                    <ul className="space-y-3">
+                        {scorecard.strengths.slice(0, 3).map((s: string, i: number) => (
+                            <li key={i} className="text-sm font-medium text-gray-700 flex items-start gap-2">
+                                <span className="text-green-500 mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+                                {s}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+                <div className={cn("p-6 rounded-2xl border", theme.card, "bg-red-50/50 border-red-100")}>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-4 flex items-center gap-2">
+                        <AlertCircle className="h-3 w-3" />
+                        Risks
+                    </h4>
+                    <ul className="space-y-3">
+                        {scorecard.risks.slice(0, 3).map((r: string, i: number) => (
+                            <li key={i} className="text-sm font-medium text-gray-700 flex items-start gap-2">
+                                <span className="text-red-500 mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+                                {r}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function KasbStudio() {
-    const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [messages, setMessages] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
+    
+    // New State for Mode and Files
+    const [mode, setMode] = useState<'studio' | 'review'>('studio');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const topRef = useRef<HTMLDivElement>(null);
 
-    const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
+    const [placeholder, setPlaceholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
+
+    useEffect(() => {
+        const arr = mode === 'review' ? REVIEW_PLACEHOLDERS : PLACEHOLDERS;
+        setPlaceholder(arr[Math.floor(Math.random() * arr.length)]);
+    }, [mode]);
+
+    // Theme Orchestration
+    const isReview = mode === 'review';
+    const theme = {
+        bg: isReview ? "bg-[#f8f9fa]" : "bg-[#030303]",
+        text: isReview ? "text-gray-900" : "text-white",
+        textMuted: isReview ? "text-gray-500" : "text-gray-400",
+        textSubtle: isReview ? "text-gray-400 font-medium" : "text-gray-600 font-bold",
+        border: isReview ? "border-gray-200" : "border-gray-800",
+        card: isReview ? "bg-white border-gray-200 shadow-sm" : "bg-white/5 border-gray-800",
+        input: isReview ? "bg-white border-gray-200 focus:border-black shadow-sm" : "bg-white/5 border-gray-800 focus:border-white/20",
+        sidebarBg: isReview ? "bg-white" : "bg-[#030303]/95 backdrop-blur-2xl",
+        sidebarBorder: isReview ? "border-gray-200" : "border-gray-800",
+        overlayBg: isReview ? "bg-black/5" : "bg-black/60",
+        activeSession: isReview ? "bg-black text-white border-black" : "bg-white/10 text-white border-white/20",
+        sessionHover: isReview ? "hover:bg-gray-100" : "hover:bg-white/5",
+        shutterTrack: isReview ? "bg-gray-200" : "bg-white/10",
+        shutterThumb: isReview ? "bg-white shadow-md text-black" : "bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)]",
+        shutterTextActive: isReview ? "text-gray-900" : "text-white",
+        shutterTextInactive: isReview ? "text-gray-500" : "text-gray-400",
+        aiBubble: isReview ? "bg-white border border-gray-200 shadow-sm" : "bg-white/5 border border-white/10",
+        userBubble: isReview ? "bg-gray-900 text-white" : "bg-white text-black",
+        accent: isReview ? "bg-black" : "bg-white",
+        accentText: isReview ? "text-white" : "text-black",
+        emptyStateIcon: isReview ? "bg-gray-100 border-gray-200" : "bg-white/5 border-gray-800"
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    };
+
+    const triggerFileUpload = () => {
+        fileInputRef.current?.click();
+    };
+
+    const removeFile = () => {
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
 
     const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -146,7 +309,55 @@ export default function KasbStudio() {
         }
     };
 
+    const handleReview = async (file: File) => {
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+        if (!apiKey) {
+            setError("Missing API Key for review. Please add VITE_GROQ_API_KEY.");
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            const userMsgId = `user-${Date.now()}`;
+            setMessages([{ id: userMsgId, role: 'user', content: `Analyze pitch deck: ${file.name}`, created_at: new Date().toISOString() }]);
+            
+            const result = await reviewPitchDeck(file, apiKey);
+            
+            let finalContent: string;
+            if (typeof result === 'string') {
+                finalContent = result;
+            } else {
+                finalContent = JSON.stringify({ type: 'scorecard', ...result });
+            }
+            
+            const assistantMsg = { 
+                id: `ai-${Date.now()}`, 
+                role: 'assistant', 
+                content: finalContent, 
+                created_at: new Date().toISOString() 
+            };
+            setMessages(prev => [...prev, assistantMsg]);
+            
+            // Clear file
+            setSelectedFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            
+        } catch (err: any) {
+            console.error("Review Error:", err);
+            setError(err.message || "Pitch deck analysis failed.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleSendMessage = async () => {
+        if (mode === 'review' && selectedFile && !query.trim()) {
+            handleReview(selectedFile);
+            return;
+        }
+
         if (!query.trim() || isLoading) return;
 
         // Exclusively use Groq/Kasb keys for Studio architecture; remove Gemini fallback to avoid 404s
@@ -233,10 +444,27 @@ export default function KasbStudio() {
         setError(null);
         setCurrentSessionId(null);
         setIsSidebarOpen(false);
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        
+        // Refresh placeholder based on current mode
+        const list = mode === 'review' ? REVIEW_PLACEHOLDERS : PLACEHOLDERS;
+        setPlaceholder(list[Math.floor(Math.random() * list.length)]);
     };
 
     return (
-        <div className="relative min-h-[calc(100vh-4rem)] md:-mt-6 -mb-24 md:-mb-6 pb-0 bg-[#141414] text-white overflow-hidden flex flex-col transition-all duration-500">
+        <div className={cn("relative min-h-[calc(100vh-4rem)] md:-mt-6 -mb-24 md:-mb-6 pb-0 overflow-hidden flex flex-col transition-all duration-500", theme.bg, theme.text)}>
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                onChange={handleFileChange}
+                accept=".pdf,.pptx,.ppt,.docx,.doc,.txt"
+            />
+            
+
+
+            <div ref={topRef} className="absolute top-0 left-0 w-full h-px pointer-events-none" />
             {/* Sidebar Drawer */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -260,7 +488,7 @@ export default function KasbStudio() {
                                     <div className="h-8 w-8 rounded-xl bg-white flex items-center justify-center">
                                         <Sparkles className="h-5 w-5 text-black" />
                                     </div>
-                                    <span className="font-black text-xl tracking-tight text-white">Kasb Studio</span>
+                                    <span className="font-black text-xl tracking-tight text-white">{isReview ? 'Kasb Review' : 'Kasb Studio'}</span>
                                 </div>
                                 <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-gray-800 rounded-full transition-colors">
                                     <X className="h-5 w-5 text-gray-400" />
@@ -340,19 +568,44 @@ export default function KasbStudio() {
                     className="absolute top-0 left-0 right-0 z-50 pointer-events-auto"
                     onMouseEnter={() => setIsHeaderVisible(true)}
                 >
-                    <header className="flex flex-col relative bg-black/80 backdrop-blur-md border-b border-gray-900 shadow-md">
+                    <header className={cn("flex flex-col relative backdrop-blur-md border-b shadow-md", isReview ? "bg-white/80 border-gray-200" : "bg-black/80 border-gray-900")}>
                         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3 z-10 relative">
                             <button 
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="h-8 w-8 flex items-center justify-center rounded-lg bg-gray-900 border border-gray-800 hover:bg-gray-800 transition-all active:scale-90"
+                                className={cn("h-8 w-8 flex items-center justify-center rounded-lg transition-all active:scale-90", isReview ? "bg-gray-100 border border-gray-200 hover:bg-gray-200" : "bg-gray-900 border border-gray-800 hover:bg-gray-800")}
                             >
                                 <Menu className="h-4 w-4 text-gray-400" />
                             </button>
                             <div className="flex items-center gap-2">
-                                <Sparkles className="h-3 w-3 text-indigo-400" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">Studio Beta</span>
+                                {isReview ? <Eye className="h-4 w-4 text-indigo-500" /> : <Sparkles className="h-4 w-4 text-indigo-400" />}
+                                <span className={cn("text-xs font-black uppercase tracking-[0.2em]", isReview ? "text-gray-900" : "text-gray-400")}>{isReview ? 'Review' : 'Studio'}</span>
                             </div>
-                            <div className="w-8" /> {/* Spacer */}
+                            
+                            {/* Header Toggle */}
+                            <div className={cn(
+                                "flex items-center p-1 rounded-full border transition-all duration-300",
+                                theme.shutterTrack,
+                                theme.border
+                            )}>
+                                <button 
+                                    onClick={() => setMode('studio')}
+                                    className={cn(
+                                        "px-4 py-1 sm:px-5 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                                        mode === 'studio' ? theme.shutterThumb : theme.shutterTextInactive
+                                    )}
+                                >
+                                    Studio
+                                </button>
+                                <button 
+                                    onClick={() => setMode('review')}
+                                    className={cn(
+                                        "px-4 py-1 sm:px-5 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                                        mode === 'review' ? theme.shutterThumb : theme.shutterTextInactive
+                                    )}
+                                >
+                                    Review
+                                </button>
+                            </div>
                         </div>
 
                         <AnimatePresence>
@@ -423,23 +676,23 @@ export default function KasbStudio() {
                         >
                             <div className="space-y-4 px-4">
                                 <motion.h1 
-                                    className="text-3xl sm:text-5xl font-black tracking-tighter bg-gradient-to-br from-white via-white to-gray-500 bg-clip-text text-transparent"
+                                    className={cn("text-5xl sm:text-7xl font-black tracking-tighter bg-clip-text text-transparent", isReview ? "bg-gradient-to-br from-gray-900 to-gray-700" : "bg-gradient-to-br from-white via-white to-gray-500")}
                                 >
-                                    Kasb Studio
+                                    {isReview ? 'Review' : 'Kasb Studio'}
                                 </motion.h1>
-                                <p className="text-sm font-bold uppercase tracking-[0.2em] text-gray-500">
-                                    Imagine it. We sketch the blueprint.
+                                <p className={cn("text-xs sm:text-sm font-bold uppercase tracking-[0.25em]", isReview ? "text-gray-400" : "text-gray-500")}>
+                                    {isReview ? 'Review. Refine. Perfect.' : 'Imagine it. We sketch the blueprint.'}
                                 </p>
                             </div>
 
                             {/* Rectangular Search Bar */}
                             <motion.div 
-                                className="relative w-full max-w-xl mx-auto group"
+                                className="relative w-full max-w-2xl mx-auto group"
                             >
-                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                                <div className="relative flex items-center bg-[#161616] border border-gray-800 rounded-lg p-1.5 shadow-2xl group-focus-within:border-gray-500 group-focus-within:ring-2 group-focus-within:ring-white/10 transition-all duration-300">
-                                    <div className="pl-3 pr-2">
-                                        <Search className="h-4 w-4 text-gray-500 group-focus-within:text-white transition-colors" />
+                                <div className={cn("absolute -inset-1 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none", isReview ? "bg-gray-200" : "bg-gradient-to-r from-indigo-500/20 to-purple-500/20")} />
+                                <div className={cn("relative flex items-center border rounded-xl p-1.5 shadow-xl transition-all duration-300", isReview ? "bg-white border-gray-200 shadow-sm" : "bg-[#161616] border-gray-800 shadow-2xl group-focus-within:border-gray-500 group-focus-within:ring-2 group-focus-within:ring-white/10")}>
+                                    <div className="pl-4 pr-3">
+                                        <Search className={cn("h-5 w-5 transition-colors", isReview ? "text-gray-400 group-focus-within:text-gray-600" : "text-gray-500 group-focus-within:text-white")} />
                                     </div>
                                     <input 
                                         type="text"
@@ -447,19 +700,32 @@ export default function KasbStudio() {
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyDown={handleKeyDown}
                                         placeholder={placeholder}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-gray-600 h-10 text-base outline-none"
+                                        className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-12 text-base outline-none", isReview ? "text-gray-900 placeholder:text-gray-400" : "text-white placeholder:text-gray-600")}
                                     />
+                                    {isReview && (
+                                        <button 
+                                            onClick={triggerFileUpload}
+                                            className="px-3 text-gray-400 hover:text-gray-600 transition-colors h-12 flex items-center justify-center border-r border-gray-100 mr-1"
+                                        >
+                                            <Paperclip className="h-5 w-5" />
+                                        </button>
+                                    )}
                                     <button 
                                         onClick={handleSendMessage}
-                                        disabled={!query.trim()}
+                                        disabled={!query.trim() && !(isReview && selectedFile)}
                                         className={cn(
-                                            "h-10 w-10 rounded-md flex items-center justify-center transition-all duration-300 ml-2",
-                                            query.trim() ? "bg-white text-black scale-100 opacity-100 hover:bg-gray-200" : "bg-gray-900 text-gray-600 scale-95 opacity-50"
+                                            "h-12 w-12 rounded-lg flex items-center justify-center transition-all duration-300 ml-1",
+                                            isReview 
+                                                ? (query.trim() || selectedFile ? "bg-gray-100 text-gray-900 hover:bg-gray-200 opacity-100 scale-100" : "bg-gray-50 text-gray-300 opacity-80 scale-95")
+                                                : (query.trim() ? "bg-white text-black scale-100 opacity-100 hover:bg-gray-200" : "bg-gray-900 text-gray-600 scale-95 opacity-50")
                                         )}
                                     >
                                         <Send className="h-5 w-5" />
                                     </button>
                                 </div>
+                                {isReview && (
+                                    <p className="text-[10px] text-gray-400 font-medium mt-6">Kasb. AI is AI can Make Mistake</p>
+                                )}
                             </motion.div>
                         </motion.div>
                     </div>
@@ -474,44 +740,52 @@ export default function KasbStudio() {
                                  if (msg.role === 'user') {
                                      return (
                                         <div key={msg.id} className="flex justify-end w-full">
-                                            <div className="bg-indigo-600 border border-indigo-500 text-white px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] font-medium shadow-md text-sm leading-relaxed">
+                                            <div className={cn("px-5 py-3 rounded-2xl rounded-tr-sm max-w-[85%] font-medium shadow-md text-sm leading-relaxed", theme.userBubble)}>
                                                 {msg.content}
                                             </div>
                                         </div>
                                      );
                                  } else {
                                      let parsed;
-                                     try { parsed = JSON.parse(msg.content); } catch(e) { parsed = { tool: "Error", prompt: msg.content }; }
+                                     try { 
+                                         parsed = JSON.parse(msg.content); 
+                                     } catch(e) { 
+                                         parsed = { tool: "Error", prompt: msg.content }; 
+                                     }
+                                     
+                                     if (parsed.type === 'scorecard') {
+                                         return <ScorecardResult key={msg.id} scorecard={parsed} theme={theme} />;
+                                     }
                                      
                                      return (
                                         <div key={msg.id} className="w-full max-w-3xl mx-auto space-y-6">
                                             {/* Tool Suggestion Card */}
                                             <div className="space-y-3">
-                                                <div className="p-5 bg-[#0a0a0a] border border-gray-800 rounded-xl flex items-start gap-4 shadow-xl">
+                                                <div className={cn("p-5 border rounded-xl flex items-start gap-4 shadow-xl", theme.aiBubble)}>
                                                     <StudioToolLogo toolName={parsed.tool || parsed.suggestedTool || "Tool"} />
                                                     <div className="flex-1">
                                                         <div className="flex items-center justify-between mb-1">
-                                                            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Recommended Tech Stack</h3>
+                                                            <h3 className={cn("text-[10px] font-black uppercase tracking-widest", isReview ? 'text-gray-900' : 'text-indigo-400')}>Recommended Tech Stack</h3>
                                                         </div>
-                                                        <p className="text-lg font-bold text-white mb-2">{parsed.tool || parsed.suggestedTool}</p>
+                                                        <p className={cn("text-lg font-bold mb-2", theme.text)}>{parsed.tool || parsed.suggestedTool}</p>
                                                         {parsed.reasoning && (
-                                                            <p className="text-sm text-gray-400 leading-relaxed border-l-2 border-indigo-500/30 pl-3">
+                                                            <p className={cn("text-sm leading-relaxed border-l-2 border-indigo-500/30 pl-3", theme.textMuted)}>
                                                                 {parsed.reasoning}
                                                             </p>
                                                         )}
                                                     </div>
                                                 </div>
-                                                <p className="px-5 text-[9px] text-gray-600 uppercase tracking-[0.2em] font-medium opacity-60">
+                                                <p className={cn("px-5 text-[9px] uppercase tracking-[0.2em] font-medium opacity-60", theme.textSubtle)}>
                                                     * Kasb.AI is independent and not sponsored by these tools.
                                                 </p>
                                             </div>
 
                                             {/* Generated Prompt/Architecture */}
-                                            <div className="p-5 bg-[#000000] border border-gray-800 rounded-xl shadow-xl">
-                                                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-800/50">
+                                            <div className={cn("p-5 border rounded-xl shadow-xl", theme.aiBubble)}>
+                                                <div className={cn("flex items-center justify-between mb-4 pb-4 border-b", isReview ? 'border-gray-200' : 'border-gray-800/50')}>
                                                     <div className="flex items-center gap-2">
                                                         <Code className="h-4 w-4 text-indigo-500" />
-                                                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-300">Implementation Blueprint</h3>
+                                                        <h3 className={cn("text-xs font-bold uppercase tracking-wider", theme.text)}>Implementation Blueprint</h3>
                                                     </div>
                                                     <button 
                                                         onClick={() => {
@@ -521,7 +795,7 @@ export default function KasbStudio() {
                                                                 setTimeout(() => setIsCopied(false), 2000);
                                                             }
                                                         }}
-                                                        className="px-2 py-1 hover:bg-white/5 border border-transparent hover:border-gray-700 rounded transition-all flex items-center gap-1.5 group"
+                                                        className={cn("px-2 py-1 rounded transition-all flex items-center gap-1.5 group", isReview ? 'hover:bg-gray-100' : 'hover:bg-white/5')}
                                                     >
                                                         {isCopied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3 text-gray-500 group-hover:text-white transition-colors" />}
                                                         <span className="text-[9px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">
@@ -529,7 +803,7 @@ export default function KasbStudio() {
                                                         </span>
                                                     </button>
                                                 </div>
-                                                <div className="prose prose-invert max-w-none text-gray-300 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                                                <div className={cn("prose max-w-none text-xs sm:text-sm leading-relaxed whitespace-pre-wrap", isReview ? 'prose-gray' : 'prose-invert', theme.textMuted)}>
                                                     {parsed.prompt || parsed.generatedPrompt}
                                                 </div>
                                             </div>
@@ -540,9 +814,9 @@ export default function KasbStudio() {
 
                              {isLoading && (
                                 <div className="flex justify-start w-full max-w-3xl mx-auto">
-                                    <div className="flex items-center gap-3 bg-[#0a0a0a] border border-gray-800 px-5 py-3 rounded-2xl rounded-tl-sm">
+                                    <div className={cn("flex items-center gap-3 border px-5 py-3 rounded-2xl rounded-tl-sm", theme.aiBubble)}>
                                         <Loader2 className="h-4 w-4 text-indigo-500 animate-spin" />
-                                        <span className="text-gray-400 text-[10px] font-bold tracking-widest uppercase">Processing Request...</span>
+                                        <span className={cn("text-[10px] font-bold tracking-widest uppercase", theme.textMuted)}>Processing Request...</span>
                                     </div>
                                 </div>
                              )}
@@ -553,7 +827,7 @@ export default function KasbStudio() {
 
 
                         {/* Follow Up Search Bar & Error Display */}
-                        <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-[#141414] via-[#141414] to-transparent pointer-events-none">
+                        <div className={cn("absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t pointer-events-none", isReview ? 'from-gray-50 via-gray-50 to-transparent' : 'from-[#141414] via-[#141414] to-transparent')}>
                             <div className="relative w-full max-w-3xl mx-auto pointer-events-auto flex flex-col gap-4">
                                 {error && (
                                     <div className="p-3 bg-red-950/40 border border-red-900/50 rounded-lg text-red-400 text-xs text-center animate-in slide-in-from-bottom-2">
@@ -561,31 +835,63 @@ export default function KasbStudio() {
                                     </div>
                                 )}
                                 <div>
-                                    <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2 ml-1 flex items-center gap-1.5">
+                                    <div className={cn("text-[9px] font-black uppercase tracking-widest mb-2 ml-1 flex items-center gap-1.5", theme.textSubtle)}>
                                         <Sparkles className="h-3 w-3 text-indigo-400" />
                                         Refine Architecture
                                     </div>
-                                <div className="relative flex items-center bg-[#111] border border-gray-700 rounded-lg p-1.5 shadow-2xl group focus-within:border-gray-500 focus-within:ring-2 focus-within:ring-white/10 transition-all duration-300">
-                                    <input 
-                                        type="text"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        onKeyDown={handleKeyDown}
-                                        disabled={isLoading}
-                                        placeholder="E.g., Make it include user authentication..."
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-gray-600 h-10 text-sm sm:text-base outline-none pl-3"
-                                    />
-                                    <button 
-                                        onClick={handleSendMessage}
-                                        disabled={!query.trim() || isLoading}
-                                        className={cn(
-                                            "h-10 w-10 rounded-md flex items-center justify-center transition-all duration-300",
-                                            query.trim() && !isLoading ? "bg-white text-black hover:bg-gray-200" : "bg-gray-800 text-gray-600"
+
+                                    {selectedFile && (
+                                        <div className={cn("mb-3 flex items-center gap-2 p-2 rounded-lg border scale-in-center overflow-hidden", theme.card)}>
+                                            <div className="h-8 w-8 rounded bg-indigo-500/20 flex items-center justify-center shrink-0">
+                                                <FileText className="h-4 w-4 text-indigo-400" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold truncate">{selectedFile.name}</p>
+                                                <p className="text-[9px] text-gray-500 uppercase tracking-widest">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                                            </div>
+                                            <button onClick={removeFile} className="p-1 hover:bg-red-500/10 rounded-full text-gray-500 hover:text-red-400">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    <div className={cn("relative flex items-center border rounded-lg p-1.5 shadow-2xl group transition-all duration-300", theme.input)}>
+                                        <input 
+                                            type="text"
+                                            value={query}
+                                            onChange={(e) => setQuery(e.target.value)}
+                                            onKeyDown={handleKeyDown}
+                                            disabled={isLoading}
+                                            placeholder="E.g., Make it include user authentication..."
+                                            className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-3", isReview ? 'text-black placeholder:text-gray-400' : 'text-white placeholder:text-gray-600')}
+                                        />
+
+                                        {isReview && (
+                                            <button 
+                                                onClick={triggerFileUpload}
+                                                disabled={isLoading}
+                                                className={cn(
+                                                    "h-10 w-10 rounded-md flex items-center justify-center transition-all duration-300 mr-2",
+                                                    selectedFile ? "bg-indigo-500/20 text-indigo-400 border border-indigo-500/30" : "text-gray-500 hover:text-gray-300 hover:bg-white/5"
+                                                )}
+                                                title="Attach Pitch Deck"
+                                            >
+                                                <Paperclip className="h-5 w-5" />
+                                            </button>
                                         )}
-                                    >
-                                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" /> : <Send className="h-4 w-4" />}
-                                    </button>
+
+                                        <button 
+                                            onClick={handleSendMessage}
+                                            disabled={(!query.trim() && !selectedFile) || isLoading}
+                                            className={cn(
+                                                "h-10 w-10 rounded-md flex items-center justify-center transition-all duration-300",
+                                                (query.trim() || selectedFile) && !isLoading ? "bg-black text-white hover:bg-gray-800" : "bg-gray-800 text-gray-600"
+                                            )}
+                                        >
+                                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin text-gray-500" /> : <Send className="h-4 w-4" />}
+                                        </button>
                                     </div>
+                                    <p className={cn("text-center text-[10px] mt-2 font-medium", theme.textSubtle)}>Kasb. AI is AI can Make Mistake</p>
                                 </div>
                             </div>
                         </div>
@@ -597,7 +903,7 @@ export default function KasbStudio() {
             {messages.length > 0 && (
                 <button
                     onClick={scrollToTop}
-                    className="fixed bottom-28 right-6 h-11 w-11 rounded-full bg-indigo-600 text-white shadow-2xl flex items-center justify-center hover:bg-indigo-500 transition-all active:scale-90 z-[999] border border-white/20"
+                    className={cn("fixed bottom-28 right-6 h-11 w-11 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-90 z-[999] border", isReview ? 'bg-black text-white border-white/20' : 'bg-indigo-600 text-white border-white/20')}
                     title="Scroll to top"
                 >
                     <ArrowUp className="h-5 w-5" />

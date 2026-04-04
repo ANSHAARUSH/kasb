@@ -25,7 +25,7 @@ export function StartupComparisonView({ startup1, startup2, result, onClose }: S
                 <div className="flex items-center justify-between border-b p-6 bg-gray-50">
                     <div>
                         <h2 className="text-2xl font-bold">AI Comparison Analysis</h2>
-                        <p className="text-gray-500 text-sm">Powered by Gemini AI</p>
+                        <p className="text-gray-500 text-sm">Powered by Kasb.AI</p>
                     </div>
                     <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white">
                         <X className="h-6 w-6" />

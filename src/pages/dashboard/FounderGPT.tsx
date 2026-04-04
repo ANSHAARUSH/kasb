@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, Loader2, User, Bot, Flame, Trash2 } from "lucide-react"
+import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../../components/ui/button"
 import { chatWithPersonality } from "../../lib/ai"
@@ -23,6 +23,8 @@ interface ChatMessage {
     role: "user" | "assistant"
     content: string
     timestamp: string
+    mentorId?: string
+    originalPrompt?: string
 }
 
 export default function FounderGPT() {
@@ -31,15 +33,47 @@ export default function FounderGPT() {
     const [isOpenPersonality, setIsOpenPersonality] = useState(false)
     const [query, setQuery] = useState("")
     const [quote, setQuote] = useState(QUOTES[0])
-    const [personality, setPersonality] = useState("Melon Tusk")
-    const [messages, setMessages] = useState<ChatMessage[]>([])
+    const [personality, setPersonality] = useState(() => {
+        return sessionStorage.getItem('foundergpt_personality') || "Melon Tusk";
+    })
+    const [messages, setMessages] = useState<ChatMessage[]>(() => {
+        try {
+            const saved = sessionStorage.getItem('foundergpt_messages');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    })
     const [isLoading, setIsLoading] = useState(false)
     const [brutalMode, setBrutalMode] = useState(false)
+    const [hasManuallySelectedMentor, setHasManuallySelectedMentor] = useState(false)
+    const [isSwitching, setIsSwitching] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
+    const scrollToTop = () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
     const [sessions, setSessions] = useState<ChatSession[]>([])
-    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
+        return sessionStorage.getItem('foundergpt_sessionId') || null;
+    })
     const { user } = useAuth()
+
+    // Persist chat state to sessionStorage so it survives tab switches
+    useEffect(() => {
+        sessionStorage.setItem('foundergpt_messages', JSON.stringify(messages));
+    }, [messages])
+
+    useEffect(() => {
+        if (currentSessionId) {
+            sessionStorage.setItem('foundergpt_sessionId', currentSessionId);
+        } else {
+            sessionStorage.removeItem('foundergpt_sessionId');
+        }
+    }, [currentSessionId])
+
+    useEffect(() => {
+        sessionStorage.setItem('foundergpt_personality', personality);
+    }, [personality])
 
     useEffect(() => {
         if (user) {
@@ -103,6 +137,153 @@ export default function FounderGPT() {
         // Fallback to the default API key
         return import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     }
+    // Keyword expertise map for each mentor
+    const MENTOR_KEYWORDS: Record<string, string[]> = {
+        "Steven Dobs": [
+            "design", "ui", "ux", "user experience", "user interface", "prototype",
+            "wireframe", "branding", "brand", "logo", "aesthetic", "visual",
+            "simplicity", "minimalist", "product design", "creative", "typography",
+            "color", "layout", "mockup", "figma", "landing page", "website design",
+            "app design", "mobile design", "look and feel", "beautiful", "elegant"
+        ],
+        "Will Grates": [
+            "build", "code", "software", "platform", "architecture", "system",
+            "database", "api", "backend", "frontend", "infrastructure", "cloud",
+            "devops", "tech stack", "programming", "developer", "engineering",
+            "saas", "tool", "automate", "automation", "integrate", "integration",
+            "data", "analytics", "machine learning", "algorithm", "security",
+            "server", "deploy", "long-term", "sustainable", "microsoft", "windows"
+        ],
+        "Marek Zane": [
+            "scale", "scaling", "growth", "user acquisition", "viral", "network effect",
+            "distribution", "social media", "marketing", "ads", "advertising",
+            "engagement", "retention", "community", "audience", "followers",
+            "influencer", "content", "seo", "campaign", "funnel", "conversion",
+            "traction", "users", "reach", "facebook", "instagram", "meta",
+            "grow", "expand", "market share", "go to market", "gtm"
+        ],
+        "Melon Tusk": [
+            "first principles", "innovation", "disrupt", "rocket", "space",
+            "manufacturing", "hardware", "physics", "engineering", "tesla",
+            "electric", "battery", "energy", "ambitious", "impossible",
+            "moonshot", "pivot", "startup", "venture", "fundraise", "funding",
+            "investor", "pitch", "valuation", "equity", "strategy", "vision",
+            "idea", "business model", "revenue", "profit", "lean", "mvp",
+            "competition", "market", "opportunity", "problem", "solution"
+        ]
+    };
+
+    // Returns mentors ranked by relevance (highest score first)
+    const getRankedMentors = (prompt: string): string[] => {
+        const text = prompt.toLowerCase();
+        const scores: Record<string, number> = {
+            "Melon Tusk": 0,
+            "Steven Dobs": 0,
+            "Marek Zane": 0,
+            "Will Grates": 0
+        };
+
+        for (const [mentor, keywords] of Object.entries(MENTOR_KEYWORDS)) {
+            for (const keyword of keywords) {
+                if (text.includes(keyword)) {
+                    scores[mentor] += 1;
+                }
+            }
+        }
+
+        return Object.entries(scores)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name]) => name);
+    };
+
+    // Auto-select the best AI mentor based on prompt keywords
+    const autoSelectMentor = (prompt: string): string => {
+        const ranked = getRankedMentors(prompt);
+        return ranked[0];
+    };
+
+    const handleSwitchMentor = async (targetMentor: string, originalPrompt: string) => {
+        if (isLoading || isSwitching || !user) return;
+
+        setIsSwitching(true);
+        setPersonality(targetMentor);
+
+        // Remove the last AI response
+        setMessages(prev => {
+            const lastAiIndex = [...prev].reverse().findIndex(m => m.role === "assistant");
+            if (lastAiIndex === -1) return prev;
+            const actualIndex = prev.length - 1 - lastAiIndex;
+            return prev.slice(0, actualIndex);
+        });
+
+        setIsLoading(true);
+
+        try {
+            const apiKey = getApiKeyForPersonality(targetMentor);
+            if (!apiKey) {
+                const errorMsg: ChatMessage = {
+                    id: `ai-err-${Date.now()}`,
+                    role: "assistant",
+                    content: `⚠️ API key not configured for ${targetMentor}.`,
+                    timestamp: new Date().toISOString(),
+                    mentorId: targetMentor,
+                    originalPrompt
+                };
+                setMessages(prev => [...prev, errorMsg]);
+                setIsLoading(false);
+                setIsSwitching(false);
+                return;
+            }
+
+            // Build history excluding the removed last AI message
+            const currentMessages = messages.filter((_, i) => {
+                const lastAiIndex = [...messages].reverse().findIndex(m => m.role === "assistant");
+                return lastAiIndex === -1 || i !== messages.length - 1 - lastAiIndex;
+            });
+            const history = currentMessages.slice(0, -1).map(m => ({
+                role: m.role,
+                content: m.content
+            }));
+
+            const responseText = await chatWithPersonality(
+                originalPrompt,
+                history,
+                apiKey,
+                targetMentor,
+                undefined,
+                brutalMode
+            );
+
+            if (currentSessionId) {
+                await saveChatMessage(currentSessionId, "assistant", responseText);
+                getUserChatSessions(user.id).then(setSessions);
+            }
+
+            const aiMessage: ChatMessage = {
+                id: `ai-switch-${Date.now()}`,
+                role: "assistant",
+                content: responseText,
+                timestamp: new Date().toISOString(),
+                mentorId: targetMentor,
+                originalPrompt
+            };
+            setMessages(prev => [...prev, aiMessage]);
+        } catch (err) {
+            console.error("Switch mentor error:", err);
+            const errorMsg: ChatMessage = {
+                id: `ai-err-${Date.now()}`,
+                role: "assistant",
+                content: "Something went wrong while switching mentors. Please try again.",
+                timestamp: new Date().toISOString(),
+                mentorId: targetMentor,
+                originalPrompt
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setIsLoading(false);
+            setIsSwitching(false);
+        }
+    };
 
     const handleSendMessage = async () => {
         if (!query.trim() || isLoading || !user) return
@@ -120,10 +301,17 @@ export default function FounderGPT() {
         setIsLoading(true)
 
         let sessionId = currentSessionId
+        let activeMentor = personality;
 
         try {
+            // Auto-select mentor for new chats if user hasn't manually picked one
+            if (!sessionId && !hasManuallySelectedMentor) {
+                activeMentor = autoSelectMentor(userText);
+                setPersonality(activeMentor);
+            }
+
             if (!sessionId) {
-                const session = await createChatSession(user.id, personality, userText)
+                const session = await createChatSession(user.id, activeMentor, userText)
                 if (session) {
                     sessionId = session.id
                     setCurrentSessionId(sessionId)
@@ -135,7 +323,7 @@ export default function FounderGPT() {
                 await saveChatMessage(sessionId, "user", userText)
             }
 
-            const apiKey = getApiKeyForPersonality(personality)
+            const apiKey = getApiKeyForPersonality(activeMentor)
             
             if (!apiKey) {
                 const errorMsg: ChatMessage = {
@@ -158,7 +346,7 @@ export default function FounderGPT() {
                 userText,
                 history,
                 apiKey,
-                personality,
+                activeMentor,
                 undefined,
                 brutalMode
             )
@@ -174,7 +362,9 @@ export default function FounderGPT() {
                 id: `ai-${Date.now()}`,
                 role: "assistant",
                 content: responseText,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                mentorId: activeMentor,
+                originalPrompt: userText
             }
             setMessages(prev => [...prev, aiMessage])
         } catch (err) {
@@ -203,6 +393,11 @@ export default function FounderGPT() {
         setMessages([])
         setQuery("")
         setIsSidebarOpen(false)
+        setHasManuallySelectedMentor(false)
+        // Clear saved state so it starts fresh
+        sessionStorage.removeItem('foundergpt_messages');
+        sessionStorage.removeItem('foundergpt_sessionId');
+        sessionStorage.removeItem('foundergpt_personality');
     }
 
     const personalities = [
@@ -281,6 +476,7 @@ export default function FounderGPT() {
                                                             return;
                                                         }
                                                         setPersonality(p.id)
+                                                        setHasManuallySelectedMentor(true)
                                                         setIsOpenPersonality(false)
                                                     }}
                                                     className={cn(
@@ -508,38 +704,89 @@ export default function FounderGPT() {
                     <>
                         <div className="flex-1 overflow-y-auto space-y-6 py-4 custom-scrollbar">
                             <AnimatePresence initial={false}>
-                                {messages.map((msg) => (
+                                {messages.map((msg, msgIndex) => {
+                                    const isLastAiMessage = msg.role === "assistant" && msgIndex === messages.length - 1;
+                                    const mentorIcon = personalities.find(p => p.id === msg.mentorId)?.icon || "🤖";
+
+                                    // Get alternative mentors (exclude current mentor)
+                                    const alternativeMentors = msg.originalPrompt
+                                        ? getRankedMentors(msg.originalPrompt).filter(m => m !== msg.mentorId)
+                                        : [];
+
+                                    return (
                                     <motion.div
                                         key={msg.id}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        className={cn(
+                                        className="flex flex-col"
+                                    >
+                                        <div className={cn(
                                             "flex gap-3",
                                             msg.role === "user" ? "justify-end" : "justify-start"
-                                        )}
-                                    >
-                                        {msg.role === "assistant" && (
-                                            <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center shrink-0 mt-1">
-                                                <Bot className="h-4 w-4 text-white" />
-                                            </div>
-                                        )}
-                                        <div
-                                            className={cn(
-                                                "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
-                                                msg.role === "user"
-                                                    ? "bg-black text-white rounded-br-md"
-                                                    : "bg-gray-50 border border-gray-100 text-gray-800 rounded-bl-md"
+                                        )}>
+                                            {msg.role === "assistant" && (
+                                                <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center shrink-0 mt-1" title={msg.mentorId || personality}>
+                                                    <Bot className="h-4 w-4 text-white" />
+                                                </div>
                                             )}
-                                        >
-                                            <div className="whitespace-pre-wrap">{msg.content}</div>
-                                        </div>
-                                        {msg.role === "user" && (
-                                            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
-                                                <User className="h-4 w-4 text-indigo-600" />
+                                            <div className="flex flex-col max-w-[80%]">
+                                                {msg.role === "assistant" && msg.mentorId && (
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">
+                                                        {mentorIcon} {msg.mentorId}
+                                                    </span>
+                                                )}
+                                                <div
+                                                    className={cn(
+                                                        "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                                                        msg.role === "user"
+                                                            ? "bg-black text-white rounded-br-md"
+                                                            : "bg-gray-50 border border-gray-100 text-gray-800 rounded-bl-md"
+                                                    )}
+                                                >
+                                                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                                                </div>
+
+                                                {/* Switch AI Mentor Button — only on the last AI response */}
+                                                {isLastAiMessage && !isLoading && !isSwitching && msg.originalPrompt && alternativeMentors.length > 0 && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: 0.3 }}
+                                                        className="mt-3 ml-1"
+                                                    >
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                            <RefreshCw className="h-3 w-3" />
+                                                            Try another perspective
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {alternativeMentors.map((mentorName) => {
+                                                                const mentorInfo = personalities.find(p => p.id === mentorName);
+                                                                if (!mentorInfo) return null;
+                                                                return (
+                                                                    <button
+                                                                        key={mentorName}
+                                                                        onClick={() => handleSwitchMentor(mentorName, msg.originalPrompt!)}
+                                                                        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-black hover:shadow-md text-xs font-bold text-gray-600 hover:text-black transition-all duration-200 active:scale-95"
+                                                                    >
+                                                                        <span className="text-base">{mentorInfo.icon}</span>
+                                                                        <span className="hidden sm:inline">{mentorInfo.label}</span>
+                                                                        <span className="sm:hidden">{mentorInfo.label.split(' ')[0]}</span>
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </motion.div>
+                                                )}
                                             </div>
-                                        )}
+                                            {msg.role === "user" && (
+                                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
+                                                    <User className="h-4 w-4 text-indigo-600" />
+                                                </div>
+                                            )}
+                                        </div>
                                     </motion.div>
-                                ))}
+                                    );
+                                })}
                             </AnimatePresence>
 
                             {/* Loading indicator */}
@@ -592,7 +839,7 @@ export default function FounderGPT() {
                                     </button>
                                 </div>
                                 {/* Brutal mode toggle in chat */}
-                                <div className="flex justify-center mt-4">
+                                <div className="flex items-center justify-center gap-3 mt-4">
                                     <button
                                         onClick={() => setBrutalMode(!brutalMode)}
                                         className={cn(
@@ -604,6 +851,14 @@ export default function FounderGPT() {
                                     >
                                         <Flame className={cn("h-3 w-3", brutalMode && "animate-pulse")} />
                                         Brutal {brutalMode ? "On" : "Off"}
+                                    </button>
+
+                                    <button
+                                        onClick={scrollToTop}
+                                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:text-black"
+                                    >
+                                        <ArrowUp className="h-3 w-3" />
+                                        Top
                                     </button>
                                 </div>
                             </div>

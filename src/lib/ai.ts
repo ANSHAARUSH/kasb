@@ -925,6 +925,7 @@ OUTPUT FORMAT (return ONLY this JSON, no other text):
     }
 }
 
+
 export async function generateInvestorSummary(
     answers: Record<string, Record<string, string>>,
     stage: string,
@@ -1042,6 +1043,7 @@ export async function generateFounderAnalysis(
 }
 
 export interface PitchDeckScorecard {
+    // Detailed analysis (StartupProfile format)
     problem: { score: number; feedback: string };
     solution: { score: number; feedback: string };
     market: { score: number; feedback: string };
@@ -1051,6 +1053,13 @@ export interface PitchDeckScorecard {
     overall_sentiment: string;
     critical_missing_info: string[];
     investor_recommendation: 'strong_pass' | 'monitor' | 'potential_investment' | 'high_priority';
+
+    // Aggregated data (KasbStudio format)
+    total_score: number;
+    scores: Record<string, number>;
+    verdict: string;
+    strengths: string[];
+    risks: string[];
 }
 
 export async function reviewPitchDeck(
@@ -1112,7 +1121,27 @@ export async function reviewPitchDeck(
         }
 
         try {
-            return extractJSON<PitchDeckScorecard>(text);
+            const result = extractJSON<any>(text);
+            
+            // Calculate legacy fields for KasbStudio compatibility
+            const scores: Record<string, number> = {
+                market_opportunity: result.market.score * 2,
+                product_solution: result.solution.score * 2,
+                business_model: result.business_model.score * 2,
+                team: result.team.score * 2,
+                financials: result.traction.score * 2
+            };
+
+            const total_score = Object.values(scores).reduce((a, b) => a + b, 0);
+            
+            return {
+                ...result,
+                total_score,
+                scores,
+                verdict: result.overall_sentiment,
+                strengths: [result.problem.feedback, result.solution.feedback, result.market.feedback],
+                risks: result.critical_missing_info
+            } as PitchDeckScorecard;
         } catch (e) {
             return text;
         }

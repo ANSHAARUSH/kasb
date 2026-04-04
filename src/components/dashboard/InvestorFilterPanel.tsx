@@ -21,7 +21,7 @@ interface InvestorFilterPanelProps {
     onClose: () => void
 }
 
-const TYPES = ["Angel Investor", "Venture Capital", "Syndicate", "Family Office"]
+const TYPES = ["Angel Investor", "Venture Capital", "Syndicate", "Family Office", "Government Grants", "Accelerators"]
 const INDUSTRIES = [
     "AI", "SaaS", "FinTech", "HealthTech", "EdTech",
     "AgriTech", "CleanTech", "PropTech", "Logistics", "DeepTech", "E-commerce"
