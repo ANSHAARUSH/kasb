@@ -51,7 +51,7 @@ function getAIClient(apiKey: string, baseUrl?: string) {
     return { type: 'openai', client: openai };
 }
 
-export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string } = {}) {
+export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string; isJSON?: boolean } = {}) {
     const { type, client } = getAIClient(apiKey, options.baseUrl);
 
     // GROQ / OPENAI PATH (Primary)
@@ -80,6 +80,7 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
         const completion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt }],
             model: options.model || "llama-3.3-70b-versatile",
+            response_format: options.isJSON ? { type: "json_object" } : undefined
         });
         return completion.choices[0].message.content || "";
     }
@@ -326,13 +327,15 @@ export async function compareStartups(startup1: Startup, startup2: Startup, apiK
     }
     `;
 
-    try {
-        const text = await runInference(apiKey, prompt, { baseUrl });
-        return extractJSON<ComparisonResult>(text);
-    } catch (error: unknown) {
-        console.error("AI Comparison Error:", error);
-        throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
-    }
+    return retryWithBackoff(async () => {
+        try {
+            const text = await runInference(apiKey, prompt, { baseUrl, isJSON: true });
+            return extractJSON<ComparisonResult>(text);
+        } catch (error: unknown) {
+            console.error("AI Comparison Error:", error);
+            throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
+        }
+    });
 }
 export async function compareInvestors(investor1: any, investor2: any, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
@@ -346,13 +349,13 @@ export async function compareInvestors(investor1: any, investor2: any, apiKey: s
     Bio: ${investor1.bio}
     Funds Available: ${investor1.fundsAvailable}
     Investments Count: ${investor1.investments}
-    Expertise: ${investor1.expertise.join(", ")}
+    Expertise: ${Array.isArray(investor1.expertise) ? investor1.expertise.join(", ") : (investor1.expertise || "Unknown")}
     
     Investor 2: ${investor2.name}
     Bio: ${investor2.bio}
     Funds Available: ${investor2.fundsAvailable}
     Investments Count: ${investor2.investments}
-    Expertise: ${investor2.expertise.join(", ")}
+    Expertise: ${Array.isArray(investor2.expertise) ? investor2.expertise.join(", ") : (investor2.expertise || "Unknown")}
     
     Provide the output in valid JSON format ONLY, with this structure:
     {
@@ -367,13 +370,15 @@ export async function compareInvestors(investor1: any, investor2: any, apiKey: s
     }
     `;
 
-    try {
-        const text = await runInference(apiKey, prompt, { baseUrl });
-        return extractJSON<ComparisonResult>(text);
-    } catch (error: unknown) {
-        console.error("AI Comparison Error:", error);
-        throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
-    }
+    return retryWithBackoff(async () => {
+        try {
+            const text = await runInference(apiKey, prompt, { baseUrl, isJSON: true });
+            return extractJSON<ComparisonResult>(text);
+        } catch (error: unknown) {
+            console.error("AI Comparison Error:", error);
+            throw new Error(`AI API Error: ${error instanceof Error ? error.message : "Failed to generate comparison"}`);
+        }
+    });
 }
 
 export interface EligibilityResult {
