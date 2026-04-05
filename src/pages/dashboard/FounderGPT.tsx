@@ -411,7 +411,7 @@ export default function FounderGPT() {
     const hasMessages = messages.length > 0
 
     return (
-        <div className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] md:-mt-6 bg-white overflow-hidden flex flex-col transition-all duration-500">
+        <div className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] md:-mt-6 bg-[#0B0B0B] overflow-hidden flex flex-col transition-all duration-500 selection:bg-white selection:text-black">
             {/* Sidebar Drawer */}
             <AnimatePresence>
                 {isSidebarOpen && (
@@ -560,38 +560,27 @@ export default function FounderGPT() {
                                     </div>
                                 </div>
                             </div>
-
-
                         </motion.aside>
                     </>
                 )}
             </AnimatePresence>
 
             {/* Header */}
-            <header className="flex items-center justify-between p-4 sm:p-6 sticky top-0 bg-white/80 backdrop-blur-md z-30">
+            <header className="flex items-center justify-between p-4 sm:p-6 sticky top-0 bg-transparent z-30">
                 <button 
                     onClick={() => setIsSidebarOpen(true)}
-                    className="h-10 w-10 flex items-center justify-center rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-all active:scale-90"
+                    className="h-10 w-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm shadow-sm hover:bg-white/10 transition-all active:scale-90"
                 >
-                    <Menu className="h-5 w-5 text-gray-600" />
+                    <Menu className="h-5 w-5 text-white/70" />
                 </button>
-                <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-indigo-600" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Founder GPT Beta</span>
-                    {hasMessages && (
-                        <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full ml-1">
-                            {personalities.find(p => p.id === personality)?.icon} {personality}
-                        </span>
-                    )}
-                </div>
-                <div className="w-10" /> {/* Spacer */}
+                <div className="w-10" /> {/* Spacer to maintain layout */}
             </header>
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col px-6 max-w-4xl mx-auto w-full pb-4">
                 {!hasMessages ? (
                     /* Welcome Screen */
-                    <div className="flex-1 flex items-center justify-center">
+                    <div className="flex-1 flex items-center justify-center relative">
                         <motion.div
                             initial={{ opacity: 0, y: 30, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -602,17 +591,21 @@ export default function FounderGPT() {
                             }}
                             className="w-full space-y-12 text-center"
                         >
-                            {/* Welcome Icon / Logo */}
+                            {/* Welcome Icon / Logo with Glow */}
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
                                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
                                 transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                                className="h-20 w-20 flex items-center justify-center mx-auto mb-4"
+                                className="relative h-20 w-20 flex items-center justify-center mx-auto mb-6"
                             >
+                                {/* Background Glow */}
+                                <div className="absolute inset-0 bg-white/20 blur-[50px] rounded-full scale-150" />
+                                <div className="absolute inset-x-[-100%] inset-y-[-100%] bg-white/5 blur-[150px] pointer-events-none" />
+                                
                                 <img 
                                     src={`${import.meta.env.BASE_URL}logo.jpg`} 
                                     alt="Kasb.AI Logo" 
-                                    className="h-full w-full object-contain rounded-2xl shadow-xl shadow-gray-100" 
+                                    className="relative h-14 w-14 object-contain rounded-2xl shadow-2xl shadow-white/5 ring-1 ring-white/10" 
                                 />
                             </motion.div>
 
@@ -622,7 +615,7 @@ export default function FounderGPT() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4 }}
-                                    className="text-2xl sm:text-4xl font-extrabold tracking-tight text-gray-900 leading-[1.1] max-w-2xl mx-auto"
+                                    className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.05] max-w-xl mx-auto"
                                 >
                                     "{quote.text}"
                                 </motion.h2>
@@ -630,23 +623,25 @@ export default function FounderGPT() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.6 }}
-                                    className="text-sm font-black uppercase tracking-[0.2em] text-indigo-500/60"
+                                    className="text-[10px] sm:text-xs font-black uppercase tracking-[0.4em] text-white/40"
                                 >
                                     — {quote.author}
                                 </motion.p>
                             </div>
+
+                            {/* Personality Indicator Box (Right Side) */}
 
                             {/* Search Bar */}
                             <motion.div 
                                 initial={{ opacity: 0, y: 40 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.8, type: "spring", damping: 20 }}
-                                className="relative w-full max-w-xl mx-auto group"
+                                className="relative w-full max-w-lg mx-auto group"
                             >
-                                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/10 to-gray-500/5 rounded-full blur-xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-700 pointer-events-none" />
-                                <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-full p-1.5 shadow-2xl shadow-gray-200/30 group-focus-within:border-black group-focus-within:ring-4 group-focus-within:ring-black/5 transition-all duration-300">
-                                    <div className="pl-4 pr-2">
-                                        <Search className="h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                                <div className="absolute -inset-1 bg-white/10 rounded-full blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none" />
+                                <div className="relative flex items-center bg-[#1A1A1A] border border-white/10 rounded-full p-2 shadow-2xl group-focus-within:border-white/30 transition-all duration-300">
+                                    <div className="pl-3 pr-2">
+                                        <Search className="h-4 w-4 text-white/30 group-focus-within:text-white/70 transition-colors" />
                                     </div>
                                     <input 
                                         type="text"
@@ -654,17 +649,17 @@ export default function FounderGPT() {
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyDown={handleKeyDown}
                                         placeholder="What's on your mind today?"
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-medium placeholder:text-gray-400 h-10 text-base outline-none"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-white/20 h-9 text-sm outline-none"
                                     />
                                     <button 
                                         onClick={handleSendMessage}
                                         disabled={!query.trim() || isLoading}
                                         className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300",
-                                            query.trim() ? "bg-black text-white scale-100 shadow-lg hover:bg-gray-800" : "bg-gray-50 text-gray-300 scale-90"
+                                            "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300",
+                                            query.trim() ? "bg-white text-black scale-100 shadow-xl hover:bg-gray-200" : "bg-white/5 text-white/10 scale-90"
                                         )}
                                     >
-                                        <Send className="h-4 w-4" />
+                                        <Send className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                                 
@@ -673,13 +668,13 @@ export default function FounderGPT() {
                                     <button
                                         onClick={() => setBrutalMode(!brutalMode)}
                                         className={cn(
-                                            "flex items-center gap-2 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 active:scale-95 border shadow-sm",
+                                            "flex items-center gap-2 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] transition-all duration-500 active:scale-95 border",
                                             brutalMode
-                                                ? "bg-red-500 text-white border-red-400 shadow-red-200/50 shadow-md"
-                                                : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:text-gray-600"
+                                                ? "bg-orange-500 text-white border-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.3)]"
+                                                : "bg-[#1A1A1A] text-white/40 border-white/5 hover:bg-[#252525] hover:text-white/60"
                                         )}
                                     >
-                                        <Flame className={cn("h-3.5 w-3.5 transition-all", brutalMode && "animate-pulse")} />
+                                        <Flame className={cn("h-3.5 w-3.5 transition-all duration-500", brutalMode && "animate-pulse fill-white")} />
                                         Brutal Mode {brutalMode ? "On" : "Off"}
                                     </button>
                                 </div>
@@ -690,7 +685,7 @@ export default function FounderGPT() {
                                         <button 
                                             key={tag} 
                                             onClick={() => setQuery(tag)}
-                                            className="px-5 py-2 rounded-full bg-gray-50 border border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-white hover:border-indigo-200 hover:text-indigo-600 transition-all active:scale-95 shadow-sm"
+                                            className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/40 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 shadow-sm"
                                         >
                                             {tag}
                                         </button>
@@ -725,22 +720,22 @@ export default function FounderGPT() {
                                             msg.role === "user" ? "justify-end" : "justify-start"
                                         )}>
                                             {msg.role === "assistant" && (
-                                                <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center shrink-0 mt-1" title={msg.mentorId || personality}>
-                                                    <Bot className="h-4 w-4 text-white" />
+                                                <div className="h-7 w-7 rounded-full bg-black flex items-center justify-center shrink-0 mt-1" title={msg.mentorId || personality}>
+                                                    <Bot className="h-3.5 w-3.5 text-white" />
                                                 </div>
                                             )}
                                             <div className="flex flex-col max-w-[80%]">
                                                 {msg.role === "assistant" && msg.mentorId && (
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">
                                                         {mentorIcon} {msg.mentorId}
                                                     </span>
                                                 )}
                                                 <div
                                                     className={cn(
-                                                        "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                                                        "rounded-2xl px-4 py-3 text-xs leading-relaxed",
                                                         msg.role === "user"
-                                                            ? "bg-black text-white rounded-br-md"
-                                                            : "bg-gray-50 border border-gray-100 text-gray-800 rounded-bl-md"
+                                                            ? "bg-white text-black rounded-br-md shadow-xl"
+                                                            : "bg-[#1A1A1A] border border-white/5 text-white/90 rounded-bl-md shadow-2xl"
                                                     )}
                                                 >
                                                     <div className="whitespace-pre-wrap">{msg.content}</div>
@@ -754,8 +749,8 @@ export default function FounderGPT() {
                                                         transition={{ delay: 0.3 }}
                                                         className="mt-3 ml-1"
                                                     >
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                            <RefreshCw className="h-3 w-3" />
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                            <RefreshCw className="h-2.5 w-2.5" />
                                                             Try another perspective
                                                         </p>
                                                         <div className="flex flex-wrap gap-2">
@@ -766,9 +761,9 @@ export default function FounderGPT() {
                                                                     <button
                                                                         key={mentorName}
                                                                         onClick={() => handleSwitchMentor(mentorName, msg.originalPrompt!)}
-                                                                        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-black hover:shadow-md text-xs font-bold text-gray-600 hover:text-black transition-all duration-200 active:scale-95"
+                                                                        className="group flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-white border border-gray-200 hover:border-black hover:shadow-md text-[10px] font-bold text-gray-600 hover:text-black transition-all duration-200 active:scale-95"
                                                                     >
-                                                                        <span className="text-base">{mentorInfo.icon}</span>
+                                                                        <span className="text-sm">{mentorInfo.icon}</span>
                                                                         <span className="hidden sm:inline">{mentorInfo.label}</span>
                                                                         <span className="sm:hidden">{mentorInfo.label.split(' ')[0]}</span>
                                                                     </button>
@@ -779,8 +774,8 @@ export default function FounderGPT() {
                                                 )}
                                             </div>
                                             {msg.role === "user" && (
-                                                <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
-                                                    <User className="h-4 w-4 text-indigo-600" />
+                                                <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 mt-1">
+                                                    <User className="h-3.5 w-3.5 text-indigo-600" />
                                                 </div>
                                             )}
                                         </div>
@@ -796,12 +791,12 @@ export default function FounderGPT() {
                                     animate={{ opacity: 1, y: 0 }}
                                     className="flex gap-3 justify-start"
                                 >
-                                    <div className="h-8 w-8 rounded-full bg-black flex items-center justify-center shrink-0 mt-1">
-                                        <Bot className="h-4 w-4 text-white" />
+                                    <div className="h-7 w-7 rounded-full bg-black flex items-center justify-center shrink-0 mt-1">
+                                        <Bot className="h-3.5 w-3.5 text-white" />
                                     </div>
-                                    <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                                        <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
-                                        <span className="text-sm text-gray-400 font-medium">
+                                    <div className="bg-[#1A1A1A] border border-white/10 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-3 shadow-2xl">
+                                        <Loader2 className="h-3.5 w-3.5 text-white/40 animate-spin" />
+                                        <span className="text-xs text-white/40 font-bold uppercase tracking-widest">
                                             {personality} is thinking...
                                         </span>
                                     </div>
@@ -811,9 +806,9 @@ export default function FounderGPT() {
                         </div>
 
                         {/* Chat Input Bar */}
-                        <div className="sticky bottom-0 bg-white pt-4 pb-2">
-                            <div className="relative w-full max-w-2xl mx-auto">
-                                <div className="relative flex items-center bg-white border-2 border-gray-100 rounded-full p-1.5 shadow-lg group focus-within:border-black focus-within:ring-4 focus-within:ring-black/5 transition-all duration-300">
+                        <div className="sticky bottom-0 bg-[#0B0B0B]/80 backdrop-blur-xl pt-3 pb-3 px-2">
+                            <div className="relative w-full max-w-xl mx-auto">
+                                <div className="relative flex items-center bg-[#1A1A1A] border border-white/10 rounded-full p-2 shadow-2xl group focus-within:border-white/30 transition-all duration-300">
                                     <input 
                                         type="text"
                                         value={query}
@@ -821,44 +816,44 @@ export default function FounderGPT() {
                                         onKeyDown={handleKeyDown}
                                         placeholder="Ask a follow-up..."
                                         disabled={isLoading}
-                                        className="flex-1 bg-transparent border-none focus:ring-0 text-gray-900 font-medium placeholder:text-gray-400 h-10 text-base outline-none pl-4"
+                                        className="flex-1 bg-transparent border-none focus:ring-0 text-white font-medium placeholder:text-white/20 h-9 text-sm outline-none pl-4"
                                     />
                                     <button 
                                         onClick={handleSendMessage}
                                         disabled={!query.trim() || isLoading}
                                         className={cn(
-                                            "h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300",
-                                            query.trim() && !isLoading ? "bg-black text-white scale-100 shadow-lg hover:bg-gray-800" : "bg-gray-50 text-gray-300 scale-90"
+                                            "h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300",
+                                            query.trim() && !isLoading ? "bg-white text-black scale-100 shadow-xl hover:bg-gray-200" : "bg-white/5 text-white/10 scale-90"
                                         )}
                                     >
                                         {isLoading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         ) : (
-                                            <Send className="h-4 w-4" />
+                                            <Send className="h-3.5 w-3.5" />
                                         )}
                                     </button>
                                 </div>
                                 {/* Brutal mode toggle in chat */}
-                                <div className="flex items-center justify-center gap-3 mt-4">
+                                <div className="flex items-center justify-center gap-4 mt-4">
                                     <button
                                         onClick={() => setBrutalMode(!brutalMode)}
                                         className={cn(
-                                            "flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border",
+                                            "flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-500 border",
                                             brutalMode
-                                                ? "bg-red-500 text-white border-red-400 shadow-sm shadow-red-200/50"
-                                                : "bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100"
+                                                ? "bg-orange-500 text-white border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+                                                : "bg-[#1A1A1A] text-white/40 border-white/5 hover:bg-[#252525] hover:text-white/60"
                                         )}
                                     >
-                                        <Flame className={cn("h-3 w-3", brutalMode && "animate-pulse")} />
+                                        <Flame className={cn("h-3 w-3 transition-all duration-500", brutalMode && "animate-pulse fill-white")} />
                                         Brutal {brutalMode ? "On" : "Off"}
                                     </button>
 
                                     <button
                                         onClick={scrollToTop}
-                                        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all duration-300 border bg-gray-50 text-gray-400 border-gray-100 hover:bg-gray-100 hover:text-black"
+                                        className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.2em] transition-all duration-300 border bg-[#1A1A1A] text-white/40 border-white/5 hover:bg-[#252525] hover:text-white/60"
                                     >
                                         <ArrowUp className="h-3 w-3" />
-                                        Top
+                                        Back to top
                                     </button>
                                 </div>
                             </div>
@@ -869,8 +864,8 @@ export default function FounderGPT() {
 
             {/* Bottom Floating Stats (Optional Premium Feel) */}
             {!hasMessages && (
-                <footer className="p-6 text-center">
-                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">
+                <footer className="p-4 text-center">
+                    <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.3em]">
                         Powered by Kasb intelligence
                     </p>
                 </footer>
