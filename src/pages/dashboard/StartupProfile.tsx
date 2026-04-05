@@ -6,11 +6,11 @@ import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { ProfileView } from "./startup/ProfileView"
 import { EditProfileModal } from "./startup/EditProfileModal"
 import { DeleteAccountModal } from "../../components/dashboard/DeleteAccountModal"
-import { getGlobalConfig, getUserSetting, supabase } from "../../lib/supabase"
+import { supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
-import { reviewPitchDeck, type PitchDeckScorecard } from "../../lib/ai"
+import { reviewPitchDeck, type PitchDeckScorecard, resolveAIConfig } from "../../lib/ai"
 import { Progress } from "../../components/ui/ScorecardProgress"
 import { Badge } from "../../components/ui/badge"
 import { cn } from "../../lib/utils"
@@ -159,9 +159,8 @@ export default function StartupProfile() {
                                 if (!file) return
                                 setIsReviewing(true)
                                 try {
-                                    let apiKey = import.meta.env.VITE_GROQ_API_KEY
-                                    if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
-                                    if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+                                    const config = await resolveAIConfig(user?.id, 'review')
+                                    let apiKey = config?.apiKey || ''
 
                                     if (!apiKey) {
                                         toast("AI API Key not configured.", "error")

@@ -34,10 +34,11 @@ import type { AnalysisResult } from "./documentIntelligence";
 
 /**
  * Centralized logic to resolve the best available AI API key and its corresponding base URL.
- * Priority: Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
+ * Priority: Feature-specific Env -> Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
  */
-export async function resolveAIConfig(userId?: string) {
+export async function resolveAIConfig(userId?: string, feature?: 'review' | 'chat') {
     // 1. Check Environment Variables
+    const envReview = import.meta.env.VITE_REVIEW_API_KEY;
     const envGroq = import.meta.env.VITE_GROQ_API_KEY;
     const envGemini = import.meta.env.VITE_GEMINI_API_KEY;
     const envOpenAI = import.meta.env.VITE_OPENAI_API_KEY;
@@ -45,9 +46,16 @@ export async function resolveAIConfig(userId?: string) {
     let apiKey = '';
     const isValid = (key: any) => key && typeof key === 'string' && !key.includes('your_') && !key.includes('here');
 
-    if (isValid(envGroq)) apiKey = envGroq;
-    else if (isValid(envGemini)) apiKey = envGemini;
-    else if (isValid(envOpenAI)) apiKey = envOpenAI;
+    // Prioritize feature-specific keys
+    if (feature === 'review' && isValid(envReview)) {
+        apiKey = envReview;
+    } 
+    
+    if (!apiKey) {
+        if (isValid(envGroq)) apiKey = envGroq;
+        else if (isValid(envGemini)) apiKey = envGemini;
+        else if (isValid(envOpenAI)) apiKey = envOpenAI;
+    }
 
     // 2. Check Supabase Global Config
     if (!apiKey) {
@@ -1958,7 +1966,7 @@ export async function reviewStartupDocument(
     content: string | File,
     additionalPrompt?: string
 ): Promise<DocumentReviewResult> {
-    const config = await resolveAIConfig();
+    const config = await resolveAIConfig(undefined, 'review');
     if (!config) throw new Error("No AI API key configured. Please add an API key.");
 
     let textContent: string;

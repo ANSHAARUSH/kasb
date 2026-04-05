@@ -596,16 +596,16 @@ export default function FounderGPT() {
                                 initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
                                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
                                 transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                                className="relative h-20 w-20 flex items-center justify-center mx-auto mb-6"
+                                className="relative h-24 w-24 flex items-center justify-center mx-auto mb-8"
                             >
                                 {/* Background Glow */}
-                                <div className="absolute inset-0 bg-white/20 blur-[50px] rounded-full scale-150" />
-                                <div className="absolute inset-x-[-100%] inset-y-[-100%] bg-white/5 blur-[150px] pointer-events-none" />
+                                <div className="absolute inset-0 bg-white/20 blur-[60px] rounded-full scale-150" />
+                                <div className="absolute inset-x-[-100%] inset-y-[-100%] bg-white/5 blur-[180px] pointer-events-none" />
                                 
                                 <img 
                                     src={`${import.meta.env.BASE_URL}logo.jpg`} 
                                     alt="Kasb.AI Logo" 
-                                    className="relative h-14 w-14 object-contain rounded-2xl shadow-2xl shadow-white/5 ring-1 ring-white/10" 
+                                    className="relative h-18 w-18 object-contain rounded-2xl shadow-2xl shadow-white/5 ring-1 ring-white/10" 
                                 />
                             </motion.div>
 
@@ -636,7 +636,7 @@ export default function FounderGPT() {
                                 initial={{ opacity: 0, y: 40 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.8, type: "spring", damping: 20 }}
-                                className="relative w-full max-w-lg mx-auto group"
+                                className="relative w-full max-w-md mx-auto group"
                             >
                                 <div className="absolute -inset-1 bg-white/10 rounded-full blur-2xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none" />
                                 <div className="relative flex items-center bg-[#1A1A1A] border border-white/10 rounded-full p-2 shadow-2xl group-focus-within:border-white/30 transition-all duration-300">
