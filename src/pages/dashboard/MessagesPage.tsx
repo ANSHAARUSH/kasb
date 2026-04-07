@@ -140,7 +140,7 @@ export default function MessagesPage() {
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
-                avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
+                avatar: `${import.meta.env.BASE_URL}ai-bot.png`,
                 lastMessage: 'AI Assistant',
                 time: '',
                 unread: 0
@@ -193,7 +193,7 @@ export default function MessagesPage() {
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
-                avatar: `${import.meta.env.BASE_URL}premium-robot.png`,
+                avatar: `${import.meta.env.BASE_URL}ai-bot.png`,
                 lastMessage: 'AI Assistant',
                 time: '',
                 unread: 0

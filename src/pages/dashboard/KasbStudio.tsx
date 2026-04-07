@@ -133,7 +133,7 @@ function ScorecardResult({ scorecard, theme }: { scorecard: any, theme: any }) {
     );
 }
 
-function ReviewResultUI({ result, theme }: { result: DocumentReviewResult, theme: any }) {
+function ReviewResultUI({ result }: { result: DocumentReviewResult }) {
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [activeVariation, setActiveVariation] = useState<'short' | 'premium'>('short');
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
@@ -165,7 +165,6 @@ function ReviewResultUI({ result, theme }: { result: DocumentReviewResult, theme
         return 'bg-red-500';
     };
 
-    const overallScore = parseScore(result.scores.overall);
     const verdictColor = result.final_verdict?.toLowerCase().startsWith('yes') 
         ? 'bg-emerald-600' 
         : result.final_verdict?.toLowerCase().startsWith('maybe') 
@@ -1005,7 +1004,7 @@ export default function KasbStudio() {
                                      }
                                      
                                      if (parsed.type === 'document_review') {
-                                         return <ReviewResultUI key={msg.id} result={parsed as DocumentReviewResult} theme={theme} />;
+                                         return <ReviewResultUI key={msg.id} result={parsed as DocumentReviewResult} />;
                                      }
                                      
                                      if (parsed.type === 'scorecard') {

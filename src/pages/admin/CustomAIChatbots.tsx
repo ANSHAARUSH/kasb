@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import { Button } from "../../components/ui/button"
-import { Loader2, Bot, CheckCircle } from "lucide-react"
+import { Loader2, CheckCircle } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export function CustomAIChatbots() {
@@ -113,7 +113,7 @@ export function CustomAIChatbots() {
                             {requests.length === 0 && (
                                 <tr>
                                     <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
-                                        <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                        <img src="/ai-bot.png" alt="AI Bot" className="h-12 w-12 mx-auto mb-4 opacity-50 rounded-full" />
                                         <p className="font-medium text-gray-500 text-base">No custom chatbot requests yet.</p>
                                         <p className="text-sm mt-1">When Fundraise Pro users request custom AI, they will appear here.</p>
                                     </td>
