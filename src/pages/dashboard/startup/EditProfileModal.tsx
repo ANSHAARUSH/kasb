@@ -6,7 +6,10 @@ import { useState, useEffect } from "react"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { ShieldCheck, Sparkles, Loader2 } from "lucide-react"
 import { saveUserSetting } from "../../../lib/supabase"
-import { refineProblemStatement } from "../../../lib/ai"
+import { extractFullTextFromDocument } from "../../../lib/documentExtraction"
+import { extractStartupDetailsFromPitchDeck } from "../../../lib/ai"
+import { Upload, FileText, CheckCircle2 } from "lucide-react"
+import { useRef } from "react"
 import { useToast } from "../../../hooks/useToast"
 
 interface EditProfileModalProps {
@@ -22,6 +25,74 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
     const [editForm, setEditForm] = useState<Partial<StartupProfileData>>({})
     const [answers, setAnswers] = useState<Record<string, Record<string, string>>>({})
     const [refining, setRefining] = useState(false)
+
+    // Pitch Deck Auto-fill State
+    const [isExtracting, setIsExtracting] = useState(false)
+    const [uploadedFileName, setUploadedFileName] = useState('')
+    const [extractionError, setExtractionError] = useState<string | null>(null)
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handlePitchDeckUpload = async (file: File) => {
+        setIsExtracting(true)
+        setExtractionError(null)
+        setUploadedFileName(file.name)
+
+        try {
+            const extractedText = await extractFullTextFromDocument(file)
+            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            if (!apiKey) throw new Error('System AI key is not configured. Please enter details manually.')
+
+            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+
+            setEditForm(prev => {
+                const newForm = { ...prev }
+                if (details.companyName) newForm.name = details.companyName
+                if (details.industry) newForm.industry = details.industry
+                if (details.stage) newForm.stage = details.stage
+                if (details.teamSize) newForm.traction = details.teamSize
+                if (details.problemSolving) newForm.problem_solving = details.problemSolving
+                if (details.founderName && !prev.founder_name) newForm.founder_name = details.founderName
+                if (details.solutionOverview) newForm.description = details.solutionOverview
+                return newForm
+            })
+
+            setAnswers(prev => {
+                const newAnswers = { ...prev }
+                
+                if (!newAnswers.core_problem_solution) newAnswers.core_problem_solution = {}
+                if (!newAnswers.market_customers) newAnswers.market_customers = {}
+                if (!newAnswers.traction_gtm) newAnswers.traction_gtm = {}
+                if (!newAnswers.competition_business) newAnswers.competition_business = {}
+                if (!newAnswers.team) newAnswers.team = {}
+                if (!newAnswers.funding_milestones) newAnswers.funding_milestones = {}
+
+                if (details.problemSolving) newAnswers.core_problem_solution.problem_statement = details.problemSolving
+                if (details.solutionOverview) newAnswers.core_problem_solution.solution_overview = details.solutionOverview
+                if (details.targetCustomer) newAnswers.market_customers.target_customer = details.targetCustomer
+                if (details.marketSize) newAnswers.market_customers.market_size = details.marketSize
+                if (details.whyNow) newAnswers.market_customers.why_now = details.whyNow
+                if (details.tractionRevenue) newAnswers.traction_gtm.traction_revenue = details.tractionRevenue
+                if (details.gtmPlan) newAnswers.traction_gtm.gtm_plan = details.gtmPlan
+                if (details.competitiveAdvantage) newAnswers.competition_business.competitive_advantage = details.competitiveAdvantage
+                if (details.businessModel) newAnswers.competition_business.business_model = details.businessModel
+                if (details.founderName || details.whyYou) newAnswers.team.founder_details = details.whyYou ? (details.founderName + "\nWhy You: " + details.whyYou) : details.founderName || ''
+                if (details.whyYou) newAnswers.team.why_you = details.whyYou
+                if (details.fundingAsk) newAnswers.funding_milestones.funding_amount = details.fundingAsk
+                if (details.useOfFunds) newAnswers.funding_milestones.fund_allocation = details.useOfFunds
+                if (details.milestones) newAnswers.funding_milestones.milestones_12m = details.milestones
+                
+                return newAnswers
+            })
+
+            toast('Pitch deck analyzed! Profile auto-filled.', 'success')
+        } catch (err: any) {
+            console.error('Pitch deck extraction failed:', err)
+            setExtractionError(err.message || 'Failed to extract details from your pitch deck.')
+            toast('Extraction failed. You can try again or enter details manually.', 'error')
+        } finally {
+            setIsExtracting(false)
+        }
+    }
 
     useEffect(() => {
         if (startup && isOpen) {
@@ -80,6 +151,77 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Edit Startup Profile">
             <div className="space-y-8 pb-10">
+                {/* Auto-fill Pitch Deck button */}
+                <div className="pt-2 pb-2">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".pdf,.pptx,.docx"
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) handlePitchDeckUpload(file)
+                        }}
+                    />
+
+                    {!isExtracting && (
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="group w-full p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/50 hover:bg-white hover:border-indigo-500 hover:shadow-md text-left transition-all duration-300 flex items-center gap-4"
+                        >
+                            <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                <Upload className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold mb-0.5 flex items-center gap-2 text-indigo-900">
+                                    Auto-fill with Pitch Deck
+                                    <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-100 px-2 py-0.5 rounded-full">
+                                        <Sparkles className="h-2.5 w-2.5" /> AI
+                                    </span>
+                                </h3>
+                                <p className="text-xs text-indigo-700/70 leading-relaxed">
+                                    Upload your latest deck to instantly update your profile fields.
+                                </p>
+                            </div>
+                        </button>
+                    )}
+
+                    {isExtracting && (
+                        <div className="flex flex-col items-center justify-center py-6 space-y-3 bg-indigo-50 rounded-2xl border border-indigo-100">
+                            <Loader2 className="h-6 w-6 text-indigo-600 animate-spin" />
+                            <div className="text-center">
+                                <h3 className="text-sm font-bold text-indigo-900">Analyzing Pitch Deck</h3>
+                                <p className="text-xs text-indigo-700/70 font-medium">Reading {uploadedFileName}...</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {extractionError && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 space-y-2">
+                            <p className="font-medium text-xs">{extractionError}</p>
+                            <button
+                                type="button"
+                                onClick={() => { setExtractionError(null); fileInputRef.current?.click() }}
+                                className="text-xs font-bold text-red-600 hover:text-red-800 underline"
+                            >Try Again</button>
+                        </div>
+                    )}
+
+                    {uploadedFileName && !isExtracting && !extractionError && (
+                        <div className="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3">
+                            <div className="h-7 w-7 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
+                                <FileText className="h-3.5 w-3.5 text-emerald-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-bold text-emerald-800">Auto-filled successfully</p>
+                                <p className="text-[10px] text-emerald-600 truncate">{uploadedFileName}</p>
+                            </div>
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                        </div>
+                    )}
+                </div>
+
                 {/* Header / Basic Info */}
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
