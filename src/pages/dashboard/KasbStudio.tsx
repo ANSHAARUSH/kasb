@@ -14,7 +14,6 @@ import {
   Trash2, 
   ArrowUp, 
   ChevronDown,
-  Eye,
   FileText,
   Zap
 } from "lucide-react";
@@ -22,7 +21,7 @@ import { cn } from "../../lib/utils";
 import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
 import { useAuth } from "../../context/AuthContext";
-import { reviewStartupDocument, type DocumentReviewResult } from "../../lib/ai";
+import { reviewPitchDeck } from "../../lib/ai";
 import { CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
 
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher";
@@ -129,262 +128,6 @@ function ScorecardResult({ scorecard, theme }: { scorecard: any, theme: any }) {
                     </ul>
                 </div>
             </div>
-        </div>
-    );
-}
-
-function ReviewResultUI({ result }: { result: DocumentReviewResult }) {
-    const [copiedField, setCopiedField] = useState<string | null>(null);
-    const [activeVariation, setActiveVariation] = useState<'short' | 'premium'>('short');
-    const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-
-    const copyText = (key: string, text: string) => {
-        navigator.clipboard.writeText(text);
-        setCopiedField(key);
-        setTimeout(() => setCopiedField(null), 2000);
-    };
-
-    const toggleSection = (key: string) => {
-        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
-    };
-
-    const parseScore = (val: string): number => {
-        const match = val?.match(/(\d+\.?\d*)/);
-        return match ? parseFloat(match[1]) : 0;
-    };
-
-    const scoreColor = (score: number) => {
-        if (score >= 8) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-        if (score >= 6) return 'text-amber-600 bg-amber-50 border-amber-200';
-        return 'text-red-600 bg-red-50 border-red-200';
-    };
-
-    const barColor = (score: number) => {
-        if (score >= 8) return 'bg-emerald-500';
-        if (score >= 6) return 'bg-amber-500';
-        return 'bg-red-500';
-    };
-
-    const verdictColor = result.final_verdict?.toLowerCase().startsWith('yes') 
-        ? 'bg-emerald-600' 
-        : result.final_verdict?.toLowerCase().startsWith('maybe') 
-            ? 'bg-amber-500' 
-            : 'bg-red-600';
-
-    const scoreEntries = [
-        { key: 'clarity', label: 'Clarity' },
-        { key: 'persuasiveness', label: 'Persuasiveness' },
-        { key: 'structure', label: 'Structure & Flow' },
-        { key: 'professionalism', label: 'Professionalism' },
-        { key: 'uniqueness', label: 'Uniqueness' },
-        { key: 'emotional_impact', label: 'Emotional Impact' },
-        { key: 'credibility', label: 'Credibility' },
-        { key: 'cta_strength', label: 'CTA Strength' },
-        { key: 'appeal', label: 'Investor Appeal' },
-    ];
-
-    const analysisEntries = [
-        { key: 'hook', label: 'Hook / Opening', icon: '🎯' },
-        { key: 'value_proposition', label: 'Value Proposition', icon: '💎' },
-        { key: 'clarity', label: 'Clarity & Simplicity', icon: '🔍' },
-        { key: 'structure', label: 'Structure', icon: '🏗️' },
-        { key: 'persuasion', label: 'Persuasion', icon: '🎤' },
-        { key: 'differentiation', label: 'Differentiation', icon: '⚡' },
-        { key: 'trust_signals', label: 'Trust Signals', icon: '🛡️' },
-        { key: 'cta', label: 'Call to Action', icon: '📣' },
-    ];
-
-    return (
-        <div className="w-full max-w-3xl mx-auto space-y-6 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            {/* Context Badges */}
-            <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1.5 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest">{result.content_type || 'Document'}</span>
-                <span className="px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-700 rounded-full text-[10px] font-black uppercase tracking-widest">🎯 {result.target_audience || 'General'}</span>
-                <span className="px-3 py-1.5 bg-gray-100 border border-gray-200 text-gray-700 rounded-full text-[10px] font-black uppercase tracking-widest">🚀 {result.goal || 'Unknown'}</span>
-            </div>
-
-            {/* Summary */}
-            <div className="p-5 rounded-2xl bg-gray-50 border border-gray-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Quick Summary</p>
-                <p className="text-sm text-gray-700 leading-relaxed font-medium">{result.summary}</p>
-            </div>
-
-            {/* Overall Score */}
-            <div className="p-6 rounded-2xl bg-black text-white text-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Overall Score</p>
-                <div className="text-6xl font-black tracking-tighter">{result.scores.overall}</div>
-                <p className="text-xs text-gray-400 mt-2 font-medium">out of 10</p>
-            </div>
-
-            {/* Category Scores */}
-            <div className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-5">Detailed Scores</p>
-                <div className="space-y-4">
-                    {scoreEntries.map(({ key, label }) => {
-                        const raw = result.scores[key as keyof typeof result.scores] || '0';
-                        const numScore = parseScore(raw);
-                        return (
-                            <div key={key} className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold text-gray-700">{label}</span>
-                                    <span className={cn("text-xs font-black px-2 py-0.5 rounded-full border", scoreColor(numScore))}>{numScore}/10</span>
-                                </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                    <div className={cn("h-full rounded-full transition-all duration-1000 ease-out", barColor(numScore))} style={{ width: `${numScore * 10}%` }} />
-                                </div>
-                                <p className="text-[11px] text-gray-500 leading-snug">{typeof raw === 'string' && raw.replace(/^\d+\.?\d*\s*[-\/:]?\s*/, '')}</p>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* First Impression */}
-            <div className="p-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3">👀 First Impression</p>
-                <p className="text-sm text-gray-800 leading-relaxed font-medium">{result.first_impression}</p>
-            </div>
-
-            {/* Deep Analysis - Expandable Sections */}
-            <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Deep Analysis</p>
-                {analysisEntries.map(({ key, label, icon }) => {
-                    const content = result.analysis[key as keyof typeof result.analysis];
-                    if (!content) return null;
-                    const isExpanded = expandedSections[key] !== false; // default open
-                    return (
-                        <div key={key} className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                            <button onClick={() => toggleSection(key)} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors text-left">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-base">{icon}</span>
-                                    <span className="text-xs font-bold text-gray-900 uppercase tracking-wide">{label}</span>
-                                </div>
-                                <ChevronDown className={cn("h-4 w-4 text-gray-400 transition-transform duration-300", isExpanded && "rotate-180")} />
-                            </button>
-                            {isExpanded && (
-                                <div className="px-4 pb-4 border-t border-gray-100 pt-3">
-                                    <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{content}</p>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Critical Flaws */}
-            {result.critical_flaws?.length > 0 && (
-                <div className="p-6 rounded-2xl bg-red-50 border-2 border-red-200">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-red-600 mb-4">🚨 Critical Flaws (Brutal Mode)</p>
-                    <ol className="space-y-3">
-                        {result.critical_flaws.map((flaw, i) => (
-                            <li key={i} className="flex gap-3">
-                                <span className="h-6 w-6 rounded-full bg-red-600 text-white flex items-center justify-center text-xs font-black shrink-0">{i + 1}</span>
-                                <p className="text-sm text-red-800 font-medium leading-relaxed">{flaw}</p>
-                            </li>
-                        ))}
-                    </ol>
-                </div>
-            )}
-
-            {/* Line-by-Line Improvements */}
-            {result.line_improvements?.length > 0 && (
-                <div className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">✏️ Line-by-Line Improvements</p>
-                    <div className="space-y-4">
-                        {result.line_improvements.map((item, i) => (
-                            <div key={i} className="space-y-2">
-                                <div className="p-3 rounded-xl bg-red-50 border border-red-100">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-red-400 mb-1">Original</p>
-                                    <p className="text-sm text-red-700 line-through opacity-70">{item.original}</p>
-                                </div>
-                                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-emerald-400 mb-1">Improved</p>
-                                    <p className="text-sm text-emerald-700 font-medium">{item.improved}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Improved Version */}
-            {result.improved_version && (
-                <div className="p-6 rounded-2xl bg-black text-white">
-                    <div className="flex items-center justify-between mb-4">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">✨ Full Improved Version</p>
-                        <button 
-                            onClick={() => copyText('improved', result.improved_version)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-xs font-bold"
-                        >
-                            {copiedField === 'improved' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-                            {copiedField === 'improved' ? 'Copied!' : 'Copy'}
-                        </button>
-                    </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-300">{result.improved_version}</p>
-                </div>
-            )}
-
-            {/* Alternative Variations */}
-            {result.variations && (
-                <div className="p-6 rounded-2xl bg-white border border-gray-200 shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">🔄 Alternative Variations</p>
-                    <div className="flex gap-2 mb-4">
-                        <button 
-                            onClick={() => setActiveVariation('short')}
-                            className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                activeVariation === 'short' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            )}
-                        >Short & Punchy</button>
-                        <button 
-                            onClick={() => setActiveVariation('premium')}
-                            className={cn("px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                                activeVariation === 'premium' ? 'bg-black text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            )}
-                        >Premium</button>
-                    </div>
-                    <div className="relative">
-                        <button 
-                            onClick={() => copyText(`var_${activeVariation}`, activeVariation === 'short' ? result.variations.short_version : result.variations.premium_version)}
-                            className="absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-xs font-bold text-gray-600"
-                        >
-                            {copiedField === `var_${activeVariation}` ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                            {copiedField === `var_${activeVariation}` ? 'Copied!' : 'Copy'}
-                        </button>
-                        <div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap pr-20">
-                                {activeVariation === 'short' ? result.variations.short_version : result.variations.premium_version}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Advanced Suggestions */}
-            {result.advanced_suggestions?.length > 0 && (
-                <div className="p-6 rounded-2xl bg-gray-50 border border-gray-200">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">💡 Advanced Suggestions</p>
-                    <ul className="space-y-3">
-                        {result.advanced_suggestions.map((sug, i) => (
-                            <li key={i} className="flex items-start gap-3">
-                                <span className="h-5 w-5 rounded-full bg-black text-white flex items-center justify-center text-[9px] font-black shrink-0 mt-0.5">{i + 1}</span>
-                                <p className="text-sm text-gray-700 leading-relaxed">{sug}</p>
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-
-            {/* Final Verdict */}
-            <div className="p-6 rounded-2xl bg-white border-2 border-gray-200 text-center shadow-lg">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">⚖️ Final Verdict</p>
-                <div className={cn("inline-block px-6 py-2 rounded-full text-white font-black text-sm uppercase tracking-widest mb-3", verdictColor)}>
-                    {result.final_verdict?.toLowerCase().startsWith('yes') ? '✅ YES' : result.final_verdict?.toLowerCase().startsWith('maybe') ? '⚠️ MAYBE' : '❌ NO'}
-                </div>
-                <p className="text-sm text-gray-600 leading-relaxed max-w-lg mx-auto">{result.final_verdict}</p>
-            </div>
-
-            {/* Powered By */}
-            <p className="text-center text-[9px] font-bold text-gray-400 uppercase tracking-widest pt-4">Powered by Kasb.AI — Independent Review Engine</p>
         </div>
     );
 }
@@ -565,50 +308,56 @@ export default function KasbStudio() {
         }
     };
 
-    const handleReview = async (content: string | File, additionalPrompt?: string) => {
+    const handleReview = async (file: File) => {
+        const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+        if (!apiKey) {
+            setError("Missing API Key for review. Please add VITE_GROQ_API_KEY.");
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         
         try {
-            const userLabel = content instanceof File ? `Review document: ${content.name}` : (content.length > 100 ? content.substring(0, 100) + '...' : content);
             const userMsgId = `user-${Date.now()}`;
-            setMessages([{ id: userMsgId, role: 'user', content: userLabel, created_at: new Date().toISOString() }]);
+            setMessages([{ id: userMsgId, role: 'user', content: `Analyze pitch deck: ${file.name}`, created_at: new Date().toISOString() }]);
             
-            const result = await reviewStartupDocument(content, additionalPrompt || undefined);
+            const result = await reviewPitchDeck(file, apiKey);
+            
+            let finalContent: string;
+            if (typeof result === 'string') {
+                finalContent = result;
+            } else {
+                finalContent = JSON.stringify({ type: 'scorecard', ...result });
+            }
             
             const assistantMsg = { 
                 id: `ai-${Date.now()}`, 
                 role: 'assistant', 
-                content: JSON.stringify({ type: 'document_review', ...result }), 
+                content: finalContent, 
                 created_at: new Date().toISOString() 
             };
             setMessages(prev => [...prev, assistantMsg]);
             
-            // Clear file and query
+            // Clear file
             setSelectedFile(null);
-            setQuery("");
             if (fileInputRef.current) fileInputRef.current.value = "";
             
         } catch (err: any) {
             console.error("Review Error:", err);
-            setError(err.message || "Document review failed.");
+            setError(err.message || "Pitch deck analysis failed.");
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSendMessage = async () => {
-        if (mode === 'review') {
-            // In review mode, use the standalone review AI
-            if (selectedFile && query.trim()) {
-                handleReview(selectedFile, query.trim());
-            } else if (selectedFile) {
-                handleReview(selectedFile);
-            } else if (query.trim()) {
-                handleReview(query.trim());
-            }
+        if (mode === 'review' && selectedFile && !query.trim()) {
+            handleReview(selectedFile);
             return;
         }
+
+        if (!query.trim() || isLoading) return;
 
         // Exclusively use Groq/Kasb keys for Studio architecture; remove Gemini fallback to avoid 404s
         const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GROQ_API_KEY;
@@ -826,10 +575,6 @@ export default function KasbStudio() {
                             >
                                 <Menu className="h-4 w-4 text-gray-400" />
                             </button>
-                            <div className="flex items-center gap-2">
-                                {isReview ? <Eye className="h-4 w-4 text-indigo-500" /> : <Sparkles className="h-4 w-4 text-indigo-400" />}
-                                <span className={cn("text-xs font-black uppercase tracking-[0.2em]", isReview ? "text-gray-900" : "text-gray-400")}>{isReview ? 'Review' : 'Studio'}</span>
-                            </div>
                             
                             {/* Header Toggle */}
                             <div className={cn(
@@ -940,8 +685,8 @@ export default function KasbStudio() {
                                 className="relative w-full max-w-2xl mx-auto group"
                             >
                                 <div className={cn("absolute -inset-1 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none", isReview ? "bg-gray-200" : "bg-gradient-to-r from-indigo-500/20 to-purple-500/20")} />
-                                <div className={cn("relative flex items-center border rounded-xl p-1.5 shadow-xl transition-all duration-300", isReview ? "bg-white border-gray-200 shadow-sm" : "bg-[#161616] border-gray-800 shadow-2xl group-focus-within:border-gray-500 group-focus-within:ring-2 group-focus-within:ring-white/10")}>
-                                    <div className="pl-4 pr-3">
+                                <div className={cn("relative flex items-center border rounded-xl p-1 shadow-xl transition-all duration-300 overflow-hidden shrink", isReview ? "bg-white border-gray-200 shadow-sm" : "bg-[#161616] border-gray-800 shadow-2xl group-focus-within:border-gray-500 group-focus-within:ring-2 group-focus-within:ring-white/10")}>
+                                    <div className="pl-3 sm:pl-4 pr-1 sm:pr-3 shrink-0">
                                         <Search className={cn("h-5 w-5 transition-colors", isReview ? "text-gray-400 group-focus-within:text-gray-600" : "text-gray-500 group-focus-within:text-white")} />
                                     </div>
                                     <input 
@@ -950,7 +695,7 @@ export default function KasbStudio() {
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyDown={handleKeyDown}
                                         placeholder={placeholder}
-                                        className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-12 text-base outline-none", isReview ? "text-gray-900 placeholder:text-gray-400" : "text-white placeholder:text-gray-600")}
+                                        className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-12 text-sm sm:text-base outline-none", isReview ? "text-gray-900 placeholder:text-gray-400" : "text-white placeholder:text-gray-600")}
                                     />
                                     {isReview && (
                                         <button 
@@ -973,9 +718,7 @@ export default function KasbStudio() {
                                         <Send className="h-5 w-5" />
                                     </button>
                                 </div>
-                                {isReview && (
-                                    <p className="text-[10px] text-gray-400 font-medium mt-6">Kasb. AI is AI can Make Mistake</p>
-                                )}
+                                <p className="text-[10px] text-gray-400 font-medium mt-6 uppercase tracking-widest text-center">Kasb AI is AI can make mistake</p>
                             </motion.div>
                         </motion.div>
                     </div>
@@ -1001,10 +744,6 @@ export default function KasbStudio() {
                                          parsed = JSON.parse(msg.content); 
                                      } catch(e) { 
                                          parsed = { tool: "Error", prompt: msg.content }; 
-                                     }
-                                     
-                                     if (parsed.type === 'document_review') {
-                                         return <ReviewResultUI key={msg.id} result={parsed as DocumentReviewResult} />;
                                      }
                                      
                                      if (parsed.type === 'scorecard') {
@@ -1109,7 +848,7 @@ export default function KasbStudio() {
                                         </div>
                                     )}
 
-                                    <div className={cn("relative flex items-center border rounded-lg p-1.5 shadow-2xl group transition-all duration-300", theme.input)}>
+                                    <div className={cn("relative flex items-center border rounded-lg p-1 shadow-2xl group transition-all duration-300 overflow-hidden shrink", theme.input)}>
                                         <input 
                                             type="text"
                                             value={query}
@@ -1117,7 +856,7 @@ export default function KasbStudio() {
                                             onKeyDown={handleKeyDown}
                                             disabled={isLoading}
                                             placeholder="E.g., Make it include user authentication..."
-                                            className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-3", isReview ? 'text-black placeholder:text-gray-400' : 'text-white placeholder:text-gray-600')}
+                                            className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-2 sm:pl-3", isReview ? 'text-black placeholder:text-gray-400' : 'text-white placeholder:text-gray-600')}
                                         />
 
                                         {isReview && (
@@ -1154,15 +893,27 @@ export default function KasbStudio() {
             </main>
 
             {/* Floating Scroll to Top Button — always visible when chat has messages */}
-            {messages.length > 0 && (
-                <button
-                    onClick={scrollToTop}
-                    className={cn("fixed bottom-28 right-6 h-11 w-11 rounded-full shadow-2xl flex items-center justify-center transition-all active:scale-90 z-[999] border", isReview ? 'bg-black text-white border-white/20' : 'bg-indigo-600 text-white border-white/20')}
-                    title="Scroll to top"
-                >
-                    <ArrowUp className="h-5 w-5" />
-                </button>
-            )}
+            <AnimatePresence>
+                {messages.length > 0 && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={scrollToTop}
+                        className={cn(
+                            "fixed bottom-28 right-6 h-12 w-12 rounded-full shadow-2xl flex items-center justify-center transition-all z-[999] border backdrop-blur-md", 
+                            isReview 
+                                ? 'bg-black/90 text-white border-white/20 hover:bg-black' 
+                                : 'bg-indigo-600/90 text-white border-white/20 hover:bg-indigo-600'
+                        )}
+                        title="Scroll to top"
+                    >
+                        <ArrowUp className="h-5 w-5" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

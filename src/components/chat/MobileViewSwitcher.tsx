@@ -12,10 +12,10 @@ export const MobileViewSwitcher: React.FC<MobileViewSwitcherProps> = ({ currentV
     return (
         <div className="md:hidden px-2 mb-6">
             <div className={cn(
-                "flex p-1 rounded-2xl border transition-colors",
+                "flex p-1 rounded-2xl border transition-colors shadow-inner",
                 currentView === 'studio' 
                     ? "bg-gray-900 border-gray-800" 
-                    : "bg-gray-100 border-gray-200"
+                    : "bg-[#111] border-white/10"
             )}>
                 <button 
                     onClick={() => navigate('/dashboard/startup/foundergpt')}
@@ -23,7 +23,7 @@ export const MobileViewSwitcher: React.FC<MobileViewSwitcherProps> = ({ currentV
                         "flex-1 py-2 px-3 rounded-[14px] text-[10px] font-extrabold uppercase tracking-widest transition-all",
                         currentView === 'foundergpt'
                             ? "bg-white text-black shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
+                            : "text-gray-500 hover:text-white"
                     )}
                 >
                     Founder GPT
@@ -35,7 +35,7 @@ export const MobileViewSwitcher: React.FC<MobileViewSwitcherProps> = ({ currentV
                         currentView === 'studio'
                             ? "bg-white/10 text-white shadow-sm"
                             : currentView === 'foundergpt'
-                                ? "text-gray-400 hover:text-gray-600"
+                                ? "text-gray-500 hover:text-white"
                                 : "text-gray-500 hover:text-gray-300"
                     )}
                 >

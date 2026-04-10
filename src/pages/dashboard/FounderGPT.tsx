@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, Home, FileText, Trophy, Fish, UserCircle, Mic, Skull } from "lucide-react"
+import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, Home, FileText, Trophy, Fish, UserCircle, Mic, Skull, Share2 } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../../components/ui/button"
 import { chatWithPersonality } from "../../lib/ai"
@@ -9,6 +9,7 @@ import { getUserChatSessions, getChatMessages, createChatSession, saveChatMessag
 import { useNavigate } from "react-router-dom"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher"
+import { ModeSwitcher } from "../../components/chat/ModeSwitcher"
 
 const QUOTES = [
     { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
@@ -81,19 +82,19 @@ export default function FounderGPT() {
 
     // Theme Orchestration
     const theme = {
-        bg: isPiranha ? "bg-[#0a0a0a]" : "bg-white",
-        text: isPiranha ? "text-gray-100" : "text-gray-900",
-        textMuted: isPiranha ? "text-gray-400" : "text-gray-500",
-        headerBg: isPiranha ? "bg-[#0a0a0a]/80" : "bg-white/80",
-        card: isPiranha ? "bg-[#111] border-red-900/30" : "bg-white border-gray-100",
-        input: isPiranha ? "bg-[#111] border-red-900/30 focus-within:border-red-500" : "bg-white border-gray-100 focus-within:border-black",
-        aiBubble: isPiranha ? "bg-[#161616] border border-red-900/20 text-gray-200" : "bg-gray-50 border border-gray-100 text-gray-800",
-        userBubble: isPiranha ? "bg-[#8B0000] text-white" : "bg-black text-white",
-        accent: isPiranha ? "bg-[#DC143C]" : "bg-indigo-600",
-        accentText: isPiranha ? "text-[#DC143C]" : "text-indigo-600",
-        sidebarBg: isPiranha ? "bg-[#0a0a0a]" : "bg-white",
-        sidebarText: isPiranha ? "text-gray-100" : "text-gray-900",
-        sidebarBorder: isPiranha ? "border-red-900/30" : "border-gray-100"
+        bg: isPiranha ? "bg-[#0a0a0a]" : "bg-[#000000]",
+        text: isPiranha ? "text-gray-100" : "text-white",
+        textMuted: isPiranha ? "text-gray-400" : "text-gray-400",
+        headerBg: isPiranha ? "bg-[#0a0a0a]/80" : "bg-black/80",
+        card: isPiranha ? "bg-[#111] border-red-900/30" : "bg-[#0a0a0a] border-white/10",
+        input: isPiranha ? "bg-[#111] border-red-900/30 focus-within:border-red-500" : "bg-[#0a0a0a] border-white/10 focus-within:border-white",
+        aiBubble: isPiranha ? "bg-[#161616] border border-red-900/20 text-gray-200" : "bg-[#111] border border-white/5 text-gray-300",
+        userBubble: isPiranha ? "bg-[#8B0000] text-white" : "bg-white text-black",
+        accent: isPiranha ? "bg-[#DC143C]" : "bg-white",
+        accentText: isPiranha ? "text-[#DC143C]" : "text-white",
+        sidebarBg: isPiranha ? "bg-[#0a0a0a]" : "bg-[#000000]",
+        sidebarText: isPiranha ? "text-gray-100" : "text-white",
+        sidebarBorder: isPiranha ? "border-red-900/30" : "border-white/10"
     };
 
     const ribbonItems = [
@@ -142,6 +143,21 @@ export default function FounderGPT() {
         return sessionStorage.getItem('foundergpt_sessionId') || null;
     })
     const { user } = useAuth()
+
+    const piranhaSessions = sessions.filter(s => 
+        s.personality_id === 'Piranha Panel' || ptSharks.some(shark => shark.name === s.personality_id)
+    );
+
+    const getRelativeTimeString = (dateString: string) => {
+        const elapsed = Date.now() - new Date(dateString).getTime();
+        const minutes = Math.floor(elapsed / (1000 * 60));
+        if (minutes < 60) return `${Math.max(1, minutes)} mins ago`;
+        const hours = Math.floor(elapsed / (1000 * 60 * 60));
+        if (hours < 24) return `${hours} hrs ago`;
+        const days = Math.floor(elapsed / (1000 * 60 * 60 * 24));
+        if (days === 1) return `Yesterday`;
+        return `${days} days ago`;
+    };
 
     // Persist chat state to sessionStorage so it survives tab switches
     useEffect(() => {
@@ -557,43 +573,8 @@ export default function FounderGPT() {
     const displayedSessions = isPiranha ? [] : sessions;
 
     return (
-        <div className={cn(
-            "overflow-hidden flex transition-all duration-500",
-            isPiranha 
-                ? "fixed inset-0 z-50 h-[100vh] w-[100vw] rounded-none border-none" 
-                : "relative h-[calc(100vh-9.5rem)] md:h-[calc(100vh-5.5rem)] md:-mt-6 rounded-2xl md:rounded-xl shadow-xl border border-white/5",
-            theme.bg
-        )}>
-            {/* Piranha Tank Ribbon (Desktop only) */}
-            <AnimatePresence>
-                {isPiranha && (
-                    <motion.aside
-                        initial={{ width: 0, opacity: 0 }}
-                        animate={{ width: 72, opacity: 1 }}
-                        exit={{ width: 0, opacity: 0 }}
-                        className={cn("hidden md:flex flex-col items-center py-6 border-r z-40 bg-[#4A0404] sticky top-0 h-[100vh] overflow-y-auto", theme.sidebarBorder)}
-                    >
-                        {/* Ribbon Icons */}
-                        <div className="flex flex-col gap-6 w-full px-2 mt-4">
-                            {ribbonItems.map((item) => {
-                                const isActive = ptTab === item.id;
-                                return (
-                                    <button
-                                        key={item.id}
-                                        onClick={() => setPtTab(item.id as any)}
-                                        className={cn("group relative flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all active:scale-95", isActive ? "bg-[#8B0000]/20" : "hover:bg-white/10")}
-                                    >
-                                        <item.icon className={cn("h-5 w-5 transition-colors", isActive ? "text-[#FF0000]" : "text-red-200/60 group-hover:text-white")} />
-                                        <span className={cn("text-[9px] font-black uppercase tracking-widest transition-colors", isActive ? "text-[#FF0000]" : "text-red-200/60 group-hover:text-white")}>
-                                            {item.label}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </motion.aside>
-                )}
-            </AnimatePresence>
+        <div className={cn("relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] md:-mt-6 overflow-hidden flex transition-all duration-500", theme.bg)}>
+
 
             <div className="flex-1 flex flex-col relative w-full h-full overflow-hidden">
             {/* Sidebar Drawer */}
@@ -667,8 +648,8 @@ export default function FounderGPT() {
                                                         className={cn(
                                                             "w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl transition-all",
                                                             personality === p.id 
-                                                                ? "bg-black text-white" 
-                                                                : "text-gray-600 hover:bg-gray-50"
+                                                                ? "bg-white text-black" 
+                                                                : "text-gray-400 hover:bg-white/5"
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-3 font-bold text-sm">
@@ -694,7 +675,7 @@ export default function FounderGPT() {
                                     "w-full justify-start gap-3 h-12 rounded-2xl shadow-sm transition-all active:scale-95 mb-8",
                                     isPiranha 
                                         ? "bg-[#1A1A1A] border border-red-900/30 hover:bg-[#222] text-white" 
-                                        : "bg-white border border-gray-100 hover:bg-gray-50 text-gray-900"
+                                        : "bg-[#111] border border-white/10 hover:bg-white/5 text-white"
                                 )}
                                 onClick={handleNewChat}
                             >
@@ -703,6 +684,15 @@ export default function FounderGPT() {
                             </Button>
 
                             <div className="flex-1 overflow-y-auto space-y-6">
+                                {/* Mode Switcher (GPT vs Tank) */}
+                                <ModeSwitcher 
+                                    activeMode={activeMode} 
+                                    onModeChange={(mode) => {
+                                        setActiveMode(mode);
+                                        setIsSidebarOpen(false);
+                                    }} 
+                                />
+
                                 {/* Unified Mobile View Switcher */}
                                 <MobileViewSwitcher currentView="foundergpt" />
 
@@ -719,21 +709,21 @@ export default function FounderGPT() {
                                                 className={cn(
                                                     "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors group text-left",
                                                     currentSessionId === chat.id 
-                                                        ? "bg-indigo-50 text-indigo-900" 
-                                                        : "hover:bg-gray-50"
+                                                        ? "bg-white/10 text-white" 
+                                                        : "hover:bg-white/5"
                                                 )}
                                             >
                                                 <MessageSquare className={cn(
                                                     "h-4 w-4 shrink-0 transition-colors",
                                                     currentSessionId === chat.id 
-                                                        ? "text-indigo-600" 
-                                                        : "text-gray-400 group-hover:text-indigo-600"
+                                                        ? "text-white" 
+                                                        : "text-gray-500 group-hover:text-white"
                                                 )} />
                                                 <span className={cn(
                                                     "text-sm font-medium truncate flex-1",
                                                     currentSessionId === chat.id
-                                                        ? "text-indigo-900"
-                                                        : "text-gray-600 group-hover:text-gray-900"
+                                                        ? "text-white"
+                                                        : "text-gray-400 group-hover:text-white"
                                                 )}>{chat.title}</span>
                                                 <button 
                                                     onClick={(e) => handleDeleteSession(e, chat.id)}
@@ -744,7 +734,7 @@ export default function FounderGPT() {
                                             </button>
                                         ))}
                                         {displayedSessions.length === 0 && (
-                                            <div className="px-3 py-4 text-xs font-medium text-gray-400 text-center border border-dashed border-gray-200 rounded-xl">
+                                            <div className="px-3 py-4 text-xs font-medium text-gray-500 text-center border border-dashed border-white/10 rounded-xl">
                                                 No past chats found
                                             </div>
                                         )}
@@ -758,7 +748,7 @@ export default function FounderGPT() {
 
             {/* Header */}
             <header className={cn("relative flex items-center justify-between p-4 sm:p-6 sticky top-0 backdrop-blur-md z-30 transition-all duration-500", theme.headerBg)}>
-                <div className="w-10 h-10 relative z-10">
+                <div className="flex items-center gap-4 relative z-10">
                     <button 
                         onClick={() => setIsSidebarOpen(true)}
                         className={cn("h-10 w-10 flex items-center justify-center rounded-xl border shadow-sm hover:shadow-md transition-all active:scale-90", theme.card)}
@@ -769,12 +759,7 @@ export default function FounderGPT() {
                 
                 {/* Centered Title */}
                 <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-                    {isPiranha ? (
-                        <>
-                            <Fish className="h-4 w-4 text-[#FF0000]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Piranha Tank</span>
-                        </>
-                    ) : (
+                    {isPiranha ? null : (
                         <>
                             <Sparkles className={cn("h-4 w-4", theme.accentText)} />
                             <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.textMuted)}>Founder GPT Beta</span>
@@ -786,37 +771,80 @@ export default function FounderGPT() {
                         </>
                     )}
                 </div>
-
-                <div className="flex flex-col items-end gap-1 relative z-10">
-                    <div className={cn("flex flex-col p-1 rounded-2xl border shadow-inner transition-all", isPiranha ? "bg-white/5 border-white/10" : "bg-gray-100 border-gray-200/50")}>
-                        <button 
-                            onClick={() => setActiveMode('foundergpt')}
-                            className={cn(
-                                "px-8 py-3 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                                activeMode === 'foundergpt' 
-                                    ? isPiranha ? "bg-[#111] text-gray-300 shadow-xl border border-white/10" : "bg-black text-white shadow-2xl shadow-black/20 scale-105 z-10" 
-                                    : isPiranha ? "text-gray-500 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"
-                            )}
-                        >
-                            Founder GPT
-                        </button>
-                        <button 
-                            onClick={() => setActiveMode('piranhatank')}
-                            className={cn(
-                                "px-8 py-3 rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                                activeMode === 'piranhatank' 
-                                    ? isPiranha ? "bg-[#8B0000] text-white shadow-2xl shadow-red-900/40 scale-105 z-10" : "bg-black text-white shadow-2xl shadow-black/20 scale-105 z-10" 
-                                    : isPiranha ? "text-gray-500 hover:text-gray-300" : "text-gray-400 hover:text-gray-600"
-                            )}
-                        >
-                            Piranha Tank
-                        </button>
+                                <div className="hidden md:flex flex-col items-end gap-1 relative z-10">
+                    <button
+                        onClick={() => setActiveMode(isPiranha ? 'foundergpt' : 'piranhatank')}
+                        className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300 cursor-pointer active:scale-95 hover:shadow-md",
+                            isPiranha ? "bg-[#111] border-red-900/40 shadow-red-900/10 hover:bg-[#1a1a1a]" : "bg-white border-gray-100 hover:bg-gray-50"
+                        )}
+                    >
+                        <div className={cn("h-2 w-2 rounded-full", isPiranha ? "bg-red-500 animate-pulse" : "bg-green-500")} />
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest", isPiranha ? "text-red-500" : "text-gray-500")}>
+                            {isPiranha ? "Switch to GPT" : "Switch to Tank"}
+                        </span>
+                    </button>
+                </div>
+                <div className="md:hidden flex flex-col items-end gap-1 relative z-10">
+                    <div className={cn(
+                        "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300",
+                        isPiranha ? "bg-[#111] border-red-900/40 shadow-red-900/10" : "bg-white border-gray-100"
+                    )}>
+                        <div className={cn("h-2 w-2 rounded-full", isPiranha ? "bg-red-500 animate-pulse" : "bg-green-500")} />
+                        <span className={cn("text-[10px] font-black uppercase tracking-widest", isPiranha ? "text-red-500" : "text-gray-500")}>
+                            {isPiranha ? "Tank Active" : "Online"}
+                        </span>
                     </div>
                 </div>
+
+                {/* Piranha Tank Desktop Navigation Bar */}
+                {isPiranha && (
+                    <div className="hidden sm:flex items-center justify-center gap-2 mt-4 border-b border-red-900/20 pb-4">
+                        {ribbonItems.map((item) => {
+                            const isActive = ptTab === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setPtTab(item.id as any)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border",
+                                        isActive 
+                                            ? "bg-[#8B0000] text-white border-red-500 shadow-[0_0_20px_rgba(255,0,0,0.3)]" 
+                                            : "bg-[#111] text-gray-500 border-[#222] hover:bg-white/5 hover:text-gray-300"
+                                    )}
+                                >
+                                    <item.icon className="h-4 w-4" />
+                                    {item.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </header>
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col px-6 max-w-4xl mx-auto w-full pb-4 relative z-10">
+                {/* Mobile Bottom Navigation Bar for Piranha Tank */}
+                {isPiranha && (
+                    <div className="sm:hidden fixed bottom-6 left-6 right-6 z-[100] bg-black/80 backdrop-blur-xl border border-red-900/30 rounded-3xl p-2 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,0,0,0.1)]">
+                        {ribbonItems.map((item) => {
+                            const isActive = ptTab === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setPtTab(item.id as any)}
+                                    className={cn(
+                                        "flex flex-col items-center gap-1 p-3 rounded-2xl transition-all active:scale-90 flex-1",
+                                        isActive ? "text-red-500 bg-red-500/10" : "text-gray-500"
+                                    )}
+                                >
+                                    <item.icon className={cn("h-5 w-5", isActive ? "text-red-500" : "text-gray-500")} />
+                                    <span className="text-[10px] font-black uppercase tracking-wider">{item.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
                 {isPiranha && (ptTab === 'choose_sharks' || ptTab === 'sharks') ? (
                     <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full pt-8">
                         <div className="flex items-center gap-4 mb-8">
@@ -901,47 +929,99 @@ export default function FounderGPT() {
                             animate={{ opacity: 1, y: 0 }}
                             className="max-w-3xl mx-auto mt-6 px-4"
                         >
-                            <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-1">My Pitches</h1>
-                            <p className="text-gray-500 mb-8 font-medium">Your pitch history in the tank</p>
+                            <div className="flex items-start justify-between mb-8 gap-4">
+                                <div>
+                                    <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight mb-1">My Pitches</h1>
+                                    <p className="text-gray-500 font-medium">Your pitch history in the tank</p>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: 'Piranha Tank on Kasb.AI',
+                                                text: 'I am pitching my startup to AI Piranhas! Try it on Kasb.AI',
+                                                url: window.location.origin
+                                            }).catch(console.error);
+                                        } else {
+                                            navigator.clipboard.writeText('I am pitching my startup to AI Piranhas! Try it on Kasb.AI ' + window.location.origin);
+                                            alert("Link copied to clipboard!");
+                                        }
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-[#2A0A0A] hover:bg-[#3D0A0A] text-[#FF4444] hover:text-white font-extrabold text-[10px] sm:text-xs uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(255,0,0,0.1)] hover:shadow-[0_0_25px_rgba(255,0,0,0.2)] border border-red-900/30 shrink-0 mt-1"
+                                >
+                                    <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                    <span>Share</span>
+                                </button>
+                            </div>
                             
                             <div className="space-y-4">
-                                {[
-                                    { id: '1', title: 'AI-Powered Toaster App', time: '2 hours ago', status: 'Survived', score: 72 },
-                                    { id: '2', title: 'Blockchain Laundry', time: 'Yesterday', status: 'Eaten', score: 31 },
-                                    { id: '3', title: 'Uber for Homework', time: '3 days ago', status: 'Survived', score: 85 }
-                                ].map((pitch, idx) => (
-                                    <motion.div 
-                                        key={pitch.id} 
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.1 }}
-                                        className="bg-[#111] border border-[#222] rounded-3xl p-5 sm:p-6 flex items-center justify-between hover:border-gray-700 transition-all cursor-pointer group"
-                                    >
-                                        <div className="flex items-center gap-4 sm:gap-6">
-                                            <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border", pitch.status === 'Survived' ? 'bg-[#0a1f11] text-[#00FF7F] border-[#00FF7F]/20' : 'bg-[#2a0808] text-[#FF0000] border-[#FF0000]/20')}>
-                                                <FileText className="h-6 w-6" strokeWidth={2.5} />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-white font-extrabold text-lg sm:text-xl mb-0.5 group-hover:text-red-500 transition-colors">{pitch.title}</h3>
-                                                <p className="text-gray-500 text-sm font-medium mb-1.5">{pitch.time}</p>
-                                                <div className="flex items-center gap-1.5">
-                                                    {pitch.status === 'Survived' ? (
-                                                        <span className="text-[#00FF7F] text-sm font-bold flex items-center gap-1.5"><span className="text-base leading-none">🎉</span> Survived</span>
-                                                    ) : (
-                                                        <span className="text-[#FF0000] text-sm font-bold flex items-center gap-1.5"><span className="text-base leading-none">💀</span> Eaten</span>
-                                                    )}
+                                {piranhaSessions.length === 0 ? (
+                                    <div className="text-center py-12 border-2 border-dashed border-red-900/20 rounded-3xl">
+                                        <Fish className="h-12 w-12 text-red-900/40 mx-auto mb-3" />
+                                        <p className="text-gray-500 font-medium">No pitches yet. Jump into the tank to start!</p>
+                                    </div>
+                                ) : (
+                                    piranhaSessions.map((pitch, idx) => (
+                                        <motion.div 
+                                            key={pitch.id} 
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.1 }}
+                                            onClick={() => {
+                                                loadSession(pitch.id);
+                                                setPtTab('chat');
+                                            }}
+                                            className="bg-[#111] border border-[#222] rounded-3xl p-5 sm:p-6 hover:border-gray-700 transition-all cursor-pointer group flex flex-col gap-4"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4 sm:gap-6 min-w-0">
+                                                    <div className="h-12 w-12 rounded-xl flex items-center justify-center shrink-0 border bg-[#2a0808] text-[#FF0000] border-[#FF0000]/20">
+                                                        <FileText className="h-6 w-6" strokeWidth={2.5} />
+                                                    </div>
+                                                    <div className="min-w-0 pr-4">
+                                                        <h3 className="text-white font-extrabold text-lg sm:text-xl mb-0.5 group-hover:text-red-500 transition-colors truncate">{pitch.title}</h3>
+                                                        <p className="text-gray-500 text-sm font-medium mb-1.5">{getRelativeTimeString(pitch.created_at)}</p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-gray-500 text-xs font-bold flex items-center gap-1 uppercase tracking-wider">
+                                                                <Fish className="h-3 w-3" />
+                                                                {pitch.personality_id}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4 sm:gap-8 shrink-0">
+                                                    <div className="text-center hidden sm:block">
+                                                        <div className="text-3xl font-black leading-none text-white/20">--</div>
+                                                        <div className="text-gray-500 text-xs font-bold mt-1 tracking-wider uppercase">Score</div>
+                                                    </div>
+                                                    <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-gray-300 transition-colors" strokeWidth={3} />
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 sm:gap-8 shrink-0">
-                                            <div className="text-center">
-                                                <div className={cn("text-3xl font-black leading-none", pitch.status === 'Survived' ? 'text-[#00FF7F]' : 'text-[#FF0000]')}>{pitch.score}</div>
-                                                <div className="text-gray-500 text-xs font-bold mt-1 tracking-wider">/100</div>
+                                            
+                                            <div className="pt-3 border-t border-white/5">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (navigator.share) {
+                                                            navigator.share({
+                                                                title: 'My Piranha Tank Roast',
+                                                                text: `I just pitched "${pitch.title}" and got roasted by the Piranhas! Try it on Kasb.AI`,
+                                                                url: window.location.origin
+                                                            }).catch(console.error);
+                                                        } else {
+                                                            navigator.clipboard.writeText(`I just pitched "${pitch.title}" and got roasted by the Piranhas! Try it on Kasb.AI`);
+                                                            alert("Link copied to clipboard!");
+                                                        }
+                                                    }}
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#2A0A0A] hover:bg-[#3D0A0A] text-[#FF4444] hover:text-white font-extrabold text-xs sm:text-[13px] uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(255,0,0,0.1)] hover:shadow-[0_0_25px_rgba(255,0,0,0.2)] border border-red-900/30"
+                                                >
+                                                    <Share2 className="h-4 w-4" />
+                                                    Share with your friend how you got roasted by Piranhas
+                                                </button>
                                             </div>
-                                            <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-gray-300 transition-colors" strokeWidth={3} />
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                        </motion.div>
+                                    ))
+                                )}
                             </div>
                         </motion.div>
                     </div>
@@ -973,7 +1053,12 @@ export default function FounderGPT() {
                                     initial={{ opacity: 0, scale: 0.5, rotate: -10 }}
                                     animate={{ opacity: 1, scale: 1, rotate: 0 }}
                                     transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                                    className={cn("h-20 w-20 flex items-center justify-center mx-auto mb-4 rounded-2xl shadow-xl overflow-hidden relative", isPiranha ? "bg-[#FF0000] shadow-red-900/20" : "bg-white shadow-gray-100")}
+                                    className={cn(
+                                        "h-20 w-20 flex items-center justify-center mx-auto mb-4 rounded-2xl shadow-2xl overflow-hidden relative transition-all duration-700", 
+                                        isPiranha 
+                                            ? "bg-[#FF0000] shadow-red-900/40" 
+                                            : "bg-white shadow-[0_0_60px_rgba(255,255,255,0.4),0_20px_40px_rgba(0,0,0,0.4)] hover:shadow-[0_0_80px_rgba(255,255,255,0.6)] scale-105"
+                                    )}
                                 >
                                     {isPiranha ? (
                                         <img 
@@ -1017,9 +1102,17 @@ export default function FounderGPT() {
                                     transition={{ delay: 0.8, type: "spring", damping: 20 }}
                                     className="relative w-full max-w-xl mx-auto group"
                                 >
-                                    <div className={cn("absolute -inset-1 rounded-full blur-xl group-focus-within:opacity-100 opacity-0 transition-opacity duration-700 pointer-events-none", isPiranha ? "bg-[#FF0000]/10" : "bg-indigo-500/10")} />
-                                    <div className={cn("relative flex items-center border-2 rounded-full p-1.5 shadow-2xl transition-all duration-300", theme.input, isPiranha && harshMode && "border-red-900/50 shadow-red-900/20")}>
-                                        <div className="pl-4 pr-2">
+                                    <div className={cn(
+                                        "absolute -inset-4 rounded-full blur-[40px] group-focus-within:opacity-100 opacity-0 transition-all duration-1000 pointer-events-none", 
+                                        isPiranha ? "bg-[#FF0000]/30" : "bg-white/20"
+                                    )} />
+                                    <div className={cn(
+                                        "relative flex items-center border-2 rounded-full p-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 overflow-hidden shrink", 
+                                        theme.input, 
+                                        !isPiranha && "group-focus-within:shadow-[0_0_50px_rgba(255,255,255,0.2)] group-focus-within:border-white/40",
+                                        isPiranha && harshMode && "border-red-900/50 shadow-red-900/40"
+                                    )}>
+                                        <div className="pl-3 sm:pl-4 pr-1 sm:pr-2 shrink-0">
                                             <Search className={cn("h-4 w-4 transition-colors", theme.textMuted)} />
                                         </div>
                                         <input 
@@ -1027,8 +1120,8 @@ export default function FounderGPT() {
                                             value={query}
                                             onChange={(e) => setQuery(e.target.value)}
                                             onKeyDown={handleKeyDown}
-                                            placeholder={isPiranha ? piranhaPlaceholder : "What's on your mind today?"}
-                                            className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-10 text-base outline-none", theme.text, "placeholder:text-gray-400")}
+                                            placeholder={isPiranha ? piranhaPlaceholder : "Describe your startup idea..."}
+                                            className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none", theme.text, "placeholder:text-gray-400")}
                                         />
                                         
                                         {/* Microphone Button */}
@@ -1108,7 +1201,7 @@ export default function FounderGPT() {
                                                 <button 
                                                     key={tag} 
                                                     onClick={() => setQuery(tag)}
-                                                    className="px-5 py-2 rounded-full bg-gray-50 border border-gray-100 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:bg-white hover:border-indigo-200 hover:text-indigo-600 transition-all active:scale-95 shadow-sm"
+                                                    className="px-5 py-2 rounded-full bg-[#111] border border-white/10 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-white/5 hover:border-white/20 hover:text-white transition-all active:scale-95 shadow-sm"
                                                 >
                                                     {tag}
                                                 </button>
@@ -1189,7 +1282,7 @@ export default function FounderGPT() {
                                                                     <button
                                                                         key={mentorName}
                                                                         onClick={() => handleSwitchMentor(mentorName, msg.originalPrompt!)}
-                                                                        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-gray-200 hover:border-black hover:shadow-md text-xs font-bold text-gray-600 hover:text-black transition-all duration-200 active:scale-95"
+                                                                        className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-[#111] border border-white/10 hover:border-white/30 hover:shadow-md text-xs font-bold text-gray-400 hover:text-white transition-all duration-200 active:scale-95"
                                                                     >
                                                                         <span className="text-base">{mentorInfo.icon}</span>
                                                                         <span className="hidden sm:inline">{mentorInfo.label}</span>
@@ -1202,8 +1295,8 @@ export default function FounderGPT() {
                                                 )}
                                             </div>
                                             {msg.role === "user" && (
-                                                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-1", isPiranha ? "bg-[#8B0000]" : "bg-indigo-100")}>
-                                                    <User className={cn("h-4 w-4", isPiranha ? "text-white" : "text-indigo-600")} />
+                                                <div className={cn("h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-1", isPiranha ? "bg-[#8B0000]" : "bg-white")}>
+                                                    <User className={cn("h-4 w-4", isPiranha ? "text-white" : "text-black")} />
                                                 </div>
                                             )}
                                         </div>
@@ -1235,7 +1328,7 @@ export default function FounderGPT() {
                         {/* Chat Input Bar */}
                         <div className={cn("sticky bottom-0 pt-4 pb-2 transition-all", theme.bg)}>
                             <div className="relative w-full max-w-2xl mx-auto">
-                                <div className={cn("relative flex items-center border-2 rounded-full p-1.5 shadow-lg group transition-all duration-300", theme.input)}>
+                                <div className={cn("relative flex items-center border-2 rounded-full p-1.5 shadow-lg group transition-all duration-300 overflow-hidden shrink", theme.input)}>
                                     <input 
                                         type="text"
                                         value={query}
@@ -1243,7 +1336,7 @@ export default function FounderGPT() {
                                         onKeyDown={handleKeyDown}
                                         placeholder={isPiranha ? piranhaPlaceholder : "Ask a follow-up..."}
                                         disabled={isLoading}
-                                        className={cn("flex-1 bg-transparent border-none focus:ring-0 font-medium h-10 text-base outline-none pl-4", theme.text, "placeholder:text-gray-400")}
+                                        className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-3 sm:pl-4", theme.text, "placeholder:text-gray-400")}
                                     />
                                     
                                     {/* Microphone Button */}

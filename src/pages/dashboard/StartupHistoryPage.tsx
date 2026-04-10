@@ -4,16 +4,15 @@ import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { supabase, getClosedDeals } from "../../lib/supabase"
+import { supabase, getClosedDeals, getUserSetting, getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
-import { compareInvestors, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
+import { compareInvestors, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
-import { QuickFillPanel } from "../../components/dashboard/QuickFillPanel"
 import { ensureArray } from "../../lib/utils"
 import { SearchInput } from "../../components/dashboard/SearchInput"
 import { useDebounce } from "../../hooks/useDebounce"
@@ -33,8 +32,6 @@ export default function StartupHistoryPage() {
    const [comparisonResult, setComparisonResult] = useState<ComparisonResult | null>(null)
    const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
    const [searchQuery, setSearchQuery] = useState("")
-   const [isQuickFillOpen, setIsQuickFillOpen] = useState(false)
-   const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
    const debouncedSearchQuery = useDebounce(searchQuery, 300)
 
    useEffect(() => {
@@ -190,14 +187,27 @@ export default function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         const config = await resolveAIConfig(user?.id);
+         // Priority: Groq -> Env -> DB Global -> DB User
+         const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+         let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
 
-         if (!config) {
+         if (!apiKey) {
+            const globalKey = await getGlobalConfig('ai_api_key')
+            if (globalKey) apiKey = globalKey
+         }
+
+         if (!apiKey && user) {
+            const storedKey = await getUserSetting(user.id, 'ai_api_key')
+            if (storedKey) apiKey = storedKey
+         }
+
+         if (!apiKey) {
             toast("AI features are not setup. Please contact the administrator.", "error")
             return
          }
 
-         const result = await compareInvestors(val1, val2, config)
+         const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+         const result = await compareInvestors(val1, val2, apiKey, baseUrl)
 
          // Track successful comparison
          subscriptionManager.trackCompare(val1.id, val2.id)
@@ -284,17 +294,6 @@ export default function StartupHistoryPage() {
                         onClick={() => handleSelect(investor.id)}
                         onDoubleClick={() => setDetailInvestor(investor)}
                         onToggleSave={handleRemove}
-                        onWebsiteClick={(inv) => {
-                           setIsQuickFillOpen(true);
-                           setRedirectTarget(inv.name);
-                           toast(`Quick-Fill Assistant opened! Openning ${inv.name} in 2 seconds...`, "success");
-                           
-                           setTimeout(() => {
-                              const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
-                              window.open(url, '_blank', 'noopener,noreferrer');
-                              setRedirectTarget(null);
-                           }, 2000);
-                        }}
                      />
                   </div>
                ))}
@@ -389,14 +388,7 @@ export default function StartupHistoryPage() {
                />
             </div>
          </div>
-
-         {/* Floating Assistant */}
-         <QuickFillPanel 
-            isOpen={isQuickFillOpen} 
-            onClose={() => setIsQuickFillOpen(false)} 
-            isRedirecting={!!redirectTarget}
-            redirectTarget={redirectTarget || ''}
-         />
       </div>
    )
 }
+

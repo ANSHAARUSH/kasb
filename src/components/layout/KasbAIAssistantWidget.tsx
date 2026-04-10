@@ -54,7 +54,7 @@ export function KasbAIAssistantWidget() {
         setQuery('');
         setIsLoading(true);
 
-        const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
+        const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
         
         try {
             let currentAiContent = "";
@@ -117,11 +117,11 @@ export function KasbAIAssistantWidget() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsOpen(true)}
                         className={cn(
-                            "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border border-white/10 bg-black text-white backdrop-blur-md transition-all duration-300"
+                            "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border-2 border-white/10 bg-black text-white backdrop-blur-md transition-all duration-300 overflow-hidden"
                         )}
                         title="Kasb AI Assistant"
                     >
-                        <MessageSquare className="h-6 w-6" />
+                        <img src={`${import.meta.env.BASE_URL}floating-bot.jpg`} alt="Kasb Bot" className="h-full w-full object-cover" />
                         <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                     </motion.button>
                 )}
@@ -140,8 +140,8 @@ export function KasbAIAssistantWidget() {
                         {/* Header */}
                         <div className="p-4 bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                                    <Sparkles className="h-5 w-5 text-white" />
+                                <div className="h-10 w-10 rounded-xl bg-transparent flex items-center justify-center shadow-lg shadow-indigo-500/20 overflow-hidden border border-gray-100">
+                                    <img src={`${import.meta.env.BASE_URL}kasb-assistant-avatar.png`} alt="Kasb Assistant" className="h-full w-full object-cover" />
                                 </div>
                                 <div className="flex flex-col">
                                     <h3 className="text-sm font-black uppercase tracking-widest leading-none">Kasb Assistant</h3>
@@ -182,17 +182,19 @@ export function KasbAIAssistantWidget() {
                                         animate={{ scale: 1, opacity: 1 }}
                                         className="h-20 w-20 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center ring-1 ring-gray-100"
                                     >
-                                        <Home className="h-10 w-10 text-indigo-500" />
+                                        <img src={`${import.meta.env.BASE_URL}kasb-assistant-avatar.png`} alt="Kasb Assistant" className="h-full w-full object-cover rounded-[2.5rem]" />
                                     </motion.div>
                                     <div>
                                         <h4 className="text-xl font-black text-gray-900 leading-tight">Welcome to Kasb.AI</h4>
-                                        <p className="text-xs text-gray-500 font-medium px-4 mt-2">I can explain any button, key, or function in the platform. Try asking me anything!</p>
+                                        <p className="text-xs text-gray-500 font-medium px-4 mt-2">I know everything about Kasb.AI — ask me about any feature, plan, or how to get started!</p>
                                     </div>
                                     <div className="grid grid-cols-1 gap-2 w-full">
                                         {[
-                                            "How to use Piranha Tank?",
-                                            "What is Kasb Studio?",
-                                            "Explain the 'Review' mode"
+                                            "What is Piranha Tank?",
+                                            "How does Founder GPT work?",
+                                            "Tell me about Kasb Studio",
+                                            "What subscription plans exist?",
+                                            "Who built Kasb.AI?"
                                         ].map((suggestion, i) => (
                                             <motion.button
                                                 initial={{ opacity: 0, y: 10 }}

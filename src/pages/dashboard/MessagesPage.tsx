@@ -140,7 +140,7 @@ export default function MessagesPage() {
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
-                avatar: `${import.meta.env.BASE_URL}ai-bot.png`,
+                avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.png`,
                 lastMessage: 'AI Assistant',
                 time: '',
                 unread: 0
@@ -193,7 +193,7 @@ export default function MessagesPage() {
             const aiBot: Conversation = {
                 userId: 'kasb-ai-bot',
                 name: 'Kasb AI',
-                avatar: `${import.meta.env.BASE_URL}ai-bot.png`,
+                avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.png`,
                 lastMessage: 'AI Assistant',
                 time: '',
                 unread: 0
@@ -350,7 +350,7 @@ export default function MessagesPage() {
                     content: m.content
                 })) as { role: 'user' | 'assistant', content: string }[]
 
-                const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
+                const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
                 console.log("API Key present:", !!apiKey)
 
                 if (!apiKey) {
@@ -452,7 +452,7 @@ export default function MessagesPage() {
             return
         }
 
-        const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
+        const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
         if (!apiKey) {
             toast("API Key missing. Please check Admin Settings.", "error")
             return

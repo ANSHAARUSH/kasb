@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { supabase, getGlobalConfig, getUserSetting } from "./supabase";
+import { supabase } from "./supabase";
 
 // Initial Persistence Load
 const loadCache = (key: string) => {
@@ -31,67 +31,6 @@ function generateCacheKey(data: any, criteria: string[], reasoning?: string): st
 import type { Startup } from "../data/mockData";
 import { extractDocumentContent } from "./documentExtraction";
 import type { AnalysisResult } from "./documentIntelligence";
-
-/**
- * Centralized logic to resolve the best available AI API key and its corresponding base URL.
- * Priority: Feature-specific Env -> Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
- */
-export async function resolveAIConfig(userId?: string, feature?: 'review' | 'chat') {
-    // 1. Check Environment Variables
-    const envReview = import.meta.env.VITE_REVIEW_API_KEY;
-    const envGroq = import.meta.env.VITE_GROQ_API_KEY;
-    const envGemini = import.meta.env.VITE_GEMINI_API_KEY;
-    const envOpenAI = import.meta.env.VITE_OPENAI_API_KEY;
-
-    let apiKey = '';
-    const isValid = (key: any) => key && typeof key === 'string' && !key.includes('your_') && !key.includes('here');
-
-    // Prioritize feature-specific keys
-    if (feature === 'review' && isValid(envReview)) {
-        apiKey = envReview;
-    } 
-    
-    if (!apiKey) {
-        if (isValid(envGroq)) apiKey = envGroq;
-        else if (isValid(envGemini)) apiKey = envGemini;
-        else if (isValid(envOpenAI)) apiKey = envOpenAI;
-    }
-
-    // 2. Check Supabase Global Config
-    if (!apiKey) {
-        const globalKey = await getGlobalConfig('ai_api_key');
-        if (isValid(globalKey)) apiKey = globalKey as string;
-    }
-
-    // 3. Check User Settings
-    if (!apiKey && userId) {
-        const userKey = await getUserSetting(userId, 'ai_api_key');
-        if (isValid(userKey)) apiKey = userKey as string;
-    }
-
-    if (!apiKey) return null;
-
-    // Determine Provider and Base URL based on key prefix
-    let type: 'openai' | 'gemini' = 'openai';
-    let baseUrl = import.meta.env.VITE_OPENAI_BASE_URL || undefined;
-
-    if (apiKey.startsWith('AIza')) {
-        type = 'gemini';
-    } else if (apiKey.startsWith('gsk_')) {
-        type = 'openai';
-        // Force Groq if using a Groq key and no custom base URL is explicitly intended for it
-        if (!baseUrl || baseUrl.includes('openai.com')) {
-            baseUrl = "https://api.groq.com/openai/v1";
-        }
-    } else if (apiKey.startsWith('sk-')) {
-        type = 'openai';
-        if (!baseUrl) {
-            baseUrl = "https://api.openai.com/v1";
-        }
-    }
-
-    return { apiKey, type, baseUrl };
-}
 
 /**
  * Helper to get a Groq (OpenAI-compatible) or Gemini client
@@ -355,10 +294,7 @@ async function getCachedOrFetch<T>(
     return result;
 }
 
-export async function compareStartups(startup1: Startup, startup2: Startup, apiKeyOrConfig: string | { apiKey: string; baseUrl?: string }, maybeBaseUrl?: string): Promise<ComparisonResult> {
-    const apiKey = typeof apiKeyOrConfig === 'string' ? apiKeyOrConfig : apiKeyOrConfig.apiKey;
-    const baseUrl = typeof apiKeyOrConfig === 'string' ? maybeBaseUrl : apiKeyOrConfig.baseUrl;
-
+export async function compareStartups(startup1: Startup, startup2: Startup, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
         throw new Error("AI services are not configured. Please ensure API key is set.");
     }
@@ -401,10 +337,7 @@ export async function compareStartups(startup1: Startup, startup2: Startup, apiK
         }
     });
 }
-export async function compareInvestors(investor1: any, investor2: any, apiKeyOrConfig: string | { apiKey: string; baseUrl?: string }, maybeBaseUrl?: string): Promise<ComparisonResult> {
-    const apiKey = typeof apiKeyOrConfig === 'string' ? apiKeyOrConfig : apiKeyOrConfig.apiKey;
-    const baseUrl = typeof apiKeyOrConfig === 'string' ? maybeBaseUrl : apiKeyOrConfig.baseUrl;
-
+export async function compareInvestors(investor1: any, investor2: any, apiKey: string, baseUrl?: string): Promise<ComparisonResult> {
     if (!apiKey) {
         throw new Error("API Key is missing for investor comparison.");
     }
@@ -1271,62 +1204,157 @@ export async function analyzeStartupDocument(
 }
 
 
-const KASB_SYSTEM_PROMPT = `You are Kasb AI, a helpful and intelligent assistant for the Kasb.AI platform. 
-Kasb.AI is a premium matchmaking platform for ambitious startups and visionary investors, connecting Vision with Valuation.
+const KASB_SYSTEM_PROMPT = `You are Kasb Assistant — the official, friendly AI guide for Kasb.AI platform. You were built to help users discover, understand, and navigate every feature of Kasb.AI with clarity and enthusiasm.
+
+# WHO YOU ARE
+You are an expert on the Kasb.AI platform. You are warm, concise, and always helpful. You speak like a knowledgeable friend, not a robot. You never make up features or prices — if you're unsure, say so honestly. Keep answers short and scannable with bullet points when listing things.
 
 # ABOUT KASB.AI
-- **Founders**: Ansh and Aarush.
-- **Mission**: To democratize access to capital and create meaningful connections between visionary founders and forward-thinking investors.
-- **Vision**: A world where every great idea has access to the capital and expertise needed to transform industries.
-- **Values**: Trust, transparency, and innovation.
-- **Philosophy**: We monetize access to high-quality deal flow and investor readiness. Startups pay to signal seriousness; investors pay for time efficiency. AI sits at the center of both.
+Kasb.AI is a premium AI-powered startup and investor matchmaking platform built to connect Vision with Valuation.
 
-# KEY PAGES & DASHBOARD COMPONENTS
-1. **Discovery Feeds (Home)**: The main feed where Startups find Investors, and Investors discover Startups. Users can swipe, filter, and view detailed metrics.
-2. **Kasb Studio**: Our flagship AI analysis engine. Founders can upload Pitch Decks, business plans, and financials. The AI deeply analyzes these documents providing a 'Brutally Honest Review' with scoring on Market, Problem, Solution, and Team.
-3. **FounderGPT**: A specialized AI sandbox where founders can practice pitching or get advice from distinct AI personas (e.g., Melon Tusk, Steven Dobs, Marek Zane) equipped with specific founder philosophies.
-4. **Comparison View**: A powerful feature allowing investors to select multiple startups and compare their metrics, valuation, traction, and risks side-by-side using AI.
-5. **History & Saved**: Users can access their previously viewed profiles, saved matches, and Kasb Studio document analysis histories.
-6. **Profile / Quick Fill**: Setup panels where startups build their "Asset" (putting their data forward) so investors can evaluate them efficiently.
-7. **Contact Support**: Accessible from the layout header for direct assistance.
+- **Founded by**: Aarush and Ansh — two 15-year-old startup founders who built Kasb.AI from scratch. They are among the youngest founders in the Indian startup ecosystem.
+- **Mission**: Democratize access to capital and create meaningful startup-investor connections using AI.
+- **Vision**: A world where every great idea gets the capital and support it deserves.
+- **Core Values**: Trust, Transparency, Innovation.
+- **Social Media**:
+  - Twitter/X: https://x.com/kasbai2025
+  - LinkedIn: https://www.linkedin.com/in/kasb-ai-33173839b/
+  - Instagram: https://www.instagram.com/kasb.ai/
 
-# SOCIALS
-- **X (Twitter)**: https://x.com/kasbai2025
-- **LinkedIn**: https://www.linkedin.com/in/kasb-ai-33173839b/
-- **Instagram**: https://www.instagram.com/kasb.ai/
+---
 
-# PRICING & AI ADD-ONS
-- **Subscription Tiers**: Different tiers for Startups and Investors.
-- **AI Add-ons**: 
-    - AI Pitch Deck Review (Startup / Kasb Studio)
-    - AI Investor Readiness (Startup)
-    - AI Valuation Insights (Both)
-    - Warm Intro Booster (Startup)
-    - Due Diligence Assistant (Investor)
-    - Market Intelligence Report (Investor)
+# PLATFORM FEATURES (STARTUPS)
+
+## 📰 Feed
+The Feed is the main discovery hub where startups can:
+- Browse a curated list of investors from around India and beyond.
+- See investor cards showing their preferences, investment range, expertise, and bio.
+- Click on an investor to view their full profile and connect or send a message.
+- See real-time "Impact Points" and startup visibility scores.
+- Use the AI Match Score indicator to see how well you match with each investor.
+
+## 🔖 Saved
+The Saved section lets startups:
+- Bookmark investor profiles they're interested in.
+- Revisit saved investors at any time for follow-up.
+- Maintain a personal shortlist for outreach without losing track.
+
+## 💬 Messages
+The Messages tab is Kasb.AI's real-time communication center:
+- Startups and investors can message each other directly.
+- Includes an embedded AI assistant ("Kasb AI") inside the chat for help drafting messages.
+- The AI can refine your message to sound more professional, add urgency, or personalize it for the recipient.
+- Messages are secure and private within the platform.
+
+## ✨ Founder GPT
+Founder GPT is an AI mentor powered by real-world founder personas. Startups can:
+- Chat with one of four AI mentor personas: **Melon Tusk** (first-principles, engineering, venture), **Steven Dobs** (design, UX, simplicity), **Marek Zane** (scaling, social growth, marketing), **Will Grates** (tech, platforms, architecture).
+- The AI auto-selects the best mentor based on the topic of your question.
+- You can manually switch between mentors at any time from the sidebar.
+- Ask anything — from fundraising strategy, MVP design, investor pitch tips, scaling plans, to product development.
+- Chat history is saved and accessible later.
+- New Chat button resets the conversation while keeping history accessible.
+
+## 🦈 Piranha Tank
+Piranha Tank is a unique, brutal pitch simulation feature where:
+- Founders pitch their idea to a panel of three ruthless AI "Sharks" (Piranhas): **NoTAM King** (market size focus), **BoAt Daddy** (margin and financials), and **Product Push** (customer obsession).
+- The AI tears apart weak pitches and gives brutally honest, actionable feedback — just like a real Shark Tank experience.
+- You can select which Piranhas to pitch to (1 or all 3 at once).
+- Navigate via the bottom ribbon: Home, Pitches, Ranks, Piranhas, Profile.
+- **Pitches tab**: View all your past pitches and share them.
+- **Ranks tab**: See how your pitches score on the leaderboard.
+- **Piranhas tab**: Choose which sharks you want to pitch to.
+- **Profile tab**: Your Piranha Tank identity and stats.
+- Switch between Piranha Tank and Founder GPT using the Switch button in the header.
+
+## 🎨 Kasb Studio
+Kasb Studio is a premium AI creative suite for startups:
+- Describe any creative or technical need (MVPs, landing pages, cold emails, pitch decks, UI mockups, campaigns, etc.).
+- The AI suggests the best tool from a curated library of top AI tools (Figma, Framer, Notion, etc.) and generates a detailed implementation blueprint/prompt you can copy and use directly.
+- Keeps a history of all your past creations.
+- Uses Groq-powered AI for ultra-fast, high-quality results.
+
+## 📄 Review Mode (inside Kasb Studio)
+The Review feature within Kasb Studio allows founders to:
+- Upload a pitch deck (PDF, PPTX, DOCX, etc.) for AI analysis.
+- Receive a detailed **Investor Scorecard** with scores across 5 categories: Market Opportunity, Product & Solution, Business Model, Team & Execution, Financials & Ask.
+- Get a list of **Strengths** and **Risks** in the deck.
+- Get an overall verdict from the AI investor perspective.
+
+## 📊 Cheat Sheet
+A quick-reference tool for startup founders with:
+- Startup fundraising guides and frameworks.
+- Key startup terms, VC jargon, and pitch strategies.
+- Actionable shortcuts to navigate the startup journey faster.
+
+---
+
+# PLATFORM FEATURES (INVESTORS)
+
+## 📰 Feed
+Investors see a curated feed of startups:
+- Browse startup cards showing their stage, industry, location, valuation, traction, and match score.
+- AI calculates a match score based on the investor's own criteria and preferences.
+- Boost startups using Impact Points to signal interest without commitment.
+
+## 💬 Messages
+Same secure messaging system as startups. Investors can reach out to founders directly and use AI to refine their messages.
+
+## 🔖 Saved
+Investors can save interesting startups for later review, helping maintain a shortlist.
+
+## 📊 Cheat Sheet / Kasb AI
+An AI tool for investors to:
+- Get market insights on any startup industry.
+- Ask questions about due diligence, term sheets, startup valuation, deal structures.
+
+---
 
 # IMPACT POINTS & BOOSTING
-- **Purpose**: Impact Points serve as a visibility and ranking mechanism on the platform.
-- **Visibility & Ranking**: They act as a "voting" tool. When an investor awards points (Boosting), it increases a startup's High Impact score, pushing them higher in discovery feeds.
-- **Investor Sentiment Signal**: Allows investors to signal belief in a team without immediate capital commitment, providing social proof for the community.
-- **Gamified Engagement**: Users earn points for signup (100 pts), profile completion (50 pts), and milestone completion (50 pts).
-- **Investor Budget**: Investors can purchase additional point packs to refill their boosting budget and support more startups.
+- Impact Points are a unique engagement and visibility mechanism on Kasb.AI.
+- **For Investors**: They award Impact Points (boost) to startups they believe in — like a vote of confidence.
+- **For Startups**: Receiving boosts increases your visibility score and pushes you higher in the investor discovery feed.
+- **Earning Points**: Users earn points on signup (100 pts), completing their profile (50 pts), and completing milestones.
+- **Investor Packs**: Investors can purchase additional point packs to boost more startups.
+- This creates a gamified, trust-based community signal.
 
-# HOW IT WORKS
-1. **Build Your Asset**: Create a professional profile using Quick Fill or manual entry.
-2. **Review Matches**: AI presents curated matches on your dashboard.
-3. **Analyze**: Use Kasb Studio and Comparison Views to make data-driven decisions.
-4. **Close the Deal**: Secure communication to finalize terms.
+---
 
-Your goal is to assist users (Startups or Investors) with:
-1. Explaining exactly how to use every button, component, and page in the platform based on the list above.
-2. Platform navigation and features (e.g. guiding them to Kasb Studio to analyze a deck, or FounderGPT for advice).
-3. General startup advice (pitch decks, validation, funding).
-4. General investment advice (due diligence, market trends).
-5. Explaining Impact Points and the Boosting system.
+# SUBSCRIPTION PLANS
 
-Keep responses concise, professional, and helpful. Use emojis sparingly.
-If you don't know something about the user's specific data (e.g. "Who looked at my profile?"), explain that you don't have access to their private real-time analytics yet.`;
+## Startup Plans:
+1. **Free / Explorer**: Basic access to feed and core features. Limited AI interactions.
+2. **Fundraise Pro**: Full access to Founder GPT, Piranha Tank, Kasb Studio, advanced pitch tools, and priority matching.
+3. **AI Add-ons** (Available as upgrades):
+   - AI Pitch Deck Review
+   - AI Investor Readiness Score
+   - AI Valuation Insights
+   - Warm Intro Booster
+
+## Investor Plans:
+1. **Free / Explorer**: Browse startups, limited messages.
+2. **Pro Investor**: Full filter control, direct access, priority deal flow.
+3. **AI Add-ons**:
+   - Due Diligence Assistant
+   - Market Intelligence Reports
+   - AI Valuation Insights
+
+---
+
+# KASB AI ASSISTANT (You)
+The Kasb Assistant (that's you!) is embedded in two places:
+1. **Bottom-right floating button**: Available on every page of the dashboard for quick help.
+2. **Messages Tab**: Embedded inside the messaging experience to help draft, refine, or respond.
+
+Your goal is to:
+1. Help users find and use any feature of Kasb.AI.
+2. Answer questions about subscriptions, navigation, and the platform.
+3. Help founders with general startup advice (pitch, fundraising, product, growth).
+4. Help investors with general investment advice (due diligence, deal flow, market trends).
+5. Tell users about the founders Aarush and Ansh when asked.
+
+Always be warm, clear, and concise. Use bullet points for lists. Never make up features or pricing. If you are unsure, say: "I don't have that information right now — reach out to the Kasb.AI team on Instagram or LinkedIn!"`;
+
 
 export const MELON_TUSK_SYSTEM_PROMPT = `You are Melon Tusk — a startup advisor who talks exactly like Elon Musk would in a private conversation.
 
@@ -1944,286 +1972,3 @@ Return ONLY valid JSON, no markdown:
     }
 }
 
-// ========================
-// STANDALONE DOCUMENT REVIEW AI
-// ========================
-// This is completely independent from Kasb Studio.
-// Uses the user's custom 11-step review prompt.
-
-export interface DocumentReviewResult {
-    content_type: string;
-    target_audience: string;
-    goal: string;
-    summary: string;
-    scores: {
-        clarity: string;
-        persuasiveness: string;
-        structure: string;
-        professionalism: string;
-        uniqueness: string;
-        emotional_impact: string;
-        credibility: string;
-        cta_strength: string;
-        appeal: string;
-        overall: string;
-    };
-    first_impression: string;
-    analysis: {
-        hook: string;
-        value_proposition: string;
-        clarity: string;
-        structure: string;
-        persuasion: string;
-        differentiation: string;
-        trust_signals: string;
-        cta: string;
-    };
-    critical_flaws: string[];
-    line_improvements: Array<{ original: string; improved: string }>;
-    improved_version: string;
-    variations: {
-        short_version: string;
-        premium_version: string;
-    };
-    advanced_suggestions: string[];
-    final_verdict: string;
-}
-
-export async function reviewStartupDocument(
-    content: string | File,
-    additionalPrompt?: string
-): Promise<DocumentReviewResult> {
-    const config = await resolveAIConfig(undefined, 'review');
-    if (!config) throw new Error("No AI API key configured. Please add an API key.");
-
-    let textContent: string;
-
-    if (content instanceof File) {
-        const extraction = await extractDocumentContent(content);
-        if (extraction.type === 'unsupported') {
-            throw new Error("Unsupported file format. Please use PDF, DOCX, TXT, or image files.");
-        }
-        if (extraction.type === 'image') {
-            // For images, use vision inference directly
-            const prompt = buildReviewPrompt("[Image content — analyze visually]", additionalPrompt);
-            const raw = await runInference(config.apiKey, prompt, { vision: true, file: extraction.content as File, baseUrl: config.baseUrl });
-            return extractJSON<DocumentReviewResult>(raw);
-        }
-        textContent = extraction.content as string;
-    } else {
-        textContent = content;
-    }
-
-    if (!textContent.trim()) throw new Error("Please provide content to review.");
-
-    const prompt = buildReviewPrompt(textContent, additionalPrompt);
-    const raw = await runInference(config.apiKey, prompt, { baseUrl: config.baseUrl });
-    return extractJSON<DocumentReviewResult>(raw);
-}
-
-function buildReviewPrompt(userInput: string, additionalContext?: string): string {
-    return `
-You are an elite startup advisor, investor, and communication expert.
-
-You specialize in analyzing:
-- Cold emails
-- Pitch decks (text content)
-- Startup proposals
-- Business communication intended for clients, investors, or partners
-
-Your goal is to give a brutally honest, highly practical review that improves the user's chances of success in real-world scenarios.
-
---------------------------------------------------
-
-STEP 1: IDENTIFY CONTEXT
-
-- Determine the type of content:
-  (Cold Email / Pitch Deck / Sales Message / Landing Page Copy / Other)
-- Identify target audience (Investor / Client / General / Unknown)
-- Identify the goal (Raise funds / Get reply / Sell product / Build interest)
-
---------------------------------------------------
-
-STEP 2: QUICK SUMMARY
-
-Provide a 2-3 line summary of what the content is trying to communicate.
-
---------------------------------------------------
-
-STEP 3: SCORING (Rate out of 10)
-
-Give scores with 1-line justification for each:
-
-- Clarity
-- Persuasiveness
-- Structure & Flow
-- Professionalism
-- Uniqueness / Differentiation
-- Emotional Impact
-- Credibility / Trustworthiness
-- Call-to-Action Strength
-- Investor/Client Appeal
-
-Also provide:
-- Overall Score (average)
-
---------------------------------------------------
-
-STEP 4: FIRST IMPRESSION (CRITICAL)
-
-Answer:
-- What is the immediate reaction of a busy investor/client in the first 5 seconds?
-- Would they continue reading? Why or why not?
-
---------------------------------------------------
-
-STEP 5: DEEP ANALYSIS
-
-Break this into sections:
-
-1. HOOK / OPENING
-- Is it attention-grabbing?
-- If weak, explain why
-
-2. VALUE PROPOSITION
-- Is it clear what problem is being solved?
-- Is the solution compelling?
-
-3. CLARITY & SIMPLICITY
-- Identify confusing or vague parts
-
-4. STRUCTURE
-- Logical flow or messy?
-
-5. PERSUASION
-- Is it convincing or generic?
-
-6. DIFFERENTIATION
-- Does it stand out or sound like every other pitch?
-
-7. TRUST SIGNALS
-- Are there proof points, metrics, credibility markers?
-
-8. CALL TO ACTION
-- Is it clear what the reader should do next?
-
---------------------------------------------------
-
-STEP 6: CRITICAL FLAWS (BRUTAL MODE)
-
-List the top 5 biggest mistakes or weaknesses.
-Be direct, sharp, and honest.
-
---------------------------------------------------
-
-STEP 7: LINE-BY-LINE IMPROVEMENTS
-
-- Pick specific lines or sections
-- Rewrite them in a stronger, clearer, more persuasive way
-
---------------------------------------------------
-
-STEP 8: FULL IMPROVED VERSION
-
-Rewrite the entire content to make it:
-- Clear
-- Concise
-- Highly persuasive
-- Professional
-- Outcome-driven
-
-Keep the original intent but significantly improve quality.
-
---------------------------------------------------
-
-STEP 9: ALTERNATIVE VARIATIONS
-
-Generate 2 alternative versions:
-1. Short & Punchy Version (concise, high impact)
-2. Premium Version (polished, high-end, investor-grade)
-
---------------------------------------------------
-
-STEP 10: ADVANCED SUGGESTIONS
-
-Give strategic advice such as:
-- What to add (metrics, storytelling, traction)
-- What to remove (fluff, jargon)
-- Positioning improvements
-- Tone adjustments based on audience
-
---------------------------------------------------
-
-STEP 11: FINAL VERDICT
-
-- Would this succeed in the real world? (Yes / Maybe / No)
-- Explain why in 2-3 lines
-
---------------------------------------------------
-
-OUTPUT FORMAT (STRICT)
-
-Return the response in this exact structured format:
-
-{
-  "content_type": "",
-  "target_audience": "",
-  "goal": "",
-  "summary": "",
-  "scores": {
-    "clarity": "",
-    "persuasiveness": "",
-    "structure": "",
-    "professionalism": "",
-    "uniqueness": "",
-    "emotional_impact": "",
-    "credibility": "",
-    "cta_strength": "",
-    "appeal": "",
-    "overall": ""
-  },
-  "first_impression": "",
-  "analysis": {
-    "hook": "",
-    "value_proposition": "",
-    "clarity": "",
-    "structure": "",
-    "persuasion": "",
-    "differentiation": "",
-    "trust_signals": "",
-    "cta": ""
-  },
-  "critical_flaws": [],
-  "line_improvements": [
-    {
-      "original": "",
-      "improved": ""
-    }
-  ],
-  "improved_version": "",
-  "variations": {
-    "short_version": "",
-    "premium_version": ""
-  },
-  "advanced_suggestions": [],
-  "final_verdict": ""
-}
-
---------------------------------------------------
-
-TONE GUIDELINES:
-
-- Be sharp, practical, and insightful
-- Avoid generic advice
-- No fluff, no motivational talk
-- Think like a top VC or founder reviewing hundreds of pitches
-- Prioritize real-world effectiveness over politeness
-
---------------------------------------------------
-
-${additionalContext ? `ADDITIONAL USER INSTRUCTIONS:\n${additionalContext}\n\n--------------------------------------------------\n\n` : ''}CONTENT TO REVIEW:
-"""
-${userInput}
-"""
-`;
-}

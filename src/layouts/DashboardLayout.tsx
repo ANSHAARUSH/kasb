@@ -4,9 +4,9 @@ import { NotificationBell } from "../components/layout/NotificationBell"
 import { UsageIcon } from "../components/layout/UsageIcon"
 import { ProfileCompletionIndicator } from "../components/layout/ProfileCompletionIndicator"
 import { ContactSupport } from "../components/layout/ContactSupport"
-import { KasbAIAssistantWidget } from "../components/layout/KasbAIAssistantWidget"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { KasbAIAssistantWidget } from "../components/layout/KasbAIAssistantWidget"
 // import { KYCVerification } from "../components/dashboard/KYCVerification"
 import { useEffect } from "react"
 
@@ -103,12 +103,10 @@ export function DashboardLayout() {
                     </div>
                 </main>
 
-                {/* Global AI Assistant Chat Widget */}
-                <KasbAIAssistantWidget />
-
                 {/* Mobile Bottom Navigation */}
                 <BottomNav />
             </div>
+            <KasbAIAssistantWidget />
         </div>
     )
 }

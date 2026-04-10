@@ -88,7 +88,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const aiBot: ChatUser = {
             id: 'kasb-ai-bot',
             name: 'Kasb AI',
-            avatar: `${import.meta.env.BASE_URL}ai-bot.png`,
+            avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.png`,
             role: 'investor' // Use investor role for admin-like styling
         }
 

@@ -4,12 +4,12 @@ import { StartupDetail } from "../../components/dashboard/StartupDetail"
 import { StartupComparisonView } from "../../components/dashboard/StartupComparisonView"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { supabase, getClosedDeals } from "../../lib/supabase"
+import { supabase, getUserSetting, getGlobalConfig, getClosedDeals } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import type { Startup } from "../../data/mockData"
 import type { StartupDB } from "../../types"
-import { compareStartups, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
+import { compareStartups, type ComparisonResult } from "../../lib/ai"
 import { Button } from "../../components/ui/button"
 import { Sparkles, Lock, X } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -218,14 +218,27 @@ export default function HistoryPage() {
         setIsComparing(true)
 
         try {
-            const config = await resolveAIConfig(user?.id);
+            // Priority: Groq -> Env -> DB Global -> DB User
+            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
+            let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
 
-            if (!config) {
+            if (!apiKey) {
+                const globalKey = await getGlobalConfig('ai_api_key')
+                if (globalKey) apiKey = globalKey
+            }
+
+            if (!apiKey && user) {
+                const storedKey = await getUserSetting(user.id, 'ai_api_key')
+                if (storedKey) apiKey = storedKey
+            }
+
+            if (!apiKey) {
                 toast("AI features are not setup. Please contact the administrator.", "error")
                 return
             }
 
-            const result = await compareStartups(s1, s2, config)
+            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const result = await compareStartups(s1, s2, apiKey, baseUrl)
 
             // Track successful comparison
             subscriptionManager.trackCompare(s1.id, s2.id)
