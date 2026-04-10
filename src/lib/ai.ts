@@ -1894,8 +1894,10 @@ export async function chatWithAIStream(
             console.error("AI Chat Stream Error:", error);
             throw new Error("Chat stream failed");
         }
-    }).catch(() => {
-        return "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
+    }).catch((e) => {
+        const errorMsg = "Sorry, I am currently offline or experiencing issues. Please check your API settings or try again later.";
+        onChunk(errorMsg);
+        return errorMsg;
     });
 }
 
