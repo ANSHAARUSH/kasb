@@ -51,6 +51,8 @@ jobs:
           VITE_MAREK_ZANE_API_KEY: ${{ secrets.VITE_MAREK_ZANE_API_KEY }}
           VITE_WILL_GRATES_API_KEY: ${{ secrets.VITE_WILL_GRATES_API_KEY }}
           VITE_KASB_STUDIO_API_KEY: ${{ secrets.VITE_KASB_STUDIO_API_KEY }}
+          VITE_KASB_ASSISTANT_API_KEY: ${{ secrets.VITE_KASB_ASSISTANT_API_KEY }}
+          VITE_REVIEW_API_KEY: ${{ secrets.VITE_REVIEW_API_KEY }}
       # Removed cp dist/index.html dist/404.html as we have a custom 404.html in public/
       - name: Setup Pages
         uses: actions/configure-pages@v5
