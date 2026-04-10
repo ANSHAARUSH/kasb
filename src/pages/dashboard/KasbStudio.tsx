@@ -14,7 +14,6 @@ import {
   Trash2, 
   ArrowUp, 
   ChevronDown,
-  Eye,
   FileText,
   Zap
 } from "lucide-react";
