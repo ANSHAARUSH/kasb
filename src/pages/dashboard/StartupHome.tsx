@@ -21,6 +21,8 @@ import { parseRevenue } from "../../lib/utils"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { isProfileComplete } from "../../lib/questionnaire"
 import { scoreInvestorForStartup } from "../../lib/feedAlgorithm"
+import { QuickFillPanel } from "../../components/dashboard/QuickFillPanel"
+import { useToast } from "../../hooks/useToast"
 
 export default function StartupHome() {
     // ... hooks ...
@@ -34,6 +36,9 @@ export default function StartupHome() {
     })
     const [showFilters, setShowFilters] = useState(false)
     const [activeFeed] = useState<'discover' | 'top-investors'>('discover')
+    const [isQuickFillOpen, setIsQuickFillOpen] = useState(false)
+    const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
+    const { toast } = useToast()
 
     // ... existing hooks ...
     // Note: I need to preserve existing hooks. I will just inject imports and state.
@@ -321,6 +326,18 @@ export default function StartupHome() {
                                             isSaved={savedInvestorIds.includes(investor.id)}
                                             onMessageClick={handleMessageClick}
                                             onToggleSave={() => handleToggleSave(investor.id, "Investor")}
+                                            onWebsiteClick={(inv) => {
+                                                setIsQuickFillOpen(true);
+                                                setRedirectTarget(inv.name);
+                                                toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                                                
+                                                // 2 second delay before opening external link
+                                                setTimeout(() => {
+                                                    const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                                    setRedirectTarget(null);
+                                                }, 2000);
+                                            }}
                                             onClick={() => {
                                                 const now = Date.now();
                                                 const isMobile = window.innerWidth < 1024;
@@ -484,6 +501,17 @@ export default function StartupHome() {
                         setSelectedId(null)
                         setPanelSize('default')
                     }}
+                    onWebsiteClick={(inv) => {
+                        setIsQuickFillOpen(true);
+                        setRedirectTarget(inv.name);
+                        toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                        
+                        setTimeout(() => {
+                            const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                            setRedirectTarget(null);
+                        }, 2000);
+                    }}
                 // onDisconnect={} // If we want to handle disconnect refresh
                 />
             </div>
@@ -493,8 +521,27 @@ export default function StartupHome() {
                 <InvestorDetailModal
                     investor={detailInvestor}
                     onClose={() => setDetailInvestor(null)}
+                    onWebsiteClick={(inv) => {
+                        setIsQuickFillOpen(true);
+                        setRedirectTarget(inv.name);
+                        toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                        
+                        setTimeout(() => {
+                            const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                            setRedirectTarget(null);
+                        }, 2000);
+                    }}
                 />
             </div>
+
+            {/* Floating QuickFill Assistant */}
+            <QuickFillPanel 
+                isOpen={isQuickFillOpen} 
+                onClose={() => setIsQuickFillOpen(false)} 
+                isRedirecting={!!redirectTarget}
+                redirectTarget={redirectTarget || ''}
+            />
         </div>
     )
 }

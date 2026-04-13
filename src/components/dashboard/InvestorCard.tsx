@@ -21,9 +21,10 @@ interface InvestorCardProps {
     onClick?: () => void
     onDoubleClick?: () => void
     showImpactPoints?: boolean
+    onWebsiteClick?: (investor: Investor) => void
 }
 
-export function InvestorCard({ investor, isSelected, isSaved = false, onMessageClick, onToggleSave, onClick, onDoubleClick, showImpactPoints }: InvestorCardProps) {
+export function InvestorCard({ investor, isSelected, isSaved = false, onMessageClick, onToggleSave, onClick, onDoubleClick, showImpactPoints, onWebsiteClick }: InvestorCardProps) {
     const { user } = useAuth()
     const { toast } = useToast()
     const navigate = useNavigate()
@@ -253,8 +254,12 @@ export function InvestorCard({ investor, isSelected, isSaved = false, onMessageC
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (investor.website) {
-                                            const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
-                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                            if (onWebsiteClick) {
+                                                onWebsiteClick(investor);
+                                            } else {
+                                                const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
+                                                window.open(url, '_blank', 'noopener,noreferrer');
+                                            }
                                         } else {
                                             alert('No official website provided for this firm.');
                                         }

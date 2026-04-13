@@ -23,9 +23,10 @@ interface InvestorDetailProps {
     onDisconnect?: () => void
     onResize?: (size: PanelSize) => void
     currentSize?: PanelSize
+    onWebsiteClick?: (investor: Investor) => void
 }
 
-export function InvestorDetail({ investor, onClose, onDisconnect, onResize, currentSize = 'default' }: InvestorDetailProps) {
+export function InvestorDetail({ investor, onClose, onDisconnect, onResize, currentSize = 'default', onWebsiteClick }: InvestorDetailProps) {
     const { user, role } = useAuth()
     const navigate = useNavigate()
     const { toast } = useToast()
@@ -1061,8 +1062,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                         size="lg"
                         onClick={() => {
                             if (investor.website) {
-                                const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
-                                window.open(url, '_blank', 'noopener,noreferrer');
+                                if (onWebsiteClick) {
+                                    onWebsiteClick(investor);
+                                } else {
+                                    const url = investor.website.startsWith('http') ? investor.website : `https://${investor.website}`;
+                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                }
                             } else {
                                 alert('No official website provided for this firm.');
                             }
@@ -1105,6 +1110,7 @@ export function InvestorDetailModal(props: InvestorDetailProps) {
                         exit={{ y: "100%" }}
                         transition={{ type: "spring", damping: 25, stiffness: 300 }}
                         className="fixed bottom-0 left-0 right-0 z-50 h-[85vh] rounded-t-[2.5rem] bg-white shadow-2xl overflow-hidden flex flex-col lg:hidden"
+                        onClick={(e) => e.stopPropagation()}
                     >
                         <InvestorDetail {...props} />
                     </motion.div>

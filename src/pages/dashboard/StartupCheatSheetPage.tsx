@@ -10,6 +10,8 @@ import { Button } from "../../components/ui/button"
 import { getInvestorsByType } from "../../lib/supabase"
 import type { Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
+import { QuickFillPanel } from "../../components/dashboard/QuickFillPanel"
+import { useToast } from "../../hooks/useToast"
 
 const FOUNDER_TOPICS = [
     {
@@ -152,6 +154,9 @@ export default function StartupCheatSheetPage() {
     const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null)
     const [resourceInvestors, setResourceInvestors] = useState<Investor[]>([])
     const [isLoadingResources, setIsLoadingResources] = useState(false)
+    const { toast } = useToast()
+    const [isQuickFillOpen, setIsQuickFillOpen] = useState(false)
+    const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
 
     useEffect(() => {
         if (selectedTopic && 'type' in selectedTopic && selectedTopic.type === 'resource') {
@@ -306,6 +311,17 @@ export default function StartupCheatSheetPage() {
                                                             key={investor.id} 
                                                             investor={investor}
                                                             onClick={() => {}} // Optional: navigate to profile
+                                                            onWebsiteClick={(inv) => {
+                                                                setIsQuickFillOpen(true);
+                                                                setRedirectTarget(inv.name);
+                                                                toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                                                                
+                                                                setTimeout(() => {
+                                                                    const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                                                                    window.open(url, '_blank', 'noopener,noreferrer');
+                                                                    setRedirectTarget(null);
+                                                                }, 2000);
+                                                            }}
                                                         />
                                                     ))}
                                                 </div>
@@ -329,6 +345,14 @@ export default function StartupCheatSheetPage() {
                     </>
                 )}
             </AnimatePresence>
+            
+            {/* Floating Assistant */}
+            <QuickFillPanel 
+                isOpen={isQuickFillOpen} 
+                onClose={() => setIsQuickFillOpen(false)} 
+                isRedirecting={!!redirectTarget}
+                redirectTarget={redirectTarget || ''}
+            />
         </div>
     )
 }
