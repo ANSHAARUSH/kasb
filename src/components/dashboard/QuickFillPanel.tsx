@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, Copy, Check, Sparkles, User, Building2, TrendingUp, Info, Briefcase, Zap, Target
+  X, Copy, Check, Sparkles, User, Building2, TrendingUp, Info, Briefcase, Zap, Target, Plus
 } from 'lucide-react';
 import { useStartupProfile } from '../../hooks/useStartupProfile';
 import { cn } from '../../lib/utils';
@@ -101,6 +101,10 @@ const EditableField = ({
 export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget }: QuickFillPanelProps) {
   const { startup, loading, updateProfile } = useStartupProfile();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isAddingCustom, setIsAddingCustom] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customValue, setCustomValue] = useState('');
+  const [isSavingCustom, setIsSavingCustom] = useState(false);
 
   const handleCopy = (field: string, value: string) => {
     if (!value) return;
@@ -206,6 +210,20 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
     }
   ];
 
+  const allStandardKeys = new Set(sections.flatMap(s => s.fields.map(f => f.key)));
+  const customFields = Object.keys((startup?.questionnaire?.quick_fill as Record<string, string>) || {})
+    .filter(key => !allStandardKeys.has(key))
+    .map(key => ({ label: key, key: key }));
+
+  const displaySections = [...sections];
+  if (customFields.length > 0) {
+      displaySections.push({
+        title: 'Your Custom Details',
+        icon: <User className="h-4 w-4 text-emerald-500" />,
+        fields: customFields
+      });
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -282,33 +300,91 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
                   ))}
                 </div>
               ) : (
-                sections.map((section, idx) => (
-                  <div key={idx} className="space-y-5">
-                    <div className="flex items-center gap-2 pb-2 border-b border-gray-50">
-                      {section.icon}
-                      <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">{section.title}</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {section.fields.map((field) => {
-                        let initialValue = getFieldValue(field.key, field.profileKey);
-                        // Convert arrays to strings if necessary
-                        if (Array.isArray(initialValue)) initialValue = initialValue.join(', ');
+                <>
+                  {displaySections.map((section, idx) => (
+                    <div key={idx} className="space-y-5">
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-50">
+                        {section.icon}
+                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-900">{section.title}</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {section.fields.map((field) => {
+                          let initialValue = getFieldValue(field.key, (field as any).profileKey);
+                          // Convert arrays to strings if necessary
+                          if (Array.isArray(initialValue)) initialValue = initialValue.join(', ');
 
-                        return (
-                          <EditableField
-                            key={field.key}
-                            fieldKey={field.key}
-                            label={field.label}
-                            initialValue={initialValue}
-                            copiedField={copiedField}
-                            onCopy={() => handleCopy(field.key, initialValue)}
-                            onSave={(val) => saveCustomAnswer(field.key, val, field.profileKey)}
-                          />
-                        );
-                      })}
+                          return (
+                            <EditableField
+                              key={field.key}
+                              fieldKey={field.key}
+                              label={field.label}
+                              initialValue={initialValue}
+                              copiedField={copiedField}
+                              onCopy={() => handleCopy(field.key, initialValue)}
+                              onSave={(val) => saveCustomAnswer(field.key, val, (field as any).profileKey)}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
+                  ))}
+
+                  <div className="pt-4 mt-8 border-t border-gray-100">
+                    {isAddingCustom ? (
+                        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
+                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">Question / Label</label>
+                            <input 
+                                value={customLabel}
+                                onChange={(e) => setCustomLabel(e.target.value)}
+                                placeholder="E.g. Link to Demo Video"
+                                className="w-full text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl p-2.5 outline-none focus:border-indigo-400"
+                            />
+                            <label className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter pt-1 block">Your Answer</label>
+                            <textarea 
+                                value={customValue}
+                                onChange={(e) => setCustomValue(e.target.value)}
+                                placeholder="Type your answer here..."
+                                className="w-full text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-xl p-2.5 outline-none focus:border-indigo-400 resize-none min-h-[60px]"
+                            />
+                            <div className="flex gap-2 pt-2">
+                                <Button 
+                                    size="sm" 
+                                    onClick={async () => {
+                                        if (!customLabel.trim()) return;
+                                        setIsSavingCustom(true);
+                                        await saveCustomAnswer(customLabel.trim(), customValue.trim());
+                                        setCustomLabel('');
+                                        setCustomValue('');
+                                        setIsAddingCustom(false);
+                                        setIsSavingCustom(false);
+                                    }}
+                                    disabled={!customLabel.trim() || isSavingCustom}
+                                    className="bg-black text-white hover:bg-gray-800 rounded-xl font-bold text-xs flex-1 h-9"
+                                >
+                                    {isSavingCustom ? 'Saving...' : 'Save Detail'}
+                                </Button>
+                                <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    onClick={() => { setIsAddingCustom(false); setCustomLabel(''); setCustomValue(''); }}
+                                    className="rounded-xl font-bold text-xs h-9 border-gray-200 bg-white hover:bg-gray-50"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setIsAddingCustom(true)}
+                            className="w-full rounded-2xl h-12 border-2 border-dashed border-gray-300 text-gray-500 hover:border-black hover:text-black hover:bg-gray-50 transition-all font-bold tracking-wide text-xs"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add Custom Detail
+                        </Button>
+                    )}
                   </div>
-                ))
+                </>
               )}
             </div>
 
