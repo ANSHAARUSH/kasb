@@ -2318,3 +2318,42 @@ ${userInput}
 """
 `;
 }
+
+export async function findSemanticQuestionMatch(
+    query: string,
+    questions: { key: string, label: string }[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<{ matchKey: string | null }> {
+    if (!apiKey) return { matchKey: null };
+
+    const prompt = `
+    You are an intelligent semantic matching assistant.
+    A user is searching through a form using their own words.
+
+    USER QUERY: "${query}"
+
+    AVAILABLE FORM QUESTIONS:
+    ${questions.map((q, i) => `[${i}] Key: ${q.key} | Label: ${q.label}`).join('\n')}
+
+    TASK:
+    Identify which form question optimally matches the user's query contextually.
+    If the user's query clearly implies one of the available questions, return its "Key".
+    If there is strictly no relevant match, return null.
+
+    OUTPUT FORMAT:
+    Return valid JSON ONLY:
+    { "matchKey": "the_key_here" } (or set to null)
+    `;
+
+    return retryWithBackoff(async () => {
+        try {
+            const text = await runInference(apiKey, prompt, { baseUrl, isJSON: true });
+            const result = extractJSON<{ matchKey: string | null }>(text);
+            return result;
+        } catch (e) {
+            console.error("AI Semantic Search failed:", e);
+            return { matchKey: null };
+        }
+    });
+}

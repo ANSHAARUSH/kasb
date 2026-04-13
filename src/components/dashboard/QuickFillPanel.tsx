@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  X, Copy, Check, Sparkles, User, Building2, TrendingUp, Info, Briefcase, Zap, Target, Plus
+  X, Copy, Check, Sparkles, User, Building2, TrendingUp, Info, Briefcase, Zap, Target, Plus, Search, Loader2
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { useDebounce } from '../../hooks/useDebounce';
+import { resolveAIConfig, findSemanticQuestionMatch } from '../../lib/ai';
 import { useStartupProfile } from '../../hooks/useStartupProfile';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -20,7 +23,8 @@ const EditableField = ({
   onSave, 
   onCopy,
   copiedField,
-  fieldKey 
+  fieldKey,
+  isHighlighted
 }: { 
   label: string; 
   initialValue: string; 
@@ -28,6 +32,7 @@ const EditableField = ({
   onCopy: () => void;
   copiedField: string | null;
   fieldKey: string;
+  isHighlighted?: boolean;
 }) => {
   const [value, setValue] = useState(initialValue || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -46,7 +51,7 @@ const EditableField = ({
   };
 
   return (
-    <div className="group relative">
+    <div id={`field-${fieldKey}`} className={cn("group relative transition-all duration-500 rounded-2xl", isHighlighted ? "ring-2 ring-indigo-500 ring-offset-2 bg-indigo-50/50" : "")}>
       <label className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mb-1 block ml-1">
         {label}
       </label>
@@ -99,12 +104,18 @@ const EditableField = ({
 };
 
 export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget }: QuickFillPanelProps) {
+  const { user } = useAuth();
   const { startup, loading, updateProfile } = useStartupProfile();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isAddingCustom, setIsAddingCustom] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customValue, setCustomValue] = useState('');
   const [isSavingCustom, setIsSavingCustom] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchMatchKey, setSearchMatchKey] = useState<string | null>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
   const handleCopy = (field: string, value: string) => {
     if (!value) return;
@@ -219,10 +230,70 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
   if (customFields.length > 0) {
       displaySections.push({
         title: 'Your Custom Details',
-        icon: <User className="h-4 w-4 text-emerald-500" />,
+        icon: <User className="h-4 w-4 text-emerald-500" /> as any,
         fields: customFields
       });
   }
+
+  useEffect(() => {
+    if (!debouncedSearchQuery.trim() || debouncedSearchQuery.trim().length < 3) {
+      setSearchMatchKey(null);
+      setIsSearching(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsSearching(true);
+
+    const performSearch = async () => {
+      try {
+        const config = await resolveAIConfig(user?.id);
+        if (!config || !isMounted) return;
+
+        const allQuestions = displaySections.flatMap(s => s.fields.map(f => ({ key: f.key, label: f.label })));
+        const { matchKey } = await findSemanticQuestionMatch(debouncedSearchQuery, allQuestions, config.apiKey, config.baseUrl);
+        
+        if (isMounted) {
+            setSearchMatchKey(matchKey || null);
+            setIsSearching(false);
+            
+            if (matchKey) {
+                setTimeout(() => {
+                    const parent = document.getElementById('quick-fill-scroll-container');
+                    if (parent) {
+                        parent.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }, 100);
+            }
+        }
+      } catch (err) {
+        console.error("Search err", err);
+        if (isMounted) setIsSearching(false);
+      }
+    };
+    performSearch();
+
+    return () => { isMounted = false; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchQuery, startup, user]);
+
+  let topMatchField: any = null;
+  let topMatchFieldProfileKey: any = null;
+
+  const contentSections = displaySections.map(section => {
+    if (searchMatchKey) {
+        const matchIdx = section.fields.findIndex(f => f.key === searchMatchKey);
+        if (matchIdx > -1) {
+            topMatchField = section.fields[matchIdx];
+            topMatchFieldProfileKey = (topMatchField as any).profileKey;
+            return {
+                ...section,
+                fields: section.fields.filter(f => f.key !== searchMatchKey)
+            };
+        }
+    }
+    return section;
+  }).filter(section => section.fields.length > 0);
 
   return (
     <AnimatePresence>
@@ -291,8 +362,32 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
               </div>
             </div>
 
+            {/* Search Bar */}
+            <div className="px-6 pb-4 pt-4 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-20 shadow-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input 
+                  type="text"
+                  placeholder="Ask Kasb to find a specific question..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white border border-indigo-100 rounded-xl py-2.5 pl-9 pr-10 text-sm font-medium outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100/50 transition-all placeholder:font-normal placeholder:text-gray-400"
+                />
+                {isSearching && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+                  </div>
+                )}
+                {!isSearching && searchQuery && searchMatchKey && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+            <div id="quick-fill-scroll-container" className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar scroll-smooth relative">
               {loading ? (
                 <div className="space-y-6">
                   {[1, 2, 3, 4].map(i => (
@@ -301,7 +396,30 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
                 </div>
               ) : (
                 <>
-                  {displaySections.map((section, idx) => (
+                  {searchMatchKey && topMatchField && (() => {
+                    let initialValue = getFieldValue(topMatchField.key, topMatchFieldProfileKey);
+                    if (Array.isArray(initialValue)) initialValue = initialValue.join(', ');
+                    
+                    return (
+                        <div className="mb-6 bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+                          <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-3 flex items-center gap-2">
+                             <Sparkles className="h-3.5 w-3.5" /> AI Top Match
+                          </h3>
+                          <EditableField
+                              key={`top-${topMatchField.key}`}
+                              fieldKey={topMatchField.key}
+                              label={topMatchField.label}
+                              initialValue={initialValue}
+                              copiedField={copiedField}
+                              onCopy={() => handleCopy(topMatchField.key, initialValue)}
+                              onSave={(val) => saveCustomAnswer(topMatchField.key, val, topMatchFieldProfileKey)}
+                              isHighlighted={true}
+                          />
+                        </div>
+                    );
+                  })()}
+
+                  {contentSections.map((section, idx) => (
                     <div key={idx} className="space-y-5">
                       <div className="flex items-center gap-2 pb-2 border-b border-gray-50">
                         {section.icon}
