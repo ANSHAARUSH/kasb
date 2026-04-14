@@ -12,6 +12,7 @@ import { ChatDialog } from "./components/chat/ChatDialog"
 import { AuthEventHandler } from "./components/auth/AuthEventHandler"
 import { LoadingScreen } from "./components/ui/LoadingScreen"
 import { LogoSplashScreen } from "./components/ui/LogoSplashScreen"
+import { KasbAIAssistantWidget } from "./components/layout/KasbAIAssistantWidget"
 import { useState, useEffect } from "react"
 import { AnimatePresence } from "framer-motion"
 
@@ -165,6 +166,7 @@ function App() {
                     </Routes>
                   </Suspense>
                   <ChatDialog />
+                  <KasbAIAssistantWidget />
                 </Router>
               </ChatProvider>
             </ToastProvider>

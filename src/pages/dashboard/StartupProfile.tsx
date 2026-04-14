@@ -25,9 +25,14 @@ import {
     Target, 
     Layout, 
     Lightbulb,
-    Briefcase
+    Briefcase,
+    CheckCircle2,
+    Upload
 } from "lucide-react"
 import { useRef } from "react"
+import { motion } from "framer-motion"
+import { extractStartupInfoFromPitchDeck } from "../../lib/ai"
+import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
 
 export default function StartupProfile() {
     const { startup, loading, saving, updateProfile, requestReview } = useStartupProfile()
@@ -38,6 +43,87 @@ export default function StartupProfile() {
     const [deckReview, setDeckReview] = useState<PitchDeckScorecard | string | null>(null)
     const [isReviewing, setIsReviewing] = useState(false)
     const fileRef = useRef<HTMLInputElement>(null)
+
+    // Pitch Deck Auto-fill State
+    const [isAutoFilling, setIsAutoFilling] = useState(false)
+    const [autoFillSuccess, setAutoFillSuccess] = useState(false)
+    const autoFillRef = useRef<HTMLInputElement>(null)
+
+    const handlePitchDeckAutoFill = async (file: File) => {
+        setIsAutoFilling(true)
+        setAutoFillSuccess(false)
+        try {
+            // 1. Get API key
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+            
+            if (!apiKey) throw new Error('System AI key is not configured.')
+
+            // 2. Extract structured details via AI
+            const details = await extractStartupInfoFromPitchDeck(file, apiKey)
+
+            // 3. Build questionnaire from extracted data
+            const mappedQ: Record<string, Record<string, string>> = { ...(startup?.questionnaire || {}) }
+            IDEATION_CONFIG.forEach(sec => {
+                if (!mappedQ[sec.id]) mappedQ[sec.id] = {}
+            })
+
+            if (mappedQ.core_problem_solution) {
+                if (details.problemSolving) mappedQ.core_problem_solution.problem_statement = details.problemSolving
+                if (details.solutionOverview) mappedQ.core_problem_solution.solution_overview = details.solutionOverview
+            }
+            if (mappedQ.market_customers) {
+                if (details.targetCustomer) mappedQ.market_customers.target_customer = details.targetCustomer
+                if (details.marketSize) mappedQ.market_customers.market_size = details.marketSize
+                if (details.whyNow) mappedQ.market_customers.why_now = details.whyNow
+            }
+            if (mappedQ.traction_gtm) {
+                if (details.tractionRevenue) mappedQ.traction_gtm.traction_revenue = details.tractionRevenue
+                if (details.gtmPlan) mappedQ.traction_gtm.gtm_plan = details.gtmPlan
+            }
+            if (mappedQ.competition_business) {
+                if (details.competitiveAdvantage) mappedQ.competition_business.competitive_advantage = details.competitiveAdvantage
+                if (details.businessModel) mappedQ.competition_business.business_model = details.businessModel
+            }
+            if (mappedQ.team) {
+                if (details.founderName) mappedQ.team.founder_details = details.whyYou ? (details.founderName + "\nWhy You: " + details.whyYou) : details.founderName
+                if (details.whyYou) mappedQ.team.why_you = details.whyYou
+            }
+            if (mappedQ.funding_milestones) {
+                if (details.fundingAsk) mappedQ.funding_milestones.funding_amount = details.fundingAsk
+                if (details.useOfFunds) mappedQ.funding_milestones.fund_allocation = details.useOfFunds
+                if (details.milestones) mappedQ.funding_milestones.milestones_12m = details.milestones
+            }
+
+            // 4. Build the update payload (only non-empty fields)
+            const updatePayload: Record<string, any> = { questionnaire: mappedQ }
+            if (details.companyName) updatePayload.name = details.companyName
+            if (details.industry) updatePayload.industry = details.industry
+            if (details.stage) updatePayload.stage = details.stage
+            if (details.teamSize) updatePayload.traction = `${details.teamSize} employees`
+            if (details.problemSolving) updatePayload.problem_solving = details.problemSolving
+            if (details.founderName) updatePayload.founder_name = details.founderName
+            if (details.state) updatePayload.state = details.state
+            if (details.city) updatePayload.city = details.city
+            if (details.solutionOverview) updatePayload.description = details.solutionOverview
+
+            // 5. Save to database
+            const success = await updateProfile(updatePayload)
+            if (success) {
+                setAutoFillSuccess(true)
+                toast('Profile auto-filled from pitch deck!', 'success')
+                setTimeout(() => setAutoFillSuccess(false), 5000)
+            } else {
+                toast('Failed to save extracted data.', 'error')
+            }
+        } catch (err: any) {
+            console.error('Profile auto-fill failed:', err)
+            toast(`Auto-fill failed: ${err.message}`, 'error')
+        } finally {
+            setIsAutoFilling(false)
+        }
+    }
 
     const handleDeleteAccount = async () => {
         try {
@@ -123,6 +209,96 @@ export default function StartupProfile() {
                     </Button>
                 </div>
             </div>
+            
+            {/* Auto-fill from Pitch Deck — Prominent Banner */}
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mb-8 px-4 sm:px-0"
+            >
+                {/* Hidden file input */}
+                <input
+                    ref={autoFillRef}
+                    type="file"
+                    accept=".pdf,.pptx,.docx"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handlePitchDeckAutoFill(file)
+                        e.target.value = ''
+                    }}
+                />
+
+                {isAutoFilling ? (
+                    <div className="flex items-center gap-4 p-5 rounded-3xl bg-gray-900 border border-white/10 shadow-2xl">
+                        <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                            <Loader2 className="h-6 w-6 text-white animate-spin" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white">Analyzing your pitch deck...</p>
+                            <p className="text-xs text-gray-400">AI is extracting and mapping your startup details</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-4">
+                            <div className="h-1.5 w-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="h-1.5 w-1.5 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="h-1.5 w-1.5 bg-indigo-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                    </div>
+                ) : autoFillSuccess ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-3 p-5 rounded-3xl bg-emerald-50 border border-emerald-200 shadow-sm"
+                    >
+                        <div className="h-12 w-12 bg-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-emerald-800">Profile auto-filled successfully!</p>
+                            <p className="text-xs text-emerald-600">All fields have been updated from your pitch deck.</p>
+                        </div>
+                        <Button
+                            onClick={() => autoFillRef.current?.click()}
+                            variant="ghost"
+                            size="sm"
+                            className="text-emerald-600 hover:bg-emerald-100 text-xs font-bold"
+                        >
+                            Upload Another
+                        </Button>
+                    </motion.div>
+                ) : (
+                    <button
+                        onClick={() => autoFillRef.current?.click()}
+                        className="w-full group flex items-center gap-4 p-5 rounded-3xl bg-gradient-to-br from-gray-900 via-gray-900 to-black border border-white/10 hover:border-indigo-500/30 transition-all duration-300 hover:shadow-[0_0_40px_rgba(79,70,229,0.15)] text-left relative overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        
+                        <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 border border-white/5">
+                            <Upload className="h-6 w-6 text-white" />
+                        </div>
+                        
+                        <div className="flex-1 z-10">
+                            <p className="text-base font-bold text-white flex items-center gap-2">
+                                Auto-fill Profile from Pitch Deck
+                                <span className="flex sm:hidden items-center gap-1 bg-white/10 px-2 py-0.5 rounded-full">
+                                    <Sparkles className="h-3 w-3 text-indigo-400" />
+                                    <span className="text-[10px] font-bold text-white">AI</span>
+                                </span>
+                            </p>
+                            <p className="text-xs text-gray-400 font-medium">Upload your deck and let AI populate your entire profile instantly</p>
+                        </div>
+                        
+                        <div className="flex items-center gap-3 z-10">
+                            <div className="hidden sm:flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-2xl border border-white/5 backdrop-blur-sm">
+                                <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                                <span className="text-[10px] font-black uppercase tracking-wider text-white">AI</span>
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-gray-600 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" />
+                        </div>
+                    </button>
+                )}
+            </motion.div>
 
             <ProfileView
                 id={startup.id}

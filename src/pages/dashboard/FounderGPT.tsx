@@ -19,10 +19,6 @@ const QUOTES = [
     { text: "Ideas are easy. Implementation is hard.", author: "Guy Kawasaki" }
 ]
 
-const PIRANHA_PLACEHOLDERS = [
-    "Pitch Hard, Get Roasted, Grab the Deal",
-    "Warning: Piranhas don't care about your feeling"
-];
 
 interface ChatMessage {
     id: string
@@ -70,15 +66,6 @@ export default function FounderGPT() {
     const [harshMode, setHarshMode] = useState(false)
     const recognitionRef = useRef<any>(null)
 
-    // Rotating Piranha Placeholder logic
-    const [piranhaPlaceholder, setPiranhaPlaceholder] = useState(PIRANHA_PLACEHOLDERS[0]);
-
-    useEffect(() => {
-        const lastIndex = parseInt(localStorage.getItem('piranha_placeholder_index') || '-1');
-        const nextIndex = (lastIndex + 1) % PIRANHA_PLACEHOLDERS.length;
-        localStorage.setItem('piranha_placeholder_index', nextIndex.toString());
-        setPiranhaPlaceholder(PIRANHA_PLACEHOLDERS[nextIndex]);
-    }, []);
 
     // Theme Orchestration
     const theme = {
@@ -772,18 +759,11 @@ export default function FounderGPT() {
                     )}
                 </div>
                                 <div className="hidden md:flex flex-col items-end gap-1 relative z-10">
-                    <button
-                        onClick={() => setActiveMode(isPiranha ? 'foundergpt' : 'piranhatank')}
-                        className={cn(
-                            "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300 cursor-pointer active:scale-95 hover:shadow-md",
-                            isPiranha ? "bg-[#111] border-red-900/40 shadow-red-900/10 hover:bg-[#1a1a1a]" : "bg-white border-gray-100 hover:bg-gray-50"
-                        )}
-                    >
-                        <div className={cn("h-2 w-2 rounded-full", isPiranha ? "bg-red-500 animate-pulse" : "bg-green-500")} />
-                        <span className={cn("text-[10px] font-black uppercase tracking-widest", isPiranha ? "text-red-500" : "text-gray-500")}>
-                            {isPiranha ? "Switch to GPT" : "Switch to Tank"}
-                        </span>
-                    </button>
+                    <ModeSwitcher 
+                        activeMode={activeMode} 
+                        onModeChange={setActiveMode} 
+                        isHeader={true} 
+                    />
                 </div>
                 <div className="md:hidden flex flex-col items-end gap-1 relative z-10">
                     <div className={cn(
@@ -822,8 +802,66 @@ export default function FounderGPT() {
                 )}
             </header>
 
+            {/* Piranha Tank Vertical Left Ribbon (Desktop Only) */}
+            {isPiranha && (
+                <div className="hidden md:flex fixed left-0 top-0 bottom-0 w-24 bg-[#0a0a0a] border-r border-red-900/30 flex-col items-center py-12 gap-10 z-30 shadow-[10px_0_30px_rgba(0,0,0,0.5)]">
+                    {/* Vertical "TANK" Text Header */}
+                    <div className="flex flex-col items-center gap-1 mb-8">
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-red-500/50 [writing-mode:vertical-lr] rotate-180">TANK</span>
+                        <div className="h-10 w-1 flex items-center justify-center">
+                            <div className="w-px h-full bg-gradient-to-b from-red-500/0 via-red-500/50 to-red-500/0" />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1.5 w-full">
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="p-3 rounded-2xl text-gray-600 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90 mb-4"
+                        >
+                            <Menu className="h-6 w-6" />
+                        </button>
+
+                        {ribbonItems.map((item) => {
+                            const isActive = ptTab === item.id;
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setPtTab(item.id as any)}
+                                    className={cn(
+                                        "group relative flex flex-col items-center justify-center gap-2 w-full py-4 transition-all duration-500",
+                                        isActive ? "text-white" : "text-gray-600 hover:text-red-400"
+                                    )}
+                                >
+                                    {isActive && (
+                                        <motion.div 
+                                            layoutId="ptVerticalTabIndicator"
+                                            className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[#DC143C] via-[#8B0000] to-[#DC143C] shadow-[0_0_15px_rgba(220,20,60,0.8)]" 
+                                        />
+                                    )}
+                                    <div className={cn(
+                                        "p-3 rounded-2xl transition-all duration-300",
+                                        isActive ? "bg-red-500/20 shadow-[0_0_15px_rgba(220,20,60,0.2)]" : "group-hover:bg-red-900/10"
+                                    )}>
+                                        <item.icon className={cn("h-6 w-6 transition-transform duration-500 group-hover:scale-110", isActive ? "text-[#DC143C]" : "text-gray-600")} />
+                                    </div>
+                                    <span className={cn(
+                                        "text-[9px] font-black uppercase tracking-widest transition-colors duration-300",
+                                        isActive ? "text-white" : "text-gray-600"
+                                    )}>
+                                        {item.label}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             {/* Main Content */}
-            <main className="flex-1 flex flex-col px-6 max-w-4xl mx-auto w-full pb-4 relative z-10">
+            <main className={cn(
+                "flex-1 flex flex-col px-6 max-w-4xl mx-auto w-full pb-4 relative z-10 transition-all duration-500",
+                isPiranha && "md:ml-24"
+            )}>
                 {/* Mobile Bottom Navigation Bar for Piranha Tank */}
                 {isPiranha && (
                     <div className="sm:hidden fixed bottom-6 left-6 right-6 z-[100] bg-black/80 backdrop-blur-xl border border-red-900/30 rounded-3xl p-2 flex items-center justify-around shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_20px_rgba(255,0,0,0.1)]">
@@ -1120,8 +1158,8 @@ export default function FounderGPT() {
                                             value={query}
                                             onChange={(e) => setQuery(e.target.value)}
                                             onKeyDown={handleKeyDown}
-                                            placeholder={isPiranha ? piranhaPlaceholder : "Describe your startup idea..."}
-                                            className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none", theme.text, "placeholder:text-gray-400")}
+                                            placeholder={isPiranha ? "Warning: Piranhas don't care about your feeling" : "Describe your startup idea..."}
+                                            className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none", theme.text, "placeholder:text-gray-600 placeholder:font-bold italic")}
                                         />
                                         
                                         {/* Microphone Button */}
@@ -1168,10 +1206,10 @@ export default function FounderGPT() {
                                                 <button
                                                     onClick={() => setHarshMode(!harshMode)}
                                                     className={cn(
-                                                        "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border cursor-pointer",
+                                                        "flex items-center gap-1.5 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 border cursor-pointer active:scale-95 shadow-xl",
                                                         harshMode
-                                                            ? "bg-[#6A0404] text-white border-red-500 shadow-[0_0_10px_rgba(255,0,0,0.4)] shadow-red-900/50"
-                                                            : "bg-[#111] text-gray-500 border-[#222] hover:bg-[#1A1A1A] hover:text-gray-400"
+                                                            ? "bg-[#6A0404] text-white border-red-500 shadow-red-900/40"
+                                                            : "bg-[#111] text-gray-500 border-white/5 hover:border-white/10"
                                                     )}
                                                 >
                                                     <Skull className={cn("h-3.5 w-3.5", harshMode ? "text-red-400 animate-pulse" : "text-gray-600")} />
@@ -1180,10 +1218,10 @@ export default function FounderGPT() {
                                                 <button
                                                     onClick={() => setAllowInterruption(!allowInterruption)}
                                                     className={cn(
-                                                        "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border cursor-pointer",
+                                                        "flex items-center gap-1.5 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 border cursor-pointer active:scale-95 shadow-xl",
                                                         allowInterruption
-                                                            ? "bg-[#FF0000] text-white border-red-500 shadow-[0_0_10px_rgba(255,0,0,0.4)] shadow-red-900/50"
-                                                            : "bg-[#111] text-gray-500 border-[#222] hover:bg-[#1A1A1A] hover:text-gray-400"
+                                                            ? "bg-[#DC143C] text-white border-red-500 shadow-red-900/40"
+                                                            : "bg-[#111] text-gray-500 border-white/5 hover:border-white/10"
                                                     )}
                                                 >
                                                     <MessageSquare className={cn("h-3.5 w-3.5", allowInterruption ? "text-white" : "text-gray-600")} />
@@ -1192,7 +1230,7 @@ export default function FounderGPT() {
                                             </>
                                         )}
                                     </div>
-                                    <p className={cn("text-[10px] font-bold uppercase tracking-[0.2em] mt-8 text-center", isPiranha ? "text-red-900/40" : "text-gray-300")}>Kasb AI is AI can make mistake</p>
+                                    <p className={cn("text-[10px] font-black uppercase tracking-[0.4em] mt-8 text-center", isPiranha ? "text-red-900/60" : "text-gray-300")}>KASB AI IS AI CAN MAKE MISTAKE</p>
 
                                     {/* Quick Suggestions - hidden in Piranha mode */}
                                     {!isPiranha && (
@@ -1334,9 +1372,9 @@ export default function FounderGPT() {
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyDown={handleKeyDown}
-                                        placeholder={isPiranha ? piranhaPlaceholder : "Ask a follow-up..."}
+                                        placeholder={isPiranha ? "Warning: Piranhas don't care about your feeling" : "Ask a follow-up..."}
                                         disabled={isLoading}
-                                        className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-3 sm:pl-4", theme.text, "placeholder:text-gray-400")}
+                                        className={cn("flex-1 min-w-0 bg-transparent border-none focus:ring-0 font-medium h-10 text-sm sm:text-base outline-none pl-3 sm:pl-4", theme.text, "placeholder:text-gray-600 placeholder:font-bold italic")}
                                     />
                                     
                                     {/* Microphone Button */}
@@ -1386,10 +1424,10 @@ export default function FounderGPT() {
                                             <button
                                                 onClick={() => setHarshMode(!harshMode)}
                                                 className={cn(
-                                                    "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border cursor-pointer",
+                                                    "flex items-center gap-1.5 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 border cursor-pointer active:scale-95 shadow-xl",
                                                     harshMode
-                                                        ? "bg-[#6A0404] text-white border-red-500 shadow-[0_0_10px_rgba(255,0,0,0.4)] shadow-red-900/50"
-                                                        : "bg-[#111] text-gray-500 border-[#222] hover:bg-[#1A1A1A] hover:text-gray-400"
+                                                        ? "bg-[#6A0404] text-white border-red-500 shadow-red-900/40"
+                                                        : "bg-[#111] text-gray-500 border-white/5 hover:border-white/10"
                                                 )}
                                             >
                                                 <Skull className={cn("h-3.5 w-3.5", harshMode ? "text-red-400 animate-pulse" : "text-gray-600")} />
@@ -1398,10 +1436,10 @@ export default function FounderGPT() {
                                             <button
                                                 onClick={() => setAllowInterruption(!allowInterruption)}
                                                 className={cn(
-                                                    "flex items-center gap-1.5 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-300 border cursor-pointer",
+                                                    "flex items-center gap-1.5 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 border cursor-pointer active:scale-95 shadow-xl",
                                                     allowInterruption
-                                                        ? "bg-[#FF0000] text-white border-red-500 shadow-[0_0_10px_rgba(255,0,0,0.4)] shadow-red-900/50"
-                                                        : "bg-[#111] text-gray-500 border-[#222] hover:bg-[#1A1A1A] hover:text-gray-400"
+                                                        ? "bg-[#DC143C] text-white border-red-500 shadow-red-900/40"
+                                                        : "bg-[#111] text-gray-500 border-white/5 hover:border-white/10"
                                                 )}
                                             >
                                                 <MessageSquare className={cn("h-3.5 w-3.5", allowInterruption ? "text-white" : "text-gray-600")} />
@@ -1410,7 +1448,7 @@ export default function FounderGPT() {
                                         </>
                                     )}
                                 </div>
-                                <p className={cn("text-center text-[9px] font-bold uppercase tracking-[0.2em] mt-3", isPiranha ? "text-red-900/40" : "text-gray-300")}>Kasb AI is AI can make mistake</p>
+                                <p className={cn("text-center text-[10px] font-black uppercase tracking-[0.4em] mt-3", isPiranha ? "text-red-900/60" : "text-gray-300")}>KASB AI IS AI CAN MAKE MISTAKE</p>
                             </div>
                         </div>
                     </>

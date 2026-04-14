@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Sparkles, Home, Minus, Loader2, Search } from 'lucide-react';
+import { Send, Sparkles, Home, Minus, Loader2, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { chatWithAIStream } from '../../lib/ai';
@@ -18,9 +18,23 @@ export function KasbAIAssistantWidget() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [query, setQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [draggedPos, setDraggedPos] = useState({ x: 0, y: 0 });
     const scrollRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
-    // Hide in messages tab
+    // Initial position loading
+    useEffect(() => {
+        const storedPos = localStorage.getItem('kasb_assistant_pos');
+        if (storedPos) {
+            try {
+                setDraggedPos(JSON.parse(storedPos));
+            } catch (e) {
+                console.error("Failed to parse stored position", e);
+            }
+        }
+    }, []);
+
+    // Hide in messages tab if it exists
     const isMessagesTab = location.pathname.endsWith('/messages');
     
     // Auto-scroll logic
@@ -109,19 +123,53 @@ export function KasbAIAssistantWidget() {
             <AnimatePresence mode="wait">
                 {!isOpen && (
                     <motion.button
+                        ref={buttonRef}
                         key="assistant-trigger"
+                        drag
+                        dragMomentum={false}
+                        dragConstraints={{ 
+                            left: -window.innerWidth + 80, 
+                            right: 20, 
+                            top: -window.innerHeight + 100, 
+                            bottom: 20 
+                        }}
+                        onDragEnd={(_, info) => {
+                            const newPos = { 
+                                x: draggedPos.x + info.offset.x, 
+                                y: draggedPos.y + info.offset.y 
+                            };
+                            setDraggedPos(newPos);
+                            localStorage.setItem('kasb_assistant_pos', JSON.stringify(newPos));
+                        }}
                         initial={{ scale: 0, opacity: 0, y: 20 }}
-                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        animate={{ 
+                            scale: 1, 
+                            opacity: 1, 
+                            y: 0,
+                            x: draggedPos.x,
+                            transition: { type: "spring", stiffness: 260, damping: 20 }
+                        }}
+                        style={{ 
+                            x: draggedPos.x, 
+                            y: draggedPos.y 
+                        }}
                         exit={{ scale: 0, opacity: 0, y: 20 }}
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => setIsOpen(true)}
+                        onClick={() => {
+                            setIsOpen(true);
+                        }}
                         className={cn(
-                            "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border-2 border-white/10 bg-black text-white backdrop-blur-md transition-all duration-300 overflow-hidden"
+                            "fixed bottom-28 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border-2 border-white/10 bg-black text-white backdrop-blur-md transition-shadow duration-300 overflow-hidden touch-none",
+                            "hover:shadow-indigo-500/20"
                         )}
                         title="Kasb AI Assistant"
                     >
-                        <img src={`${import.meta.env.BASE_URL}floating-bot.jpg`} alt="Kasb Bot" className="h-full w-full object-cover" />
+                        <img 
+                            src="/floating-bot.jpg" 
+                            alt="Kasb Bot" 
+                            className="h-full w-full object-cover pointer-events-none" 
+                        />
                         <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                     </motion.button>
                 )}
@@ -133,15 +181,23 @@ export function KasbAIAssistantWidget() {
                     <motion.div
                         key="assistant-panel"
                         initial={{ opacity: 0, y: 100, scale: 0.9, x: 20 }}
-                        animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+                        animate={{ 
+                            opacity: 1, 
+                            y: 0, 
+                            scale: 1, 
+                            x: 0
+                        }}
                         exit={{ opacity: 0, y: 100, scale: 0.9, x: 20 }}
-                        className="fixed bottom-6 right-6 w-[320px] sm:w-[350px] h-[480px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[9999] overflow-hidden flex flex-col transition-all"
+                        className={cn(
+                            "fixed right-6 w-[320px] sm:w-[350px] h-[480px] bg-white border border-gray-100 rounded-3xl shadow-2xl z-[9999] overflow-hidden flex flex-col transition-all",
+                            "bottom-24 md:bottom-6"
+                        )}
                     >
                         {/* Header */}
                         <div className="p-4 bg-black text-white flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-transparent flex items-center justify-center shadow-lg shadow-indigo-500/20 overflow-hidden border border-gray-100">
-                                    <img src={`${import.meta.env.BASE_URL}kasb-assistant-avatar.png`} alt="Kasb Assistant" className="h-full w-full object-cover" />
+                                <div className="h-10 w-10 rounded-xl bg-transparent flex items-center justify-center shadow-lg shadow-indigo-500/20 overflow-hidden border border-gray-100/10">
+                                    <img src="/floating-bot.jpg" alt="Kasb Assistant" className="h-full w-full object-cover" />
                                 </div>
                                 <div className="flex flex-col">
                                     <h3 className="text-sm font-black uppercase tracking-widest leading-none">Kasb Assistant</h3>
@@ -155,7 +211,7 @@ export function KasbAIAssistantWidget() {
                                 {messages.length > 0 && (
                                     <button 
                                         onClick={clearHistory}
-                                        className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-500"
+                                        className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
                                         title="Clear history"
                                     >
                                         <Home className="h-4 w-4" />
@@ -163,7 +219,7 @@ export function KasbAIAssistantWidget() {
                                 )}
                                 <button 
                                     onClick={() => setIsOpen(false)}
-                                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                                    className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
                                 >
                                     <Minus className="h-4 w-4" />
                                 </button>
@@ -182,7 +238,7 @@ export function KasbAIAssistantWidget() {
                                         animate={{ scale: 1, opacity: 1 }}
                                         className="h-20 w-20 rounded-[2.5rem] bg-white shadow-xl flex items-center justify-center ring-1 ring-gray-100"
                                     >
-                                        <img src={`${import.meta.env.BASE_URL}kasb-assistant-avatar.png`} alt="Kasb Assistant" className="h-full w-full object-cover rounded-[2.5rem]" />
+                                        <img src="/floating-bot.jpg" alt="Kasb Assistant" className="h-full w-full object-cover rounded-[2.5rem]" />
                                     </motion.div>
                                     <div>
                                         <h4 className="text-xl font-black text-gray-900 leading-tight">Welcome to Kasb.AI</h4>

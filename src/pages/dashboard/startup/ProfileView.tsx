@@ -2,7 +2,7 @@ import { Card, CardContent } from "../../../components/ui/card"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
 import { VerificationSection } from "./VerificationSection"
 import { useMemo, useState, useEffect } from "react"
-import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, CheckCircle2, Lock, ExternalLink, History as HistoryIcon } from "lucide-react"
+import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, ExternalLink, History as HistoryIcon, Eye, EyeOff } from "lucide-react"
 import { Link } from "react-router-dom"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, isProfileComplete, getStartupMissingFields } from "../../../lib/questionnaire"
 import type { StartupProfileData } from "../../../hooks/useStartupProfile"
@@ -42,6 +42,7 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
     const [localStartup, setLocalStartup] = useState<Partial<StartupProfileData>>({})
     const [generatingSummary, setGeneratingSummary] = useState(false)
     const [documents, setDocuments] = useState<any[]>([])
+    const [isTogglingFeed, setIsTogglingFeed] = useState(false)
 
     const [stats, setStats] = useState({
         boosts: 0
@@ -174,6 +175,25 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
         }
     }
 
+    const handleToggleFeedVisibility = async () => {
+        if (!onSave) return
+        setIsTogglingFeed(true)
+        try {
+            const newValue = !startup.show_in_feed
+            const success = await onSave({ show_in_feed: newValue })
+            if (success) {
+                toast(
+                    newValue
+                        ? "Your startup is now visible in the feed!"
+                        : "Your startup is now hidden from the feed.",
+                    newValue ? "success" : "info"
+                )
+            }
+        } finally {
+            setIsTogglingFeed(false)
+        }
+    }
+
     const tabs = [
         { id: 'questions' as const, label: 'Stage Questions', icon: Info },
         { id: 'metrics' as const, label: 'Metrics', icon: BarChart3 },
@@ -255,47 +275,74 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
                         </div>
                     </div>
 
-                    {/* Completion Progress Card */}
+                    {/* Feed Visibility Toggle Card */}
                     <div className={cn(
-                        "mx-0 sm:mx-4 p-6 rounded-none sm:rounded-[2rem] border-x-0 sm:border transition-all duration-300",
-                        isComplete
-                            ? "bg-green-50/50 border-green-100"
-                            : "bg-amber-50/50 border-amber-200"
+                        "mx-0 sm:mx-4 p-5 rounded-none sm:rounded-[2rem] border-x-0 sm:border transition-all duration-300",
+                        startup.show_in_feed
+                            ? "bg-emerald-50/60 border-emerald-100"
+                            : "bg-gray-50/80 border-gray-200"
                     )}>
-                        <div className="flex items-start gap-4">
-                            <div className={cn(
-                                "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0",
-                                isComplete ? "bg-green-100 text-green-600" : "bg-amber-100 text-amber-600"
-                            )}>
-                                {isComplete ? <CheckCircle2 className="h-6 w-6" /> : <Lock className="h-6 w-6" />}
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 transition-colors",
+                                    startup.show_in_feed ? "bg-emerald-100" : "bg-gray-100"
+                                )}>
+                                    {startup.show_in_feed
+                                        ? <Eye className="h-5 w-5 text-emerald-600" />
+                                        : <EyeOff className="h-5 w-5 text-gray-400" />}
+                                </div>
+                                <div>
+                                    <p className={cn(
+                                        "text-[10px] font-black uppercase tracking-widest",
+                                        startup.show_in_feed ? "text-emerald-700" : "text-gray-500"
+                                    )}>
+                                        {startup.show_in_feed ? "Visible in Feed" : "Hidden from Feed"}
+                                    </p>
+                                    <p className={cn(
+                                        "text-sm font-medium mt-0.5",
+                                        startup.show_in_feed ? "text-emerald-800" : "text-gray-600"
+                                    )}>
+                                        {startup.show_in_feed
+                                            ? "Investors and other startups can discover you."
+                                            : "Turn on to appear in the discovery feed."}
+                                    </p>
+                                </div>
                             </div>
-                            <div className="flex-1">
-                                <h3 className={cn(
-                                    "text-[10px] font-black uppercase tracking-widest leading-none mb-1",
-                                    isComplete ? "text-green-900" : "text-amber-900"
-                                )}>
-                                    {isComplete ? "Startup is Live" : "Visibility Restricted"}
-                                </h3>
-                                <p className={cn(
-                                    "text-sm font-medium leading-relaxed",
-                                    isComplete ? "text-green-800" : "text-amber-800"
-                                )}>
-                                    {isComplete
-                                        ? "Your profile is 100% complete and visible to investors in the discovery feed. Keep it updated for better matching!"
-                                        : "Complete the following required questionnaire sections to become visible in the investor discovery feed:"}
-                                </p>
 
-                                {!isComplete && (
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {missingFields.map(field => (
-                                            <span key={field} className="px-3 py-1 bg-white border border-amber-200 rounded-full text-[10px] font-bold text-amber-600 uppercase tracking-tight">
-                                                • {field}
-                                            </span>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            {!readOnly && (
+                                <button
+                                    type="button"
+                                    disabled={isTogglingFeed}
+                                    onClick={handleToggleFeedVisibility}
+                                    className={cn(
+                                        "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                                        startup.show_in_feed ? "bg-emerald-500" : "bg-gray-300",
+                                        isTogglingFeed && "opacity-60 cursor-wait"
+                                    )}
+                                >
+                                    <span className={cn(
+                                        "pointer-events-none inline-block h-6 w-6 rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out",
+                                        startup.show_in_feed ? "translate-x-5" : "translate-x-0"
+                                    )} />
+                                </button>
+                            )}
                         </div>
+
+                        {!isComplete && !startup.show_in_feed && (
+                            <div className="mt-3 pt-3 border-t border-gray-200/60">
+                                <p className="text-xs text-gray-500 font-medium">
+                                    Complete the required fields to improve match visibility:
+                                </p>
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                    {missingFields.map(field => (
+                                        <span key={field} className="px-2 py-0.5 bg-white border border-gray-200 rounded-full text-[10px] font-bold text-gray-500">
+                                            • {field}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Mobile-only Quick Links (relocated from bottom nav) */}

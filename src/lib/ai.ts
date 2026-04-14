@@ -1926,17 +1926,31 @@ export async function refineMessage(
 }
 
 export interface ExtractedStartupInfo {
-    name: string;
+    companyName: string;
     industry: string;
     stage: string;
-    problem_solving: string;
-    team_size: string;
-    description: string;
-    founder_name: string;
-    location: { city: string; state: string };
-    valuation: string;
+    teamSize: string;
+    problemSolving: string;
+    state: string;
+    city: string;
+    founderName: string;
+    solutionOverview: string;
+    targetCustomer: string;
+    marketSize: string;
+    whyNow: string;
+    tractionRevenue: string;
+    gtmPlan: string;
+    competitiveAdvantage: string;
+    businessModel: string;
+    whyYou: string;
+    fundingAsk: string;
+    useOfFunds: string;
+    milestones: string;
 }
 
+/**
+ * Enhanced extraction - gets comprehensive details from pitch deck
+ */
 export async function extractStartupInfoFromPitchDeck(
     file: File,
     apiKey: string,
@@ -1954,12 +1968,11 @@ export async function extractStartupInfoFromPitchDeck(
         let imageFile: File | null = null;
         let textContent = '';
 
-        // For PDFs: inline canvas rendering to avoid stale module cache issues
+        // For PDFs: inline canvas rendering for vision fallback
         if (mimeType === 'application/pdf' || fileExt === 'pdf') {
             try {
                 const pdfjsLib = await import('pdfjs-dist');
                 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-                console.log('[PitchDeck] Rendering PDF page to canvas...');
                 const arrayBuffer = await file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
                 const page = await pdf.getPage(1);
@@ -1975,18 +1988,15 @@ export async function extractStartupInfoFromPitchDeck(
                 if (blob) {
                     imageFile = new File([blob], file.name.replace(/\.pdf$/i, '.png'), { type: 'image/png' });
                     type = 'image';
-                    console.log('[PitchDeck] PDF → image conversion succeeded, size:', imageFile.size);
+                    console.log('[PitchDeck] PDF → image conversion succeeded');
                 }
             } catch (e) {
-                console.warn('[PitchDeck] PDF canvas render failed, falling back to text:', e);
-                // Fall through to text extraction via extractDocumentContent
+                console.warn('[PitchDeck] PDF canvas render failed, falling back to text extraction');
             }
         }
 
-        // If not a PDF or image conversion failed, get text content
         if (type === 'text') {
             const extracted = await extractDocumentContent(file);
-            console.log(`[PitchDeck] Text extraction type: ${extracted.type}, length: ${typeof extracted.content === 'string' ? extracted.content.length : 'N/A'}`);
             if (extracted.type === 'unsupported') {
                 throw new Error(`Unsupported file: ${file.name}. Please upload a PDF, PPTX, DOCX, or image.`);
             }
@@ -1998,36 +2008,51 @@ export async function extractStartupInfoFromPitchDeck(
             }
         }
 
-        const prompt = `You are extracting startup information from a pitch deck to pre-fill an onboarding form.
+        const prompt = `You are an expert startup analyst. Read the following raw content from a pitch deck and identify the startup's key details.
         
-Be confident and extract any information visible in the content. Use your best inference based on context.
-Do not invent completely fictional data, but DO infer the industry, stage, and description from what you see.
+EXTRACTION TASK:
+Identify the following details. If a field cannot be determined, return an empty string "". Do NOT guess or fabricate data — only extract what is explicitly present.
 
-Extract these fields:
-- name: Company/startup name (from title slide, headers, logo text)
-- industry: Best match from [AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others]
-- stage: Best match from [Ideation, Pre-seed, Seed, Series A+] based on context
-- problem_solving: The core problem or value proposition 
-- team_size: Number if shown, else ""
-- description: 1-2 sentences about what the company does
-- founder_name: Founder/CEO name if visible
-- location: city and state/region if mentioned
-- valuation: Funding ask if stated, else ""
+VALID INDUSTRIES (pick closest match):
+AI/ML, SaaS, FinTech, HealthTech, EdTech, AgriTech, CleanTech, ClimateTech, Manufacturing, E-commerce, Media & Gaming, PropTech, LogisticTech, Others
 
-Return ONLY valid JSON, no markdown:
-{"name":"","industry":"","stage":"","problem_solving":"","team_size":"","description":"","founder_name":"","location":{"city":"","state":""},"valuation":""}`;
+VALID STAGES (pick closest match):
+Ideation, Pre-seed, Seed, Series A+
+
+Return ONLY valid JSON:
+{
+    "companyName": "The startup/company name",
+    "industry": "One of the valid industries listed above",
+    "stage": "One of the valid stages listed above",
+    "teamSize": "Number of team members as a string, e.g. '5'",
+    "problemSolving": "A concise 1-2 sentence description of the problem the startup solves",
+    "state": "Indian state where the startup is based, if mentioned",
+    "city": "City where the startup is based, if mentioned",
+    "founderName": "Name of the founder or CEO, if mentioned",
+    "solutionOverview": "Description of the solution/product",
+    "targetCustomer": "Target market / customers",
+    "marketSize": "Market size / TAM",
+    "whyNow": "Why now? Market timing insights",
+    "tractionRevenue": "Traction, users, or revenue",
+    "gtmPlan": "Customer acquisition / go-to-market plan",
+    "competitiveAdvantage": "Competitive advantage / moat",
+    "businessModel": "Business model / how they make money",
+    "whyYou": "Why this team / founder advantages",
+    "fundingAsk": "Funding ask / raise amount",
+    "useOfFunds": "Planned use of funds",
+    "milestones": "Future milestones / roadmap"
+}`;
 
         let rawText: string;
         if (type === 'image' && imageFile) {
             rawText = await runInference(apiKey, prompt, { vision: true, file: imageFile, baseUrl });
         } else {
-            const truncated = textContent.length > 8000 ? textContent.substring(0, 8000) : textContent;
-            rawText = await runInference(apiKey, `${prompt}\n\nPITCH DECK TEXT:\n${truncated}`, { baseUrl });
+            const truncated = textContent.length > 10000 ? textContent.substring(0, 10000) : textContent;
+            rawText = await runInference(apiKey, `${prompt}\n\nPITCH DECK CONTENT:\n${truncated}`, { baseUrl });
         }
 
-        console.log(`[PitchDeck] AI raw response:`, rawText.substring(0, 500));
         const result = extractJSON<ExtractedStartupInfo>(rawText);
-        console.log(`[PitchDeck] Parsed result:`, result);
+        console.log(`[PitchDeck] Extracted data:`, result);
         return result;
     } catch (error: unknown) {
         console.error("Pitch Deck Extraction Error:", error);
@@ -2357,3 +2382,4 @@ export async function findSemanticQuestionMatch(
         }
     });
 }
+

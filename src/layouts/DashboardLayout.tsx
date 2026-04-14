@@ -6,7 +6,6 @@ import { ProfileCompletionIndicator } from "../components/layout/ProfileCompleti
 import { ContactSupport } from "../components/layout/ContactSupport"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
-import { KasbAIAssistantWidget } from "../components/layout/KasbAIAssistantWidget"
 // import { KYCVerification } from "../components/dashboard/KYCVerification"
 import { useEffect } from "react"
 
@@ -106,7 +105,6 @@ export function DashboardLayout() {
                 {/* Mobile Bottom Navigation */}
                 <BottomNav />
             </div>
-            <KasbAIAssistantWidget />
         </div>
     )
 }

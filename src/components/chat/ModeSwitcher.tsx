@@ -5,9 +5,46 @@ import { Sparkles, Fish } from 'lucide-react';
 interface ModeSwitcherProps {
     activeMode: 'foundergpt' | 'piranhatank';
     onModeChange: (mode: 'foundergpt' | 'piranhatank') => void;
+    isHeader?: boolean;
 }
 
-export const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ activeMode, onModeChange }) => {
+export const ModeSwitcher: React.FC<ModeSwitcherProps> = ({ activeMode, onModeChange, isHeader }) => {
+    if (isHeader) {
+        return (
+            <div className={cn(
+                "flex p-1 rounded-full border transition-all duration-500 shadow-xl gap-1 backdrop-blur-md",
+                activeMode === 'piranhatank' 
+                    ? "bg-[#0c0c0c]/80 border-red-900/40 shadow-red-900/20" 
+                    : "bg-white/10 border-white/10 shadow-black/10"
+            )}>
+                <button 
+                    onClick={() => onModeChange('foundergpt')}
+                    className={cn(
+                        "flex items-center justify-center gap-2 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500",
+                        activeMode === 'foundergpt'
+                            ? "bg-white text-black shadow-[0_4px_12px_rgba(255,255,255,0.2)] scale-[1.05]"
+                            : "text-gray-400 hover:text-white hover:bg-white/5"
+                    )}
+                >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Founder GPT</span>
+                </button>
+                <button 
+                    onClick={() => onModeChange('piranhatank')}
+                    className={cn(
+                        "flex items-center justify-center gap-2 py-2 px-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500",
+                        activeMode === 'piranhatank'
+                            ? "bg-[#DC143C] text-white shadow-[0_4px_12px_rgba(220,20,60,0.3)] scale-[1.05]"
+                            : "text-gray-400 hover:text-red-500 hover:bg-red-500/5"
+                    )}
+                >
+                    <Fish className="h-3.5 w-3.5" />
+                    <span>Piranha Tank</span>
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="px-2 mb-8">
             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-4 px-2 flex items-center justify-between">
