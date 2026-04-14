@@ -11,6 +11,9 @@ import { ChatProvider } from "./context/ChatContext"
 import { ChatDialog } from "./components/chat/ChatDialog"
 import { AuthEventHandler } from "./components/auth/AuthEventHandler"
 import { LoadingScreen } from "./components/ui/LoadingScreen"
+import { LogoSplashScreen } from "./components/ui/LogoSplashScreen"
+import { useState, useEffect } from "react"
+import { AnimatePresence } from "framer-motion"
 
 // Lazy load pages for code splitting with reload-on-failure logic
 const Landing = lazyWithRetry(() => import("./pages/Landing"))
@@ -73,87 +76,101 @@ function CatchAll() {
 
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    if (showSplash) {
+      // Auto-hide splash after a fixed delay
+      const timer = setTimeout(() => {
+        setShowSplash(false);
+      }, 3500); // 3.5s cinematic duration
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
 
   console.log("[App.tsx] Component rendering. Environment:", import.meta.env.MODE);
   console.log("[App.tsx] Current Location Hash:", window.location.hash);
   console.log("[App.tsx] Base URL:", import.meta.env.BASE_URL);
+  
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <ToastProvider>
-          <ChatProvider>
-            <Router>
-              <Suspense fallback={<LoadingScreen />}>
-                <AuthEventHandler />
-                <Routes>
-                  {/* Public Routes */}
-                  <Route element={<PublicLayout />}>
-                    <Route path="/" element={<Landing />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/email-confirmed" element={<EmailConfirmed />} />
-                    <Route path="/auth/callback" element={<AuthCallback />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                    <Route path="/update-password" element={<UpdatePassword />} />
-                    <Route path="/pricing" element={<PricingPage />} />
-                    <Route path="/onboarding" element={<Onboarding />} />
-                    {/* Placeholders for public links */}
-                    <Route path="/about" element={<Navigate to="/#about-us" replace />} />
-                    <Route path="/features" element={<Navigate to="/#features" replace />} />
-                    <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
-                  </Route>
+      <AnimatePresence mode="wait">
+        {showSplash ? (
+          <LogoSplashScreen key="splash" onComplete={() => setShowSplash(false)} />
+        ) : (
+          <AuthProvider key="auth-provider">
+            <ToastProvider>
+              <ChatProvider>
+                <Router>
+                  <Suspense fallback={<LoadingScreen />}>
+                    <AuthEventHandler />
+                    <Routes>
+                      {/* Public Routes */}
+                      <Route element={<PublicLayout />}>
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/signup" element={<SignUp />} />
+                        <Route path="/email-confirmed" element={<EmailConfirmed />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/update-password" element={<UpdatePassword />} />
+                        <Route path="/pricing" element={<PricingPage />} />
+                        <Route path="/onboarding" element={<Onboarding />} />
+                        {/* Placeholders for public links */}
+                        <Route path="/about" element={<Navigate to="/#about-us" replace />} />
+                        <Route path="/features" element={<Navigate to="/#features" replace />} />
+                        <Route path="/how-it-works" element={<Navigate to="/#how-it-works" replace />} />
+                      </Route>
 
+                      {/* Admin Route (Standalone) - Protected */}
+                      <Route path="/admin-portal-v3x8z1" element={
+                        <AdminRoute>
+                          <AdminDashboard />
+                        </AdminRoute>
+                      } />
 
+                      {/* Dashboard Routes */}
+                      <Route path="/dashboard" element={<DashboardLayout />}>
+                        {/* Default redirect to investor dashboard */}
+                        <Route index element={<Navigate to="/dashboard/investor" replace />} />
 
+                        {/* Investor Dashboard & Routes */}
+                        <Route path="investor" element={<InvestorHome />} />
+                        <Route path="investor/history" element={<HistoryPage />} />
+                        <Route path="investor/messages" element={<MessagesPage />} />
+                        <Route path="investor/profile" element={<InvestorProfile />} />
+                        <Route path="investor/cheatsheet" element={<CheatSheetPage />} />
+                        <Route path="investor/:id" element={<InvestorPublicProfile />} />
 
+                        {/* Startup Dashboard & Routes */}
+                        <Route path="startup" element={<StartupHome />} />
+                        <Route path="startup/history" element={<StartupHistoryPage />} />
+                        <Route path="startup/messages" element={<MessagesPage />} />
+                        <Route path="startup/profile" element={<StartupProfile />} />
+                        <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
+                        <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
+                        <Route path="startup/foundergpt" element={<FounderGPT />} />
+                        <Route path="startup/studio" element={<KasbStudio />} />
+                        <Route path="startup/:id" element={<StartupPublicProfile />} />
 
-                  {/* Admin Route (Standalone) - Protected */}
-                  <Route path="/admin-portal-v3x8z1" element={
-                    <AdminRoute>
-                      <AdminDashboard />
-                    </AdminRoute>
-                  } />
+                        {/* Shared Routes - Keep for fallbacks or generic access */}
+                        <Route path="custom-chatbot" element={<CustomChatbotRequest />} />
+                        <Route path="pricing" element={<DashboardPricing />} />
+                        <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
+                      </Route>
 
-                  {/* Dashboard Routes */}
-                  <Route path="/dashboard" element={<DashboardLayout />}>
-                    {/* Default redirect to investor dashboard */}
-                    <Route index element={<Navigate to="/dashboard/investor" replace />} />
+                      {/* Redirect unknown to landing, but save auth fragments */}
+                      <Route path="*" element={<CatchAll />} />
 
-                    {/* Investor Dashboard & Routes */}
-                    <Route path="investor" element={<InvestorHome />} />
-                    <Route path="investor/history" element={<HistoryPage />} />
-                    <Route path="investor/messages" element={<MessagesPage />} />
-                    <Route path="investor/profile" element={<InvestorProfile />} />
-                    <Route path="investor/cheatsheet" element={<CheatSheetPage />} />
-                    <Route path="investor/:id" element={<InvestorPublicProfile />} />
-
-                    {/* Startup Dashboard & Routes */}
-                    <Route path="startup" element={<StartupHome />} />
-                    <Route path="startup/history" element={<StartupHistoryPage />} />
-                    <Route path="startup/messages" element={<MessagesPage />} />
-                    <Route path="startup/profile" element={<StartupProfile />} />
-                    <Route path="startup/analytics" element={<StartupAnalyticsPage />} />
-                    <Route path="startup/cheatsheet" element={<StartupCheatSheetPage />} />
-                    <Route path="startup/foundergpt" element={<FounderGPT />} />
-                    <Route path="startup/studio" element={<KasbStudio />} />
-                    <Route path="startup/:id" element={<StartupPublicProfile />} />
-
-                    {/* Shared Routes - Keep for fallbacks or generic access */}
-                    <Route path="custom-chatbot" element={<CustomChatbotRequest />} />
-                    <Route path="pricing" element={<DashboardPricing />} />
-                    <Route path="cheatsheet" element={<Navigate to="investor/cheatsheet" replace />} />
-                  </Route>
-
-                  {/* Redirect unknown to landing, but save auth fragments */}
-                  <Route path="*" element={<CatchAll />} />
-
-                </Routes>
-              </Suspense>
-              <ChatDialog />
-            </Router>
-          </ChatProvider>
-        </ToastProvider>
-      </AuthProvider>
+                    </Routes>
+                  </Suspense>
+                  <ChatDialog />
+                </Router>
+              </ChatProvider>
+            </ToastProvider>
+          </AuthProvider>
+        )}
+      </AnimatePresence>
     </HelmetProvider>
   )
 }

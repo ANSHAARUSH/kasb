@@ -25,10 +25,12 @@ export const TransparentHeroImage: React.FC<TransparentHeroImageProps> = ({
         img.src = src;
 
         img.onload = () => {
+            // Cap DPR at 2.0 for performance on high-DPI screens
+            const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
             const canvas = document.createElement('canvas');
-            const scale = 1;
-            canvas.width = img.naturalWidth * scale;
-            canvas.height = img.naturalHeight * scale;
+            // We scale the internal canvas for High-DPI sharpness
+            canvas.width = img.naturalWidth * dpr;
+            canvas.height = img.naturalHeight * dpr;
             
             const ctx = canvas.getContext('2d', { willReadFrequently: true });
             if (!ctx) {
@@ -55,8 +57,8 @@ export const TransparentHeroImage: React.FC<TransparentHeroImageProps> = ({
                     // Optimized for dark backgrounds/checkerboards
                     return isGrayscale && r < 120;
                 } else if (backgroundType === 'light-with-watermark') {
-                    // Removes light checkerboard + dark watermarks/logos
-                    return isGrayscale && (r > 165 || r < 50);
+                    // Removes light checkerboard + dark watermarks/logos (Aggressive threshold)
+                    return isGrayscale && (r > 165 || r < 100);
                 } else {
                     // Optimized for light/white backgrounds (STRICT - safe for Hero)
                     return isGrayscale && r > 165;
@@ -64,7 +66,7 @@ export const TransparentHeroImage: React.FC<TransparentHeroImageProps> = ({
             };
 
             const visited = new Uint8Array(canvas.width * canvas.height);
-            const stack = [];
+            const stack: { x: number; y: number }[] = [];
             
             for (let x = 0; x < canvas.width; x++) {
                 stack.push({ x, y: 0 });
@@ -134,6 +136,8 @@ export const TransparentHeroImage: React.FC<TransparentHeroImageProps> = ({
                 ...props.style,
                 imageRendering: 'auto',
                 WebkitBackfaceVisibility: 'hidden',
+                filter: isLoaded ? 'contrast(1.08) brightness(1.03) saturate(1.05)' : 'none',
+                transform: 'translateZ(0)', // Force GPU acceleration
             }}
             {...props} 
         />
