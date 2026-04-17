@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from "react"
 import { type Investor } from "../../data/mockData"
 import { InvestorCard } from "../../components/dashboard/InvestorCard"
+import { StartupCard } from "../../components/dashboard/StartupCard"
 import { useChat } from "../../hooks/useChat"
 import { useSavedEntities } from "../../hooks/useSavedEntities"
 import { useInvestors } from "../../hooks/useInvestors"
+import { useStartups } from "../../hooks/useStartups"
 import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { useImpactPointsTracker } from "../../hooks/useImpactPointsTracker"
 import { SearchInput } from "../../components/dashboard/SearchInput"
@@ -11,8 +13,9 @@ import { useDebounce } from "../../hooks/useDebounce"
 import { Link } from "react-router-dom"
 import { Button } from "../../components/ui/button"
 import { type Startup } from "../../data/mockData"
-import { Filter, BarChart3, Lock, ChevronUp } from "lucide-react"
+import { Filter, BarChart3, Lock, ChevronUp, Users, TrendingUp } from "lucide-react"
 import { InvestorDetail, type PanelSize, InvestorDetailModal } from "../../components/dashboard/InvestorDetail"
+import { StartupDetail } from "../../components/dashboard/StartupDetail"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -36,6 +39,7 @@ export default function StartupHome() {
     })
     const [showFilters, setShowFilters] = useState(false)
     const [activeFeed] = useState<'discover' | 'top-investors'>('discover')
+    const [feedMode, setFeedMode] = useState<'investors' | 'startups'>('investors')
     const [isQuickFillOpen, setIsQuickFillOpen] = useState(false)
     const [redirectTarget, setRedirectTarget] = useState<string | null>(null)
     const { toast } = useToast()
@@ -47,6 +51,7 @@ export default function StartupHome() {
     // Let's rewrite the component start to include new state
     const { openChat } = useChat()
     const { investors, loading: investorsLoading } = useInvestors()
+    const { startups: allStartups, loading: startupsLoading } = useStartups()
     const { savedIds: savedInvestorIds, toggleSave: handleToggleSave, loading: savedLoading } = useSavedEntities({
         tableName: 'saved_investors',
         userColumn: 'startup_id',
@@ -61,6 +66,7 @@ export default function StartupHome() {
     // Panel State
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [detailInvestor, setDetailInvestor] = useState<Investor | null>(null)
+    const [detailStartup, setDetailStartup] = useState<Startup | null>(null)
     const [panelSize, setPanelSize] = useState<PanelSize>('default')
     const [lastTap, setLastTap] = useState<{ id: string; time: number } | null>(null)
 
@@ -69,10 +75,10 @@ export default function StartupHome() {
     [investors, selectedId])
 
     useEffect(() => {
-        if (!detailInvestor) {
+        if (!detailInvestor && !detailStartup) {
             setIsSummaryExpanded(false)
         }
-    }, [detailInvestor])
+    }, [detailInvestor, detailStartup])
 
     // Track impact points for notifications
     const trackerEntity = useMemo(() => profileStartup ? ({
@@ -277,94 +283,178 @@ export default function StartupHome() {
                                 </div>
                             </div>
                         )}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-                            <h1 className="text-2xl font-bold text-center sm:text-left">Discover Investors</h1>
+                        <div className="flex flex-col mb-8 gap-4">
+                            {/* Row 1: Title + Filter/Analytics */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <h1 className="text-2xl font-bold text-center sm:text-left">
+                                    {feedMode === 'investors' ? 'Discover Investors' : 'Discover Startups'}
+                                </h1>
 
-                            <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
-                                <Button
-                                    onClick={() => setShowFilters(!showFilters)}
-                                    className={cn("gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 border-0", showFilters ? "ring-2 ring-offset-2 ring-gray-900" : "")}
-                                >
-                                    <Filter className="h-4 w-4" />
-                                    Filter
-                                    {(filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
-                                        <span className="ml-1 bg-white text-black px-1.5 py-0.5 rounded-full text-[10px] font-bold">
-                                            {filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)}
-                                        </span>
+                                <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
+                                    {feedMode === 'investors' && (
+                                        <Button
+                                            onClick={() => setShowFilters(!showFilters)}
+                                            className={cn("gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 border-0", showFilters ? "ring-2 ring-offset-2 ring-gray-900" : "")}
+                                        >
+                                            <Filter className="h-4 w-4" />
+                                            Filter
+                                            {(filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)) > 0 && (
+                                                <span className="ml-1 bg-white text-black px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+                                                    {filters.types.length + filters.industries.length + filters.states.length + filters.cities.length + (filters.minFunds !== "0" ? 1 : 0)}
+                                                </span>
+                                            )}
+                                        </Button>
                                     )}
-                                </Button>
-                                <Link to="/dashboard/startup/analytics">
-                                    <Button className="gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 h-10 border-0">
-                                        <BarChart3 className="h-4 w-4" />
-                                        <span className="text-sm">Analytics</span>
-                                    </Button>
-                                </Link>
-                                <span className="text-sm text-gray-500 hidden sm:inline">
-                                    {filteredInvestors.length} matches
-                                </span>
+                                    <Link to="/dashboard/startup/analytics">
+                                        <Button className="gap-2 shadow-sm rounded-xl bg-black text-white hover:bg-gray-800 h-10 border-0">
+                                            <BarChart3 className="h-4 w-4" />
+                                            <span className="text-sm">Analytics</span>
+                                        </Button>
+                                    </Link>
+                                    <span className="text-sm text-gray-500 hidden lg:inline">
+                                        {feedMode === 'investors' ? `${filteredInvestors.length} matches` : `${allStartups.length} tracking`}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Row 2: Feed Mode Toggle (Pill Switch) under filter/analytics, aligned to right */}
+                            <div className="flex justify-center sm:justify-end">
+                                <div className="flex items-center p-0.5 bg-gray-100 rounded-[12px] border border-gray-200 shadow-sm w-full sm:w-auto overflow-x-auto hide-scrollbar">
+                                    <button
+                                        onClick={() => setFeedMode('investors')}
+                                        className={cn(
+                                            "flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                                            feedMode === 'investors'
+                                                ? "bg-black text-white shadow-sm scale-100"
+                                                : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
+                                        )}
+                                    >
+                                        <TrendingUp className="h-3 w-3" />
+                                        Investors
+                                    </button>
+                                    <button
+                                        onClick={() => setFeedMode('startups')}
+                                        className={cn(
+                                            "flex-1 sm:flex-none flex justify-center items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                                            feedMode === 'startups'
+                                                ? "bg-black text-white shadow-sm scale-100"
+                                                : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/50"
+                                        )}
+                                    >
+                                        <Users className="h-3 w-3" />
+                                        Startups
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-
-
-                        {filteredInvestors.length === 0 ? (
-                            <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">
-                                <Filter className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900 mb-1">No investors found</h3>
-                                <p>Try adjusting your search.</p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-                                {filteredInvestors.map(investor => (
-                                    <div
-                                        key={investor.id}
-                                        className="transform transition-all duration-200 hover:scale-[1.01]"
-                                    >
-                                        <InvestorCard
-                                            investor={investor}
-                                            isSelected={selectedId === investor.id}
-                                            isSaved={savedInvestorIds.includes(investor.id)}
-                                            onMessageClick={handleMessageClick}
-                                            onToggleSave={() => handleToggleSave(investor.id, "Investor")}
-                                            onWebsiteClick={(inv) => {
-                                                setIsQuickFillOpen(true);
-                                                setRedirectTarget(inv.name);
-                                                toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
-                                                
-                                                // 2 second delay before opening external link
-                                                setTimeout(() => {
-                                                    const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
-                                                    window.open(url, '_blank', 'noopener,noreferrer');
-                                                    setRedirectTarget(null);
-                                                }, 2000);
-                                            }}
-                                            onClick={() => {
-                                                const now = Date.now();
-                                                const isMobile = window.innerWidth < 1024;
-                                                
-                                                if (isMobile) {
-                                                    if (lastTap?.id === investor.id && (now - lastTap.time < 300)) {
-                                                        // Double tap -> Open Modal
-                                                        setDetailInvestor(investor)
-                                                        setLastTap(null)
-                                                    } else {
-                                                        // Single tap -> Highlight only
-                                                        setSelectedId(investor.id)
-                                                        setLastTap({ id: investor.id, time: now })
-                                                    }
-                                                } else {
-                                                    // Desktop behavior
-                                                    setSelectedId(investor.id)
-                                                    setDetailInvestor(investor)
-                                                    if (panelSize === 'minimized') setPanelSize('default')
-                                                }
-                                            }}
-                                            showImpactPoints={false}
-                                        />
+                        <AnimatePresence mode="wait">
+                        {feedMode === 'investors' ? (
+                            <motion.div key="investors" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                                {filteredInvestors.length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">
+                                        <Filter className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-1">No investors found</h3>
+                                        <p>Try adjusting your search.</p>
                                     </div>
-                                ))}
-                            </div>
+                                ) : (
+                                    <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+                                        {filteredInvestors.map(investor => (
+                                            <div
+                                                key={investor.id}
+                                                className="transform transition-all duration-200 hover:scale-[1.01]"
+                                            >
+                                                <InvestorCard
+                                                    investor={investor}
+                                                    isSelected={selectedId === investor.id}
+                                                    isSaved={savedInvestorIds.includes(investor.id)}
+                                                    onMessageClick={handleMessageClick}
+                                                    onToggleSave={() => handleToggleSave(investor.id, "Investor")}
+                                                    onWebsiteClick={(inv) => {
+                                                        setIsQuickFillOpen(true);
+                                                        setRedirectTarget(inv.name);
+                                                        toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                                                        
+                                                        // 2 second delay before opening external link
+                                                        setTimeout(() => {
+                                                            const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                                            setRedirectTarget(null);
+                                                        }, 2000);
+                                                    }}
+                                                    onClick={() => {
+                                                        const now = Date.now();
+                                                        const isMobile = window.innerWidth < 1024;
+                                                        
+                                                        if (isMobile) {
+                                                            if (lastTap?.id === investor.id && (now - lastTap.time < 300)) {
+                                                                // Double tap -> Open Modal
+                                                                setDetailInvestor(investor)
+                                                                setLastTap(null)
+                                                            } else {
+                                                                // Single tap -> Highlight only
+                                                                setSelectedId(investor.id)
+                                                                setLastTap({ id: investor.id, time: now })
+                                                            }
+                                                        } else {
+                                                            // Desktop behavior
+                                                            setSelectedId(investor.id)
+                                                            setDetailInvestor(investor)
+                                                            if (panelSize === 'minimized') setPanelSize('default')
+                                                        }
+                                                    }}
+                                                    showImpactPoints={false}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div key="startups" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
+                                {startupsLoading ? (
+                                    <div className="grid gap-4 md:grid-cols-2 max-w-2xl mx-auto">
+                                        {[1,2,3,4].map(i => <div key={i} className="h-[220px] skeleton rounded-2xl" />)}
+                                    </div>
+                                ) : allStartups.length === 0 ? (
+                                    <div className="p-12 text-center text-gray-500 border border-dashed border-gray-200 rounded-xl bg-white">
+                                        <Users className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-1">No startups found</h3>
+                                        <p>Startups that make their profile public will appear here.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4 max-w-2xl mx-auto">
+                                        {allStartups.map(startup => (
+                                            <div key={startup.id} className="transform transition-all duration-200 hover:scale-[1.01]">
+                                                <StartupCard
+                                                    startup={startup}
+                                                    isSelected={selectedId === startup.id}
+                                                    onClick={() => {
+                                                        const now = Date.now();
+                                                        const isMobile = window.innerWidth < 1024;
+                                                        if (isMobile) {
+                                                            if (lastTap?.id === startup.id && (now - lastTap.time < 300)) {
+                                                                setDetailStartup(startup)
+                                                                setLastTap(null)
+                                                            } else {
+                                                                setSelectedId(startup.id)
+                                                                setLastTap({ id: startup.id, time: now })
+                                                            }
+                                                        } else {
+                                                            setSelectedId(startup.id)
+                                                            setDetailStartup(startup)
+                                                            if (panelSize === 'minimized') setPanelSize('default')
+                                                        }
+                                                    }}
+                                                    showImpactPoints={true}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
                         )}
+                        </AnimatePresence>
 
                         {/* Bottom spacer */}
                         <div className="h-24" />
@@ -481,42 +571,70 @@ export default function StartupHome() {
                 </motion.div>
             </div>
         
-            {/* Right Panel: Investor Details (Desktop) */}
+            {/* Right Panel: Details (Desktop) */}
             <div className={`
                 hidden lg:block border-l border-gray-200 bg-white h-full relative z-10 shadow-xl overflow-hidden transition-all duration-300 ease-in-out
                 ${panelSize === 'minimized' ? 'w-0 border-l-0 opacity-0 pointer-events-none' : ''}
                 ${panelSize === 'full' ? 'flex-1 border-l-0' : (panelSize === 'minimized' ? '' : 'w-[450px] xl:w-[500px]')}
             `}>
-                <InvestorDetail
-                    investor={detailInvestor}
-                    currentSize={panelSize}
-                    onResize={(size) => {
-                        if (size === 'minimized') {
-                            setPanelSize('minimized')
-                        } else {
-                            setPanelSize(size)
-                        }
-                    }}
-                    onClose={() => {
-                        setSelectedId(null)
-                        setPanelSize('default')
-                    }}
-                    onWebsiteClick={(inv) => {
-                        setIsQuickFillOpen(true);
-                        setRedirectTarget(inv.name);
-                        toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
-                        
-                        setTimeout(() => {
-                            const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
-                            window.open(url, '_blank', 'noopener,noreferrer');
-                            setRedirectTarget(null);
-                        }, 2000);
-                    }}
-                // onDisconnect={} // If we want to handle disconnect refresh
-                />
+                {detailInvestor ? (
+                    <InvestorDetail
+                        investor={detailInvestor}
+                        currentSize={panelSize}
+                        onResize={(size) => {
+                            if (size === 'minimized') {
+                                setPanelSize('minimized')
+                            } else {
+                                setPanelSize(size)
+                            }
+                        }}
+                        onClose={() => {
+                            setSelectedId(null)
+                            setDetailInvestor(null)
+                            setPanelSize('default')
+                        }}
+                        onWebsiteClick={(inv) => {
+                            setIsQuickFillOpen(true);
+                            setRedirectTarget(inv.name);
+                            toast(`Quick-Fill Assistant opened! Opening ${inv.name} in 2 seconds...`, "success");
+                            
+                            setTimeout(() => {
+                                const url = inv.website!.startsWith('http') ? inv.website! : `https://${inv.website!}`;
+                                window.open(url, '_blank', 'noopener,noreferrer');
+                                setRedirectTarget(null);
+                            }, 2000);
+                        }}
+                    />
+                ) : detailStartup ? (
+                    <StartupDetail
+                        startup={detailStartup}
+                        currentSize={panelSize}
+                        onResize={(size) => {
+                            if (size === 'minimized') {
+                                setPanelSize('minimized')
+                            } else {
+                                setPanelSize(size)
+                            }
+                        }}
+                        onClose={() => {
+                            setSelectedId(null)
+                            setDetailStartup(null)
+                            setPanelSize('default')
+                        }}
+                    />
+                ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400 p-8 text-center">
+                        <div>
+                            <div className="bg-gray-100 p-4 rounded-full inline-block mb-4">
+                                {feedMode === 'investors' ? <TrendingUp className="h-8 w-8" /> : <Users className="h-8 w-8" />}
+                            </div>
+                            <p>Select an item to view details</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Mobile Detail Modal */}
+            {/* Mobile Detail Modals */}
             <div className="lg:hidden">
                 <InvestorDetailModal
                     investor={detailInvestor}
@@ -533,6 +651,16 @@ export default function StartupHome() {
                         }, 2000);
                     }}
                 />
+                <AnimatePresence>
+                    {detailStartup && (
+                        <div className="fixed inset-0 z-[100] bg-white overflow-hidden animate-in slide-in-from-bottom duration-300">
+                            <StartupDetail
+                                startup={detailStartup}
+                                onClose={() => setDetailStartup(null)}
+                            />
+                        </div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {/* Floating QuickFill Assistant */}
