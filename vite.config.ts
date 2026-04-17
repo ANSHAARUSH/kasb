@@ -9,7 +9,17 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: true
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['framer-motion', 'lucide-react'],
+          'ai-vendor': ['openai', '@google/generative-ai'],
+          'data-vendor': ['@supabase/supabase-js', 'recharts'],
+        }
+      }
+    }
   },
   server: {
     host: true

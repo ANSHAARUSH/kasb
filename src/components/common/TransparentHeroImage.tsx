@@ -20,13 +20,21 @@ export const TransparentHeroImage: React.FC<TransparentHeroImageProps> = ({
     const [isLoaded, setIsLoaded] = useState(false);
 
     useEffect(() => {
+        // Skip expensive canvas processing on mobile — just show raw image
+        const isMobile = window.innerWidth < 768;
+        if (isMobile) {
+            setProcessedSrc(src);
+            setIsLoaded(true);
+            return;
+        }
+
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.src = src;
 
         img.onload = () => {
-            // Cap DPR at 2.0 for performance on high-DPI screens
-            const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
+            // Cap DPR at 1.5 for performance on high-DPI screens
+            const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
             const canvas = document.createElement('canvas');
             // We scale the internal canvas for High-DPI sharpness
             canvas.width = img.naturalWidth * dpr;

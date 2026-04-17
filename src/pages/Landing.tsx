@@ -67,7 +67,7 @@ export default function Landing() {
             <div 
                 className="fixed inset-0 -z-20 pointer-events-none"
                 style={{ 
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('${import.meta.env.BASE_URL}landing-background.png')`,
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('${import.meta.env.BASE_URL}landing-background.webp')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundColor: '#000000'
@@ -516,7 +516,7 @@ export default function Landing() {
                     viewport={{ once: true }}
                     className="rounded-[4rem] px-6 py-24 relative overflow-hidden text-white shadow-2xl"
                     style={{ 
-                        backgroundImage: `url('${import.meta.env.BASE_URL}cta-bg.png')`,
+                        backgroundImage: `url('${import.meta.env.BASE_URL}cta-bg.webp')`,
                         backgroundSize: 'cover',
                         backgroundPosition: 'center'
                     }}

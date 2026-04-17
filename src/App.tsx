@@ -12,7 +12,8 @@ import { ChatDialog } from "./components/chat/ChatDialog"
 import { AuthEventHandler } from "./components/auth/AuthEventHandler"
 import { LoadingScreen } from "./components/ui/LoadingScreen"
 import { LogoSplashScreen } from "./components/ui/LogoSplashScreen"
-import { KasbAIAssistantWidget } from "./components/layout/KasbAIAssistantWidget"
+import { lazy } from "react"
+const KasbAIAssistantWidget = lazy(() => import("./components/layout/KasbAIAssistantWidget").then(m => ({ default: m.KasbAIAssistantWidget })))
 import { useState, useEffect } from "react"
 import { AnimatePresence } from "framer-motion"
 
@@ -166,7 +167,9 @@ function App() {
                     </Routes>
                   </Suspense>
                   <ChatDialog />
-                  <KasbAIAssistantWidget />
+                  <Suspense fallback={null}>
+                    <KasbAIAssistantWidget />
+                  </Suspense>
                 </Router>
               </ChatProvider>
             </ToastProvider>

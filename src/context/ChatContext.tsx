@@ -4,7 +4,15 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../hooks/useToast'
 import { type Message, type ChatUser } from '../types'
 import { ChatContext } from '../hooks/useChat'
-import { chatWithAI } from '../lib/ai'
+// Lazy-loaded to avoid pulling the entire AI SDK into the main bundle
+let _chatWithAI: typeof import('../lib/ai').chatWithAI | null = null;
+async function getChatWithAI() {
+    if (!_chatWithAI) {
+        const mod = await import('../lib/ai');
+        _chatWithAI = mod.chatWithAI;
+    }
+    return _chatWithAI;
+}
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
@@ -88,23 +96,23 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         const aiBot: ChatUser = {
             id: 'kasb-ai-bot',
             name: 'Kasb AI',
-            avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.png`,
+            avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.webp`,
             role: 'investor' // Use investor role for admin-like styling
         }
 
         setRecentChats([aiBot, ...chatUsers])
     }, [user])
 
-    // Initialize recent chats when user logs in
+    // Initialize recent chats only when chat dialog is first opened
     useEffect(() => {
-        if (user) {
+        if (user && isOpen) {
             fetchRecentChats()
         }
-    }, [user, fetchRecentChats])
+    }, [user, isOpen, fetchRecentChats])
 
-    // Subscribe to realtime messages to refresh chat list
+    // Subscribe to realtime messages only when chat has been opened
     useEffect(() => {
-        if (!user) return
+        if (!user || !isOpen) return
 
         const channel = supabase
             .channel('chat_updates')
@@ -137,7 +145,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [user, fetchRecentChats])
+    }, [user, isOpen, fetchRecentChats])
 
     // Load messages when active user changes
     useEffect(() => {
@@ -247,6 +255,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 console.log("Calling chatWithAI...")
+                const chatWithAI = await getChatWithAI()
                 const responseText = await chatWithAI(content, historyForAI, apiKey)
                 console.log("chatWithAI returned:", responseText ? responseText.substring(0, 20) + "..." : "EMPTY/NULL")
 
