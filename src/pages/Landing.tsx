@@ -5,7 +5,7 @@ import { CheckCircle2, TrendingUp, Users, MessageSquare } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
 import { SEO } from "../components/common/SEO"
-import { TransparentHeroImage } from "../components/common/TransparentHeroImage"
+
 
 import { TiltWrapper } from "../components/common/TiltWrapper"
 
@@ -131,10 +131,10 @@ export default function Landing() {
                         transition={{ delay: 0.5, duration: 1 }}
                         className="block lg:hidden mt-8 w-full max-w-[280px] mx-auto"
                     >
-                        <TransparentHeroImage 
-                            src={`${import.meta.env.BASE_URL}standing-man.jpg`} 
+                        <img 
+                            src={`${import.meta.env.BASE_URL}standing-man-transparent.webp`} 
                             alt="Visionary Concept" 
-                            className="w-full h-auto drop-shadow-2xl"
+                            className="w-full h-auto drop-shadow-2xl brightness-105 contrast-105 saturate-105"
                         />
                     </motion.div>
                 </motion.div>
@@ -147,10 +147,10 @@ export default function Landing() {
                         transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
                         className="relative"
                     >
-                        <TransparentHeroImage 
-                            src={`${import.meta.env.BASE_URL}standing-man.jpg`} 
+                        <img 
+                            src={`${import.meta.env.BASE_URL}standing-man-transparent.webp`} 
                             alt="Visionary Concept" 
-                            className="w-full h-auto drop-shadow-[0_25px_50px_rgba(255,255,255,0.15)] animate-hero-float scale-110"
+                            className="w-full h-auto drop-shadow-[0_25px_50px_rgba(255,255,255,0.15)] animate-hero-float scale-110 brightness-105 contrast-105 saturate-105"
                         />
                     </motion.div>
                 </div>
