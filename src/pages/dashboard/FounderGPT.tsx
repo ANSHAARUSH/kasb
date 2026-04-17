@@ -9,7 +9,6 @@ import { getUserChatSessions, getChatMessages, createChatSession, saveChatMessag
 import { useNavigate } from "react-router-dom"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher"
-import { ModeSwitcher } from "../../components/chat/ModeSwitcher"
 import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { buildFounderContext } from "../../lib/founderContext"
 
@@ -42,27 +41,20 @@ export default function FounderGPT() {
     const [personality, setPersonality] = useState(() => {
         return sessionStorage.getItem('foundergpt_personality') || "Melon Tusk";
     })
-    const [gptMessages, setGptMessages] = useState<ChatMessage[]>(() => {
+    const [messages, setMessages] = useState<ChatMessage[]>(() => {
         try {
             const saved = sessionStorage.getItem('foundergpt_messages');
             return saved ? JSON.parse(saved) : [];
         } catch { return []; }
     })
-    const [ptMessages, setPtMessages] = useState<ChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [brutalMode, setBrutalMode] = useState(false)
     const [hasManuallySelectedMentor, setHasManuallySelectedMentor] = useState(false)
     const [isSwitching, setIsSwitching] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
-    const [activeMode, setActiveMode] = useState<'foundergpt' | 'piranhatank'>('foundergpt')
-    const [ptTab, setPtTab] = useState<'home' | 'pitches' | 'ranks' | 'sharks' | 'profile' | 'choose_sharks' | 'chat'>('home')
-    const [selectedSharks, setSelectedSharks] = useState<string[]>([])
 
-    // Mode-aware aliases
-    const isPiranha = activeMode === 'piranhatank';
-    const messages = isPiranha ? ptMessages : gptMessages;
-    const setMessages = isPiranha ? setPtMessages : setGptMessages;
+    const isPiranha = false;
     
     // New Features States
     const [isListening, setIsListening] = useState(false)
@@ -73,30 +65,22 @@ export default function FounderGPT() {
 
     // Theme Orchestration
     const theme = {
-        bg: isPiranha ? "bg-[#0a0a0a]" : "bg-[#000000]",
-        text: isPiranha ? "text-gray-100" : "text-white",
-        textMuted: isPiranha ? "text-gray-400" : "text-gray-400",
-        headerBg: isPiranha ? "bg-[#0a0a0a]/80" : "bg-black/80",
-        card: isPiranha ? "bg-[#111] border-red-900/30" : "bg-[#0a0a0a] border-white/10",
-        input: isPiranha ? "bg-[#111] border-red-900/30 focus-within:border-red-500" : "bg-[#0a0a0a] border-white/10 focus-within:border-white",
-        aiBubble: isPiranha ? "bg-[#161616] border border-red-900/20 text-gray-200" : "bg-[#111] border border-white/5 text-gray-300",
-        userBubble: isPiranha ? "bg-[#8B0000] text-white" : "bg-white text-black",
-        accent: isPiranha ? "bg-[#DC143C]" : "bg-white",
-        accentText: isPiranha ? "text-[#DC143C]" : "text-white",
-        sidebarBg: isPiranha ? "bg-[#0a0a0a]" : "bg-[#000000]",
-        sidebarText: isPiranha ? "text-gray-100" : "text-white",
-        sidebarBorder: isPiranha ? "border-red-900/30" : "border-white/10"
+        bg: "bg-[#000000]",
+        text: "text-white",
+        textMuted: "text-gray-400",
+        headerBg: "bg-black/80",
+        card: "bg-[#0a0a0a] border-white/10",
+        input: "bg-[#0a0a0a] border-white/10 focus-within:border-white",
+        aiBubble: "bg-[#111] border border-white/5 text-gray-300",
+        userBubble: "bg-white text-black",
+        accent: "bg-white",
+        accentText: "text-white",
+        sidebarBg: "bg-[#000000]",
+        sidebarText: "text-white",
+        sidebarBorder: "border-white/10"
     };
 
-    const ribbonItems = [
-        { id: "home", icon: Home, label: "Home" },
-        { id: "pitches", icon: FileText, label: "Pitches" },
-        { id: "ranks", icon: Trophy, label: "Ranks" },
-        { id: "sharks", icon: Fish, label: "Piranhas" },
-        { id: "profile", icon: UserCircle, label: "Profile" },
-    ];
-
-    const ptSharks = [
+const ptSharks = [
         { id: 'notam', name: 'NoTAM King', icon: '📊', subtext: "No market size? You're out bro 📉", titleColor: 'text-[#FF0000]', iconBg: 'bg-[#3E0000]' },
         { id: 'boat', name: 'BoAt Daddy', icon: '🛥️', subtext: "What's your margin, king? 💰", titleColor: 'text-yellow-400', iconBg: 'bg-yellow-900/30' },
         { id: 'push', name: 'Product Push', icon: '🔍', subtext: "Does the customer actually care? 🤨", titleColor: 'text-green-500', iconBg: 'bg-green-900/30' },
@@ -135,11 +119,7 @@ export default function FounderGPT() {
     })
     const { user } = useAuth()
 
-    const piranhaSessions = sessions.filter(s => 
-        s.personality_id === 'Piranha Panel' || ptSharks.some(shark => shark.name === s.personality_id)
-    );
-
-    const getRelativeTimeString = (dateString: string) => {
+const getRelativeTimeString = (dateString: string) => {
         const elapsed = Date.now() - new Date(dateString).getTime();
         const minutes = Math.floor(elapsed / (1000 * 60));
         if (minutes < 60) return `${Math.max(1, minutes)} mins ago`;
@@ -152,8 +132,8 @@ export default function FounderGPT() {
 
     // Persist chat state to sessionStorage so it survives tab switches
     useEffect(() => {
-        sessionStorage.setItem('foundergpt_messages', JSON.stringify(gptMessages));
-    }, [gptMessages])
+        sessionStorage.setItem('foundergpt_messages', JSON.stringify(messages));
+    }, [messages])
 
     useEffect(() => {
         if (currentSessionId) {
@@ -542,7 +522,7 @@ export default function FounderGPT() {
             if (ptTab === 'chat') setPtTab('home')
         } else {
             setCurrentSessionId(null)
-            setGptMessages([])
+            setMessages([])
             setQuery("")
             setIsSidebarOpen(false)
             setHasManuallySelectedMentor(false)
@@ -563,7 +543,7 @@ export default function FounderGPT() {
     const hasMessages = messages.length > 0
 
     // Filter sessions by mode
-    const displayedSessions = isPiranha ? [] : sessions;
+    const displayedSessions = sessions;
 
     return (
         <div className={cn("relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] md:-mt-6 overflow-hidden flex transition-all duration-500", theme.bg)}>
@@ -678,14 +658,6 @@ export default function FounderGPT() {
 
                             <div className="flex-1 overflow-y-auto space-y-6">
                                 {/* Mode Switcher (GPT vs Tank) */}
-                                <ModeSwitcher 
-                                    activeMode={activeMode} 
-                                    onModeChange={(mode) => {
-                                        setActiveMode(mode);
-                                        setIsSidebarOpen(false);
-                                    }} 
-                                />
-
                                 {/* Unified Mobile View Switcher */}
                                 <MobileViewSwitcher currentView="foundergpt" />
 
@@ -765,12 +737,7 @@ export default function FounderGPT() {
                     )}
                 </div>
                                 <div className="hidden md:flex flex-col items-end gap-1 relative z-10">
-                    <ModeSwitcher 
-                        activeMode={activeMode} 
-                        onModeChange={setActiveMode} 
-                        isHeader={true} 
-                    />
-                </div>
+                    </div>
                 <div className="md:hidden flex flex-col items-end gap-1 relative z-10">
                     <div className={cn(
                         "flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all duration-300",
