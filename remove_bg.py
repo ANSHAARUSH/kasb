@@ -69,4 +69,7 @@ def process_image(input_path, output_path):
     print("Done!")
 
 if __name__ == "__main__":
-    process_image("public/standing-man.jpg", "public/standing-man-transparent.png")
+    if len(sys.argv) > 2:
+        process_image(sys.argv[1], sys.argv[2])
+    else:
+        print("Usage: python remove_bg.py <input> <output>")

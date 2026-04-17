@@ -314,9 +314,8 @@ export default function Landing() {
                         className="w-full lg:w-1/2 max-w-[450px]"
                     >
                         <TiltWrapper className="animate-hero-float">
-                            <TransparentHeroImage 
-                                src={`${import.meta.env.BASE_URL}features-walker-clean.png`} 
-                                backgroundType="light"
+                            <img 
+                                src={`${import.meta.env.BASE_URL}features-walker-clean-transparent.webp`} 
                                 alt="Kasb AI Matchmaking" 
                                 className="w-full h-auto drop-shadow-[0_20px_60px_rgba(255,255,255,0.1)] transition-transform hover:scale-110 duration-700"
                             />
@@ -473,9 +472,8 @@ export default function Landing() {
                             className="w-full lg:w-1/2 max-w-[550px]"
                         >
                             <TiltWrapper className="animate-hero-float">
-                                <TransparentHeroImage 
-                                    src={`${import.meta.env.BASE_URL}how-it-works-man.png`} 
-                                    backgroundType="light"
+                                <img 
+                                    src={`${import.meta.env.BASE_URL}how-it-works-man-transparent.webp`} 
                                     alt="Kasb AI Process" 
                                     className="w-full h-auto drop-shadow-[0_20px_60px_rgba(255,255,255,0.1)] scale-[1.2] hover:scale-[1.25] transition-transform duration-700"
                                 />
