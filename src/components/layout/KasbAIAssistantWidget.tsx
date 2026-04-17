@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Sparkles, Home, Minus, Loader2, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { chatWithAIStream } from '../../lib/ai';
 import { useAuth } from '../../context/AuthContext';
+import { useStartupProfile } from '../../hooks/useStartupProfile';
+import { buildFounderContext } from '../../lib/founderContext';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -13,6 +15,8 @@ interface Message {
 
 export function KasbAIAssistantWidget() {
     const { user } = useAuth();
+    const { startup: founderProfile } = useStartupProfile();
+    const founderContext = useMemo(() => buildFounderContext(founderProfile), [founderProfile]);
     const location = useLocation();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -92,7 +96,9 @@ export function KasbAIAssistantWidget() {
                         }
                         return updated;
                     });
-                }
+                },
+                undefined,
+                founderContext || undefined
             );
 
             // Save to localStorage after completion

@@ -1727,7 +1727,8 @@ export async function chatWithPersonality(
     apiKey: string,
     personalityId: string,
     baseUrl?: string,
-    brutalMode?: boolean
+    brutalMode?: boolean,
+    founderContext?: string
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for AI Chat.");
 
@@ -1743,6 +1744,11 @@ export async function chatWithPersonality(
 - Think of yourself as the harshest VC who has seen 10,000 pitches and is tired of mediocrity.
 - Use phrases like "This won't work because...", "You're delusional if you think...", "Here's what you're not seeing...", "The market doesn't care about..."
 - Still be logical and accurate — brutal doesn't mean wrong. It means painfully honest.`;
+    }
+
+    // Inject founder's startup profile context for personalized advice
+    if (founderContext) {
+        systemPrompt += `\n\nFOUNDER CONTEXT (This is the startup you are currently advising. Use this data to personalize every response. Reference their actual startup name, industry, stage, traction, and metrics when relevant. Do NOT ask for information that is already provided here.):\n${founderContext}`;
     }
 
     // RAG: Retrieve relevant context from vector database for supported personalities
@@ -1795,11 +1801,15 @@ export async function chatWithAI(
     userMessage: string,
     history: { role: 'user' | 'assistant', content: string }[],
     apiKey: string,
-    baseUrl?: string
+    baseUrl?: string,
+    founderContext?: string
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for AI Chat.");
 
-    const systemPrompt = KASB_SYSTEM_PROMPT;
+    let systemPrompt = KASB_SYSTEM_PROMPT;
+    if (founderContext) {
+        systemPrompt += `\n\nFOUNDER CONTEXT (The user's startup profile — use this to personalize your responses):\n${founderContext}`;
+    }
 
     // Wrap in retry logic for better reliability
     return retryWithBackoff(async () => {
@@ -1825,11 +1835,15 @@ export async function chatWithAIStream(
     history: { role: 'user' | 'assistant', content: string }[],
     apiKey: string,
     onChunk: (chunk: string) => void,
-    baseUrl?: string
+    baseUrl?: string,
+    founderContext?: string
 ): Promise<string> {
     if (!apiKey) throw new Error("API Key is missing for AI Chat.");
 
-    const systemPrompt = KASB_SYSTEM_PROMPT;
+    let systemPrompt = KASB_SYSTEM_PROMPT;
+    if (founderContext) {
+        systemPrompt += `\n\nFOUNDER CONTEXT (The user's startup profile — use this to personalize your responses):\n${founderContext}`;
+    }
 
     return retryWithBackoff(async () => {
         try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, Home, FileText, Trophy, Fish, UserCircle, Mic, Skull, Share2 } from "lucide-react"
 import { cn } from "../../lib/utils"
@@ -10,6 +10,8 @@ import { useNavigate } from "react-router-dom"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher"
 import { ModeSwitcher } from "../../components/chat/ModeSwitcher"
+import { useStartupProfile } from "../../hooks/useStartupProfile"
+import { buildFounderContext } from "../../lib/founderContext"
 
 const QUOTES = [
     { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
@@ -31,6 +33,8 @@ interface ChatMessage {
 
 export default function FounderGPT() {
     const navigate = useNavigate()
+    const { startup: founderProfile } = useStartupProfile()
+    const founderContext = useMemo(() => buildFounderContext(founderProfile), [founderProfile])
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const [isOpenPersonality, setIsOpenPersonality] = useState(false)
     const [query, setQuery] = useState("")
@@ -339,7 +343,8 @@ export default function FounderGPT() {
                 apiKey,
                 targetMentor,
                 undefined,
-                brutalMode
+                brutalMode,
+                founderContext || undefined
             );
 
             if (currentSessionId) {
@@ -446,7 +451,8 @@ export default function FounderGPT() {
                 apiKey,
                 activeMentor,
                 undefined,
-                brutalMode
+                brutalMode,
+                !isPiranha ? (founderContext || undefined) : undefined
             )
 
             if (sessionId) {
