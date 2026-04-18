@@ -1,4 +1,4 @@
-import { Trash2, Award, Pencil } from "lucide-react"
+import { Trash2, Award, Pencil, MessageSquare } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { VerificationBadge } from "../../components/ui/VerificationBadge"
 import { cn } from "../../lib/utils"
@@ -71,6 +71,7 @@ interface InvestorManagementProps {
     onAddClick: () => void
     onEditClick: (investor: Investor) => void
     updateTier: (table: 'startups' | 'investors', id: string, tier: string) => void
+    onMessageClick: (user: { id: string; name: string; avatar: string; role: 'startup' | 'investor' }) => void
 }
 
 export function InvestorManagement({
@@ -81,7 +82,8 @@ export function InvestorManagement({
     promptDelete,
     onAddClick,
     onEditClick,
-    updateTier
+    updateTier,
+    onMessageClick
 }: InvestorManagementProps) {
     if (loading) {
         return <div className="p-8 text-center text-gray-400">Loading investors...</div>
@@ -138,6 +140,15 @@ export function InvestorManagement({
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full text-xs font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                onClick={() => onMessageClick({ id: investor.id, name: investor.name, avatar: investor.avatar || '👤', role: 'investor' })}
+                            >
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Message
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="sm"

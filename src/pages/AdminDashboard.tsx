@@ -15,6 +15,7 @@ import { Button } from "../components/ui/button"
 import { Plus } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
 import { useToast } from "../hooks/useToast"
+import { AdminChatModal } from "../components/admin/AdminChatModal"
 
 // Define types that match our Supabase schema
 // (Keep types for now as they are used in management components)
@@ -125,6 +126,8 @@ export default function AdminDashboard() {
     // Form states
     const [isStartupModalOpen, setIsStartupModalOpen] = useState(false)
     const [isInvestorModalOpen, setIsInvestorModalOpen] = useState(false)
+    const [chatTarget, setChatTarget] = useState<{ id: string; name: string; avatar: string; role: 'startup' | 'investor' } | null>(null)
+    const [isChatOpen, setIsChatOpen] = useState(false)
 
     const [newStartup, setNewStartup] = useState({
         name: '', logo: '🚀', problem_solving: '', description: '', valuation: '', stage: 'Seed', traction: '',
@@ -514,6 +517,7 @@ export default function AdminDashboard() {
                                     promptDelete={promptDelete}
                                     onAddClick={() => setIsStartupModalOpen(true)}
                                     updateTier={updateUserTier}
+                                    onMessageClick={(user) => { setChatTarget(user); setIsChatOpen(true) }}
                                 />
                             ) : (
                                 <InvestorManagement
@@ -531,6 +535,7 @@ export default function AdminDashboard() {
                                         setIsInvestorModalOpen(true)
                                     }}
                                     updateTier={updateUserTier}
+                                    onMessageClick={(user) => { setChatTarget(user); setIsChatOpen(true) }}
                                 />
                             )}
                         </div>
@@ -562,6 +567,13 @@ export default function AdminDashboard() {
                 editingInvestor={editingInvestor}
                 setEditingInvestor={setEditingInvestor}
                 handleAddInvestor={handleAddInvestor}
+            />
+
+            {/* Admin Chat Modal */}
+            <AdminChatModal
+                isOpen={isChatOpen}
+                onClose={() => { setIsChatOpen(false); setChatTarget(null) }}
+                targetUser={chatTarget}
             />
 
             {/* Quick Add Button only on Users tab */}

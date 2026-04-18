@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react"
+import { Trash2, MessageSquare } from "lucide-react"
 import { Button } from "../../components/ui/button"
 import { VerificationBadge } from "../../components/ui/VerificationBadge"
 import { cn } from "../../lib/utils"
@@ -40,6 +40,7 @@ interface StartupManagementProps {
     promptDelete: (table: 'startups' | 'investors', id: string) => void
     onAddClick: () => void
     updateTier: (table: 'startups' | 'investors', id: string, tier: string) => void
+    onMessageClick: (user: { id: string; name: string; avatar: string; role: 'startup' | 'investor' }) => void
 }
 
 export function StartupManagement({
@@ -50,7 +51,8 @@ export function StartupManagement({
     toggleFeedVisibility,
     promptDelete,
     onAddClick,
-    updateTier
+    updateTier,
+    onMessageClick
 }: StartupManagementProps) {
     if (loading) {
         return <div className="p-8 text-center text-gray-400">Loading startups...</div>
@@ -120,6 +122,15 @@ export function StartupManagement({
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="rounded-full text-xs font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+                                onClick={() => onMessageClick({ id: startup.id, name: startup.name, avatar: startup.logo || '🚀', role: 'startup' })}
+                            >
+                                <MessageSquare className="h-3 w-3 mr-1" />
+                                Message
+                            </Button>
                             <Button
                                 variant="outline"
                                 size="sm"
