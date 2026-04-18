@@ -8,7 +8,7 @@ export const TOOL_DOMAINS: Record<string, string> = {
     "bolt": "bolt.new",
     "gamma": "gamma.app",
     "canva": "canva.com",
-    "anthropic": "anthropic.com",
+    "claude": "claude.ai",
     "copy.ai": "copy.ai",
     "jasper": "jasper.ai",
     "google": "google.com",

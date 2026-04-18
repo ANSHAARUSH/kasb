@@ -12,7 +12,7 @@ const KASB_AI_TOOLS = `
 - MVP (Medium Complexity): Lovable (Alternative: Replit)
 - MVP (High Complexity): Replit (Alternative: Bolt)
 - Pitch Deck (Any Complexity): Gamma (Alternative: Canva)
-- Email - Cold/High Quality (Any Complexity): Anthropic (Alternative: Copy.ai)
+- Email - Cold/High Quality (Any Complexity): Claude (Alternative: Copy.ai)
 - Email - Sales (Any Complexity): Jasper (Alternative: Copy.ai)
 - Marketing - Ads (Any Complexity): Google (Alternative: Jasper)
 - Marketing - Content (Any Complexity): Jasper (Alternative: ChatGPT)
