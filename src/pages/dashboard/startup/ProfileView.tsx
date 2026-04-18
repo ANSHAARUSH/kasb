@@ -1,6 +1,5 @@
 import { Card, CardContent } from "../../../components/ui/card"
 import { VerificationBadge } from "../../../components/ui/VerificationBadge"
-import { VerificationSection } from "./VerificationSection"
 import { useMemo, useState, useEffect } from "react"
 import { Sparkles, BarChart3, Info, TrendingUp, ShieldCheck, Pencil, Save, X, Loader2, FileText, ExternalLink, History as HistoryIcon, Eye, EyeOff } from "lucide-react"
 import { Link } from "react-router-dom"
@@ -713,10 +712,6 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
                     </div>
                 </CardContent>
             </Card>
-
-            <div className="pt-8 border-t border-gray-100">
-                <VerificationSection startup={startup} onRequestReview={onRequestReview} />
-            </div>
         </div>
     )
 }

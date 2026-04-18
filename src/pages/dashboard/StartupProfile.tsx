@@ -10,22 +10,13 @@ import { getGlobalConfig, getUserSetting, supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
-import { reviewPitchDeck, type PitchDeckScorecard } from "../../lib/ai"
-import { Progress } from "../../components/ui/ScorecardProgress"
-import { Badge } from "../../components/ui/badge"
+
 import { cn } from "../../lib/utils"
 import { 
     Sparkles, 
     FileText, 
     Loader2, 
-    AlertCircle, 
     ChevronRight, 
-    TrendingUp, 
-    Users, 
-    Target, 
-    Layout, 
-    Lightbulb,
-    Briefcase,
     CheckCircle2,
     Upload
 } from "lucide-react"
@@ -40,9 +31,7 @@ export default function StartupProfile() {
     const { toast } = useToast()
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-    const [deckReview, setDeckReview] = useState<PitchDeckScorecard | string | null>(null)
-    const [isReviewing, setIsReviewing] = useState(false)
-    const fileRef = useRef<HTMLInputElement>(null)
+
 
     // Pitch Deck Auto-fill State
     const [isAutoFilling, setIsAutoFilling] = useState(false)
@@ -308,162 +297,6 @@ export default function StartupProfile() {
                 saving={saving}
                 onMarkAsLive={() => { }}
             />
-
-            {/* AI Pitch Deck Review Section */}
-            <div className="mt-8 sm:mt-12 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-indigo-50 border border-indigo-100 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4">
-                    <Sparkles className="h-8 w-8 text-indigo-200" />
-                </div>
-
-                <h3 className="text-xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    AI Pitch Deck Review
-                </h3>
-                <p className="text-indigo-700/70 text-sm mb-6 max-w-md">
-                    Get critical, constructive feedback on your pitch deck from an investor's perspective.
-                </p>
-
-                {!deckReview ? (
-                    <div className="space-y-4">
-                        <input
-                            type="file"
-                            accept=".pdf,.pptx,image/*"
-                            className="hidden"
-                            ref={fileRef}
-                            onChange={async (e) => {
-                                const file = e.target.files?.[0]
-                                if (!file) return
-                                setIsReviewing(true)
-                                try {
-                                    let apiKey = import.meta.env.VITE_GROQ_API_KEY
-                                    if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
-                                    if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
-
-                                    if (!apiKey) {
-                                        toast("AI API Key not configured.", "error")
-                                        return
-                                    }
-
-                                    const review = await reviewPitchDeck(file, apiKey)
-                                    setDeckReview(review)
-                                    toast("AI Analysis Complete", "success")
-                                } catch (err: any) {
-                                    toast(`Analysis failed: ${err.message}`, "error")
-                                } finally {
-                                    setIsReviewing(false)
-                                }
-                            }}
-                        />
-                        <Button
-                            onClick={() => fileRef.current?.click()}
-                            disabled={isReviewing}
-                            className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-8"
-                        >
-                            {isReviewing ? (
-                                <>
-                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    Analyzing Deck...
-                                </>
-                            ) : (
-                                "Upload & Analyze Deck"
-                            )}
-                            {!subscriptionManager.hasFeature('Pitch Deck') && (
-                                <span className="ml-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">PRO</span>
-                            )}
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Analysis Report</span>
-                            <Button variant="ghost" size="sm" onClick={() => setDeckReview(null)} className="text-indigo-600">Analyze New Deck</Button>
-                        </div>
-
-                        {typeof deckReview === 'string' ? (
-                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100 prose prose-sm max-w-none text-indigo-900 leading-relaxed whitespace-pre-line font-medium">
-                                {deckReview}
-                            </div>
-                        ) : (
-                            <div className="grid gap-6">
-                                {/* Recommendation Header */}
-                                <div className={cn(
-                                    "p-6 rounded-[2rem] border-2 flex items-center justify-between gap-4",
-                                    deckReview.investor_recommendation === 'high_priority' ? "bg-emerald-50 border-emerald-100 text-emerald-900" :
-                                        deckReview.investor_recommendation === 'potential_investment' ? "bg-blue-50 border-blue-100 text-blue-900" :
-                                            deckReview.investor_recommendation === 'monitor' ? "bg-amber-50 border-amber-100 text-amber-900" :
-                                                "bg-red-50 border-red-100 text-red-900"
-                                )}>
-                                    <div className="flex items-center gap-4">
-                                        <div className="h-12 w-12 rounded-2xl bg-white/80 flex items-center justify-center shadow-sm">
-                                            <Sparkles className="h-6 w-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Investor Verdict</p>
-                                            <h4 className="text-lg font-bold capitalize">{deckReview.investor_recommendation.replace('_', ' ')}</h4>
-                                        </div>
-                                    </div>
-                                    <Badge className="bg-white/50 text-current border-current/20 font-bold px-4 py-1.5 rounded-full uppercase text-[10px] tracking-tight">AI Assessment</Badge>
-                                </div>
-
-                                {/* Main Sentiment */}
-                                <div className="bg-white rounded-[2rem] p-8 border border-indigo-100 shadow-sm">
-                                    <h5 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">Executive Summary</h5>
-                                    <p className="text-indigo-900 font-medium leading-relaxed">{deckReview.overall_sentiment}</p>
-                                </div>
-
-                                {/* Scorecard Grid */}
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    {[
-                                        { key: 'problem', label: 'Problem', icon: Lightbulb },
-                                        { key: 'solution', label: 'Solution', icon: Layout },
-                                        { key: 'market', label: 'Market', icon: Target },
-                                        { key: 'traction', label: 'Traction', icon: TrendingUp },
-                                        { key: 'team', label: 'Team', icon: Users },
-                                        { key: 'business_model', label: 'Business Model', icon: Briefcase }
-                                    ].map((item: any) => {
-                                        const data = (deckReview as any)[item.key];
-                                        return (
-                                            <div key={item.key} className="bg-white p-6 rounded-[2rem] border border-indigo-50 shadow-sm hover:shadow-md transition-shadow group">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:rotate-6 transition-transform">
-                                                            <item.icon className="h-4 w-4" />
-                                                        </div>
-                                                        <h5 className="font-bold text-gray-900">{item.label}</h5>
-                                                    </div>
-                                                    <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{data.score}/10</span>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <Progress value={data.score * 10} className="h-1.5 bg-indigo-100" />
-                                                    <p className="text-xs text-gray-600 leading-relaxed font-medium">{data.feedback}</p>
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-
-                                {/* Missing Info */}
-                                {deckReview.critical_missing_info.length > 0 && (
-                                    <div className="bg-amber-50/50 border border-amber-200 rounded-[2rem] p-8">
-                                        <div className="flex items-center gap-2 text-amber-900 font-bold mb-4">
-                                            <AlertCircle className="h-5 w-5" />
-                                            Critical Missing Information
-                                        </div>
-                                        <ul className="grid sm:grid-cols-2 gap-3">
-                                            {deckReview.critical_missing_info.map((info: string, idx: number) => (
-                                                <li key={idx} className="flex items-start gap-2 text-xs text-amber-800 font-medium">
-                                                    <ChevronRight className="h-4 w-4 shrink-0 mt-0.5" />
-                                                    {info}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
 
             {/* Danger Zone */}
             <div className="mt-12 pt-8 border-t border-gray-100">

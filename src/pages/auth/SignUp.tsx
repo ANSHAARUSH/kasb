@@ -440,9 +440,9 @@ export default function SignUp() {
                                                         <button
                                                             type="button"
                                                             onClick={() => fileInputRef.current?.click()}
-                                                            className="group p-5 rounded-2xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-indigo-500 hover:shadow-lg text-left transition-all duration-300"
+                                                            className="group p-5 rounded-2xl border-2 border-gray-100 bg-gray-50/50 hover:bg-white hover:border-black hover:shadow-lg text-left transition-all duration-300"
                                                         >
-                                                            <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:rotate-6 transition-transform">
+                                                            <div className="h-10 w-10 bg-black rounded-xl flex items-center justify-center mb-3 group-hover:rotate-6 transition-transform">
                                                                 <Upload className="h-5 w-5 text-white" />
                                                             </div>
                                                             <h3 className="text-sm font-bold mb-1">Upload Pitch Deck</h3>
@@ -450,8 +450,8 @@ export default function SignUp() {
                                                                 Auto-fill with AI from your deck
                                                             </p>
                                                             <div className="mt-2 flex items-center gap-1.5">
-                                                                <Sparkles className="h-3 w-3 text-indigo-500" />
-                                                                <span className="text-[9px] font-black uppercase tracking-widest text-indigo-500">AI-Powered</span>
+                                                                <Sparkles className="h-3 w-3 text-black" />
+                                                                <span className="text-[9px] font-black uppercase tracking-widest text-black">AI-Powered</span>
                                                             </div>
                                                         </button>
                                                         <button

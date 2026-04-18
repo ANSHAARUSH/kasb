@@ -3,8 +3,8 @@ import type { Investor } from "../../data/mockData"
 import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink, Loader2, ChevronDown, ChevronUp, Landmark } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
-import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
-import { checkEligibility, identifyMissingEligibilityData, type EligibilityResult, type MissingField } from "../../lib/ai"
+import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus, getGlobalConfig, getUserSetting } from "../../lib/supabase"
+import { checkEligibility, identifyMissingEligibilityData, resolveAIConfig, type EligibilityResult, type MissingField } from "../../lib/ai"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -159,8 +159,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
 
         try {
             const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
-            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
-            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const aiConfig = await resolveAIConfig(user.id)
+            
+            if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
+            
+            const envKey = aiConfig.apiKey
+            const baseUrl = aiConfig.baseUrl
 
             const finalCriteria = criteria && criteria.length > 0 
                 ? criteria 
@@ -194,8 +198,12 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         try {
             // Merge MCQ answers into startup data
             const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers }
-            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY
-            const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+            const aiConfig = await resolveAIConfig(user?.id)
+            
+            if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
+
+            const envKey = aiConfig.apiKey
+            const baseUrl = aiConfig.baseUrl
             const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
             
             setEligibilityResult(res)
