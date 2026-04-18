@@ -12,7 +12,7 @@ export const TOOL_DOMAINS: Record<string, string> = {
     "copy.ai": "copy.ai",
     "jasper": "jasper.ai",
     "google": "google.com",
-    "chatgpt": "openai.com",
+    "chatgpt": "chatgpt.com",
     "vercel": "vercel.com",
     "v0": "vercel.com",
     "figma": "figma.com",
