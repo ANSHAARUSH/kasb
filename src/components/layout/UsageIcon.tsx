@@ -73,11 +73,11 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                             : { opacity: 0, x: -10, scale: 0.95 }
                         }
                         className={cn(
-                            "p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-indigo-100 z-[100] animate-in fade-in md:w-80",
-                            isMobile ? "fixed top-[68px] left-4 right-4 w-auto slide-in-from-top-2" : "absolute w-72",
-                            !isMobile && placement === 'top' && "bottom-full mb-3 slide-in-from-bottom-2",
-                            !isMobile && placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : "right-0"),
-                            !isMobile && placement === 'right' && "left-full top-1/2 -translate-y-1/2 ml-4 slide-in-from-left-2"
+                            "p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-indigo-100 z-[100] animate-in fade-in",
+                            "fixed top-[68px] left-4 right-4 w-auto slide-in-from-top-2", // Mobile default
+                            "md:absolute md:w-80 md:left-auto md:right-0 md:top-full md:mt-2", // Desktop override
+                            placement === 'top' && showLabel && "md:left-1/2 md:-translate-x-1/2 md:right-auto",
+                            placement === 'right' && "md:left-full md:top-1/2 md:-translate-y-1/2 md:ml-4 md:slide-in-from-left-2 md:mt-0"
                         )}
                     >
                         {/* Tooltip Header */}
@@ -137,13 +137,13 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                             </p>
                         </div>
 
-                        {/* Arrow */}
                         <div className={cn(
                             "absolute border-8 border-transparent",
-                            !isMobile && placement === 'top' && "top-full border-t-white",
-                            !isMobile && placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : "right-4"),
-                            !isMobile && placement === 'right' && "right-full top-1/2 -translate-y-1/2 border-r-white",
-                            isMobile && "bottom-full border-b-white right-[88px]"
+                            "bottom-full border-b-white right-[88px]", // Mobile default
+                            "md:bottom-auto md:top-0 md:-mt-[16px] md:border-b-transparent md:border-t-transparent", // Reset mobile arrow
+                            placement === 'top' && "md:top-auto md:bottom-full md:border-b-white md:right-4",
+                            placement === 'top' && showLabel && "md:left-1/2 md:-translate-x-1/2 md:right-auto",
+                            placement === 'right' && "md:right-full md:top-1/2 md:-translate-y-1/2 md:border-r-white md:border-b-transparent md:bottom-auto md:mt-0"
                         )} />
                     </motion.div>
                 )}
