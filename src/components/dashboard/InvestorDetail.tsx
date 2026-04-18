@@ -159,7 +159,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
 
         try {
             const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
-            const aiConfig = await resolveAIConfig(user.id)
+            const aiConfig = await resolveAIConfig(user.id, 'eligibility')
             
             if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
             
@@ -198,7 +198,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         try {
             // Merge MCQ answers into startup data
             const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers }
-            const aiConfig = await resolveAIConfig(user?.id)
+            const aiConfig = await resolveAIConfig(user?.id, 'eligibility')
             
             if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
 

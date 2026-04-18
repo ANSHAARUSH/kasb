@@ -36,12 +36,13 @@ import type { AnalysisResult } from "./documentIntelligence";
  * Centralized logic to resolve the best available AI API key and its corresponding base URL.
  * Priority: Feature-specific Env -> Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
  */
-export async function resolveAIConfig(userId?: string, feature?: 'review' | 'chat') {
+export async function resolveAIConfig(userId?: string, feature?: 'review' | 'chat' | 'eligibility' | 'comparison') {
     // 1. Check Environment Variables
     const envReview = import.meta.env.VITE_REVIEW_API_KEY;
     const envGroq = import.meta.env.VITE_GROQ_API_KEY;
     const envGemini = import.meta.env.VITE_GEMINI_API_KEY;
     const envOpenAI = import.meta.env.VITE_OPENAI_API_KEY;
+    const envEligibility = import.meta.env.VITE_ELIGIBILITY_API_KEY;
 
     let apiKey = '';
     const isValid = (key: any) => key && typeof key === 'string' && !key.includes('your_') && !key.includes('here');
@@ -49,7 +50,9 @@ export async function resolveAIConfig(userId?: string, feature?: 'review' | 'cha
     // Prioritize feature-specific keys
     if (feature === 'review' && isValid(envReview)) {
         apiKey = envReview;
-    } 
+    } else if ((feature === 'eligibility' || feature === 'comparison') && isValid(envEligibility)) {
+        apiKey = envEligibility;
+    }  
     
     if (!apiKey) {
         if (isValid(envGroq)) apiKey = envGroq;
