@@ -20,7 +20,7 @@ export interface ChatMessage {
 /**
  * Fetch all chat sessions for a given user, ordered by most recently updated
  */
-export async function getUserChatSessions(userId: string, appContext: "founder_gpt" | "kasb_studio" = "founder_gpt"): Promise<ChatSession[]> {
+export async function getUserChatSessions(userId: string, appContext: "founder_gpt" | "kasb_studio" | "kasb_review" = "founder_gpt"): Promise<ChatSession[]> {
     let query = supabase
         .from('ai_chat_sessions')
         .select('*')
@@ -28,8 +28,10 @@ export async function getUserChatSessions(userId: string, appContext: "founder_g
 
     if (appContext === "kasb_studio") {
         query = query.eq('personality_id', 'Kasb Studio');
+    } else if (appContext === "kasb_review") {
+        query = query.eq('personality_id', 'Kasb Review');
     } else {
-        query = query.neq('personality_id', 'Kasb Studio');
+        query = query.neq('personality_id', 'Kasb Studio').neq('personality_id', 'Kasb Review');
     }
 
     const { data, error } = await query.order('updated_at', { ascending: false });

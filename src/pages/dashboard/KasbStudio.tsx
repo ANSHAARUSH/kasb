@@ -530,11 +530,23 @@ export default function KasbStudio() {
     // Initial load logic: fetch sessions
     useEffect(() => {
         if (user) {
-            getUserChatSessions(user.id, "kasb_studio").then((data) => {
+            const contextType = mode === 'review' ? 'kasb_review' : 'kasb_studio';
+            getUserChatSessions(user.id, contextType).then((data) => {
                 setSessions(data);
             });
         }
-    }, [user]);
+    }, [user, mode]);
+
+    const switchMode = (newMode: 'studio' | 'review') => {
+        if (mode === newMode) return;
+        setMode(newMode);
+        setMessages([]);
+        setQuery("");
+        setError(null);
+        setCurrentSessionId(null);
+        setSelectedFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
 
     const loadSession = async (sessionId: string) => {
         setCurrentSessionId(sessionId);
@@ -570,18 +582,39 @@ export default function KasbStudio() {
         
         try {
             const userLabel = content instanceof File ? `Review document: ${content.name}` : (content.length > 100 ? content.substring(0, 100) + '...' : content);
-            const userMsgId = `user-${Date.now()}`;
-            setMessages([{ id: userMsgId, role: 'user', content: userLabel, created_at: new Date().toISOString() }]);
             
+            let sessionId = currentSessionId;
+            if (!sessionId && user) {
+                const session = await createChatSession(user.id, "Kasb Review", userLabel);
+                if (session) {
+                    sessionId = session.id;
+                    setCurrentSessionId(sessionId);
+                    setSessions(prev => [session, ...prev]);
+                }
+            }
+
+            const userMsgId = `user-${Date.now()}`;
+            setMessages(prev => [...prev, { id: userMsgId, role: 'user', content: userLabel, created_at: new Date().toISOString(), session_id: sessionId || '' }]);
+            
+            if (sessionId) {
+                await saveChatMessage(sessionId, 'user', userLabel);
+            }
+
             const result = await reviewStartupDocument(content, additionalPrompt || undefined);
             
+            const stringifiedResult = JSON.stringify({ type: 'document_review', ...result });
             const assistantMsg = { 
                 id: `ai-${Date.now()}`, 
                 role: 'assistant', 
-                content: JSON.stringify({ type: 'document_review', ...result }), 
-                created_at: new Date().toISOString() 
+                content: stringifiedResult, 
+                created_at: new Date().toISOString(),
+                session_id: sessionId || ''
             };
             setMessages(prev => [...prev, assistantMsg]);
+            
+            if (sessionId) {
+                await saveChatMessage(sessionId, 'assistant', stringifiedResult);
+            }
             
             // Clear file and query
             setSelectedFile(null);
@@ -835,7 +868,7 @@ export default function KasbStudio() {
                                 theme.border
                             )}>
                                 <button 
-                                    onClick={() => setMode('studio')}
+                                    onClick={() => switchMode('studio')}
                                     className={cn(
                                         "px-4 py-1 sm:px-5 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
                                         mode === 'studio' ? theme.shutterThumb : theme.shutterTextInactive
@@ -844,7 +877,7 @@ export default function KasbStudio() {
                                     Studio
                                 </button>
                                 <button 
-                                    onClick={() => setMode('review')}
+                                    onClick={() => switchMode('review')}
                                     className={cn(
                                         "px-4 py-1 sm:px-5 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all duration-300",
                                         mode === 'review' ? theme.shutterThumb : theme.shutterTextInactive
