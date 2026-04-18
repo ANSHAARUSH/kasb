@@ -18,7 +18,7 @@ export function SideNav() {
     const navItems = [
         { icon: Home, label: "Feed", href: dashboardHome },
         { icon: History, label: "Saved", href: historyRoute },
-        { icon: MessageSquare, label: "Messages", href: messagesRoute },
+        { icon: MessageSquare, label: "Inbox", href: messagesRoute },
         ...(isStartupDashboard ? [
             { icon: Sparkles, label: "Founder GPT", href: '/dashboard/startup/foundergpt' },
             { icon: Wrench, label: "Kasb Studio", href: '/dashboard/startup/studio' },

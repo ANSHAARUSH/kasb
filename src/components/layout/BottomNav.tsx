@@ -19,7 +19,7 @@ export function BottomNav() {
     const navItems = [
         { icon: Home, label: "Feed", href: dashboardHome },
         { icon: History, label: "Saved", href: historyRoute },
-        { icon: MessageSquare, label: "Messages", href: messagesRoute },
+        { icon: MessageSquare, label: "Inbox", href: messagesRoute },
         ...(isStartupDashboard ? [
             { icon: Sparkles, label: "Founder GPT", href: '/dashboard/startup/foundergpt' },
             { icon: FileText, label: "Cheat Sheet", href: '/dashboard/startup/cheatsheet' }
