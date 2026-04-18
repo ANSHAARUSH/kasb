@@ -129,6 +129,12 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
     };
 
     const handleSubmit = async () => {
+        // Validation
+        if (!editForm.name || !answers['contact_info']?.['linkedin'] || !answers['contact_info']?.['email']) {
+            toast("Company Name, LinkedIn Profile, and Contact Email are required fields.", "error")
+            return
+        }
+
         // Check if stage has changed
         const stageChanged = editForm.stage !== startup.stage
 
@@ -264,6 +270,34 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Industry</label>
                             <Input value={editForm.industry || ''} onChange={e => setEditForm({ ...editForm, industry: e.target.value })} />
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 px-1">Contact Information</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Contact Email <span className="text-red-500">*</span></label>
+                                <Input 
+                                    type="email"
+                                    value={answers['contact_info']?.['email'] || ''} 
+                                    onChange={e => setAnswers(prev => ({
+                                        ...prev,
+                                        contact_info: { ...prev.contact_info, email: e.target.value }
+                                    }))} 
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">LinkedIn Profile URL <span className="text-red-500">*</span></label>
+                                <Input 
+                                    type="url"
+                                    value={answers['contact_info']?.['linkedin'] || ''} 
+                                    onChange={e => setAnswers(prev => ({
+                                        ...prev,
+                                        contact_info: { ...prev.contact_info, linkedin: e.target.value }
+                                    }))} 
+                                />
+                            </div>
                         </div>
                     </div>
 

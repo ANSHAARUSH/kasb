@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import type { InvestorProfileData, InvestorProfileDetails } from "../../../hooks/useInvestorProfile"
 import { COUNTRIES, CITIES } from "../../../lib/locationData"
 import { EXPERTISE_AREAS } from "../../../lib/constants"
+import { useToast } from "../../../hooks/useToast"
 
 interface EditProfileModalProps {
     isOpen: boolean
@@ -26,6 +27,7 @@ const TABS = [
 ]
 
 export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: EditProfileModalProps) {
+    const { toast } = useToast()
     const [activeTab, setActiveTab] = useState('basic')
     const [editForm, setEditForm] = useState<Partial<InvestorProfileData>>({})
 
@@ -36,6 +38,11 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
     }, [isOpen, investor])
 
     const handleSave = async () => {
+        if (!editForm.name || !editForm.profile_details?.social_proof?.linkedin || !editForm.profile_details?.communication?.contact_email) {
+            toast("Name, LinkedIn Profile, and Contact Email are required fields.", "error")
+            return
+        }
+
         const success = await onSave(editForm)
         if (success) {
             onClose()
@@ -495,6 +502,16 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
                             </div>
 
                             <div className="space-y-2">
+                                <label className="text-sm font-medium">Contact Email <span className="text-red-500">*</span></label>
+                                <Input
+                                    type="email"
+                                    value={editForm.profile_details?.communication?.contact_email || ''}
+                                    onChange={e => updateProfileDetails('communication', 'contact_email', e.target.value)}
+                                    placeholder="you@example.com"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
                                 <label className="text-sm font-medium">Typical Response Time</label>
                                 <Input
                                     value={editForm.profile_details?.communication?.response_time || ''}
@@ -524,8 +541,9 @@ export function EditProfileModal({ isOpen, onClose, investor, onSave, saving }: 
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">LinkedIn Profile URL</label>
+                                <label className="text-sm font-medium">LinkedIn Profile URL <span className="text-red-500">*</span></label>
                                 <Input
+                                    type="url"
                                     value={editForm.profile_details?.social_proof?.linkedin || ''}
                                     onChange={e => updateProfileDetails('social_proof', 'linkedin', e.target.value)}
                                     placeholder="https://linkedin.com/in/..."

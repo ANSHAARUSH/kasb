@@ -38,6 +38,8 @@ export default function Onboarding() {
     const [name, setName] = useState("")
     const [state, setState] = useState("")
     const [city, setCity] = useState("")
+    const [linkedin, setLinkedin] = useState("")
+    const [contactEmail, setContactEmail] = useState("")
 
     // Startup Specific
     const [companyName, setCompanyName] = useState('')
@@ -61,6 +63,9 @@ export default function Onboarding() {
             if (user.user_metadata?.full_name && !name) {
                 setName(user.user_metadata.full_name)
             }
+            if (user.email && !contactEmail) {
+                setContactEmail(user.email)
+            }
         }
     }, [user, authLoading])
 
@@ -73,10 +78,11 @@ export default function Onboarding() {
             return true
         }
         if (step === 3) {
+            const baseValid = name.trim() !== '' && linkedin.trim() !== '' && contactEmail.trim() !== ''
             if (role === 'startup') {
-                return name.trim() !== '' && companyName.trim() !== '' && selectedIndustry !== ''
+                return baseValid && companyName.trim() !== '' && selectedIndustry !== ''
             } else {
-                return name.trim() !== '' && investorType !== '' && investmentRange.trim() !== ''
+                return baseValid && investorType !== '' && investmentRange.trim() !== ''
             }
         }
         if (step === 4) {
@@ -242,7 +248,13 @@ export default function Onboarding() {
                         state,
                         city,
                         kyc_status: 'pending',
-                        questionnaire: questionnaire
+                        questionnaire: {
+                            ...questionnaire,
+                            contact_info: {
+                                linkedin: linkedin,
+                                email: contactEmail
+                            }
+                        }
                     })
 
                 if (insertError) throw insertError
@@ -263,7 +275,16 @@ export default function Onboarding() {
                         expertise: expertise,
                         state,
                         city,
-                        kyc_status: 'pending'
+                        kyc_status: 'pending',
+                        profile_details: {
+                            social_proof: {
+                                linkedin: linkedin
+                            },
+                            communication: {
+                                contact_mode: ['Email'],
+                                contact_email: contactEmail
+                            }
+                        }
                     })
 
                 if (insertError) throw insertError
@@ -579,6 +600,28 @@ export default function Onboarding() {
                                                         placeholder="Your Name"
                                                         value={name}
                                                         onChange={(e) => setName(e.target.value)}
+                                                        className="h-12 rounded-xl focus:ring-black"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-700">Contact Email</label>
+                                                    <Input
+                                                        required
+                                                        type="email"
+                                                        placeholder="you@example.com"
+                                                        value={contactEmail}
+                                                        onChange={(e) => setContactEmail(e.target.value)}
+                                                        className="h-12 rounded-xl focus:ring-black"
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-gray-700">LinkedIn Profile URL</label>
+                                                    <Input
+                                                        required
+                                                        type="url"
+                                                        placeholder="https://linkedin.com/in/..."
+                                                        value={linkedin}
+                                                        onChange={(e) => setLinkedin(e.target.value)}
                                                         className="h-12 rounded-xl focus:ring-black"
                                                     />
                                                 </div>

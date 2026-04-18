@@ -57,6 +57,7 @@ export default function SignUp() {
     // Form States
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
+    const [linkedin, setLinkedin] = useState('')
     const [password, setPassword] = useState('')
     const [showPassword, setShowPassword] = useState(false)
 
@@ -213,6 +214,9 @@ export default function SignUp() {
                     ? [...selectedExpertise.filter(e => e !== 'Others'), customExpertise]
                     : selectedExpertise
             }
+
+            metadata.linkedin = linkedin
+            metadata.contact_email = email
 
             const { data: { user }, error: authError } = await supabase.auth.signUp({
                 email,
@@ -390,6 +394,17 @@ export default function SignUp() {
                                         placeholder="john@example.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        className="h-12 rounded-xl border-gray-100 focus:ring-black"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-gray-700">LinkedIn Profile URL</label>
+                                    <Input
+                                        required
+                                        type="url"
+                                        placeholder="https://linkedin.com/in/..."
+                                        value={linkedin}
+                                        onChange={(e) => setLinkedin(e.target.value)}
                                         className="h-12 rounded-xl border-gray-100 focus:ring-black"
                                     />
                                 </div>
