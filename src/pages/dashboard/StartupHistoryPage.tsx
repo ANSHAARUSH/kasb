@@ -8,7 +8,7 @@ import { supabase, getClosedDeals, getUserSetting, getGlobalConfig } from "../..
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
-import { compareInvestors, type ComparisonResult } from "../../lib/ai"
+import { compareInvestors, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
@@ -190,26 +190,14 @@ export default function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         // Priority: Groq -> Env -> DB Global -> DB User
-         const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
-         let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
-
-         if (!apiKey) {
-            const globalKey = await getGlobalConfig('ai_api_key')
-            if (globalKey) apiKey = globalKey
-         }
-
-         if (!apiKey && user) {
-            const storedKey = await getUserSetting(user.id, 'ai_api_key')
-            if (storedKey) apiKey = storedKey
-         }
-
-         if (!apiKey) {
+         const aiConfig = await resolveAIConfig(user?.id, 'comparison')
+         if (!aiConfig?.apiKey) {
             toast("AI features are not setup. Please contact the administrator.", "error")
             return
          }
 
-         const baseUrl = import.meta.env.VITE_OPENAI_BASE_URL
+         const apiKey = aiConfig.apiKey
+         const baseUrl = aiConfig.baseUrl
          const result = await compareInvestors(val1, val2, apiKey, baseUrl)
 
          // Track successful comparison
