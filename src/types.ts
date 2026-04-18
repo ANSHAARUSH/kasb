@@ -55,4 +55,6 @@ export interface ChatUser {
     name: string
     avatar: string
     role?: 'startup' | 'investor'
+    unreadCount?: number
+    lastMessageTime?: string
 }

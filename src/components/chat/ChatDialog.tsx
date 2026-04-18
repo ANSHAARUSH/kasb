@@ -177,6 +177,13 @@ export function ChatDialog() {
                                                         <div className="font-bold text-sm text-gray-900">{chat.name}</div>
                                                         <div className="text-xs text-gray-500 capitalize">{chat.role}</div>
                                                     </div>
+                                                    {chat.unreadCount ? (
+                                                        <div className="ml-auto flex shrink-0">
+                                                            <span className="bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full shadow-sm">
+                                                                {chat.unreadCount}
+                                                            </span>
+                                                        </div>
+                                                    ) : null}
                                                 </button>
                                             ))}
                                         </div>

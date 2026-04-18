@@ -39,16 +39,27 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         const { data } = await supabase
             .from('messages')
-            .select('sender_id, receiver_id')
+            .select('sender_id, receiver_id, created_at, is_read')
             .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
             .order('created_at', { ascending: false })
 
         // ... error handling ...
 
         const uniqueUserIds = new Set<string>()
+        const unreadCounts: Record<string, number> = {}
+        const lastMessageTimes: Record<string, string> = {}
+
         data?.forEach((msg: any) => {
-            if (msg.sender_id !== user.id) uniqueUserIds.add(msg.sender_id)
-            if (msg.receiver_id !== user.id) uniqueUserIds.add(msg.receiver_id)
+            const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+            uniqueUserIds.add(otherId)
+
+            if (!lastMessageTimes[otherId]) {
+                lastMessageTimes[otherId] = msg.created_at
+            }
+
+            if (msg.receiver_id === user.id && !msg.is_read) {
+                unreadCounts[otherId] = (unreadCounts[otherId] || 0) + 1
+            }
         })
 
         const ids = Array.from(uniqueUserIds)
@@ -82,12 +93,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
             sData?.forEach((s: { id: string, name: string, logo: string }) => {
                 if (!adminIds.has(s.id)) {
-                    chatUsers.push({ id: s.id, name: s.name, avatar: s.logo || '🚀', role: 'startup' })
+                    chatUsers.push({ id: s.id, name: s.name, avatar: s.logo || '🚀', role: 'startup', unreadCount: unreadCounts[s.id] || 0, lastMessageTime: lastMessageTimes[s.id] })
                 }
             })
             iData?.forEach((i: { id: string, name: string, avatar: string }) => {
                 if (!adminIds.has(i.id)) {
-                    chatUsers.push({ id: i.id, name: i.name, avatar: i.avatar || '👤', role: 'investor' })
+                    chatUsers.push({ id: i.id, name: i.name, avatar: i.avatar || '👤', role: 'investor', unreadCount: unreadCounts[i.id] || 0, lastMessageTime: lastMessageTimes[i.id] })
                 }
             })
         }
@@ -97,8 +108,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             id: 'kasb-ai-bot',
             name: 'Kasb AI',
             avatar: `${import.meta.env.BASE_URL}kasb-assistant-avatar.webp`,
-            role: 'investor' // Use investor role for admin-like styling
+            role: 'investor', // Use investor role for admin-like styling
+            lastMessageTime: new Date().toISOString() // Keep on top
         }
+
+        // Sort rest of the users by last message time
+        chatUsers.sort((a, b) => {
+            const timeA = new Date(a.lastMessageTime || 0).getTime()
+            const timeB = new Date(b.lastMessageTime || 0).getTime()
+            return timeB - timeA
+        })
 
         setRecentChats([aiBot, ...chatUsers])
     }, [user])
@@ -194,7 +213,22 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setMessages([])
         setActiveUser(chatUser)
         setIsOpen(true)
-    }, [])
+
+        // Mark messages as read
+        if (chatUser && user && chatUser.id !== 'kasb-ai-bot') {
+            supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('sender_id', chatUser.id)
+                .eq('receiver_id', user.id)
+                .eq('is_read', false)
+                .then(({ error }) => {
+                    if (!error) {
+                        fetchRecentChats() // Refresh to update unread counts
+                    }
+                })
+        }
+    }, [user, fetchRecentChats])
 
     const closeChat = useCallback(() => {
         setMessages([])

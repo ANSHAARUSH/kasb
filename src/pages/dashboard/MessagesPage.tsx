@@ -31,6 +31,7 @@ interface Conversation {
     lastMessage: string
     time: string
     unread: number
+    rawTime?: number
 }
 
 export default function MessagesPage() {
@@ -119,11 +120,16 @@ export default function MessagesPage() {
         if (!user) return
 
         const conversationMap = new Map<string, Message>()
+        const unreadCounts = new Map<string, number>()
 
         msgs.forEach(msg => {
             if (msg.is_deleted) return
             const otherId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
             conversationMap.set(otherId, msg) // Keeps the latest one because we sorted by time
+
+            if (msg.receiver_id === user.id && !msg.is_read) {
+                unreadCounts.set(msg.sender_id, (unreadCounts.get(msg.sender_id) || 0) + 1)
+            }
         })
 
         const otherIds = Array.from(conversationMap.keys())
@@ -183,9 +189,12 @@ export default function MessagesPage() {
                     avatar: profile?.avatar || '',
                     lastMessage: lastMsg.content,
                     time: new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    unread: 0 // logic for unread count can be added here
+                    unread: unreadCounts.get(id) || 0,
+                    rawTime: new Date(lastMsg.created_at).getTime()
                 }
             })
+
+        formatted.sort((a, b) => (b.rawTime || 0) - (a.rawTime || 0))
 
         const finalConversations = [...formatted]
 
@@ -275,6 +284,30 @@ export default function MessagesPage() {
         prevActiveLen.current = activeMessages.length
         prevChat.current = selectedChat
     }, [activeMessages.length, selectedChat])
+
+    // Mark messages as read when selecting a chat
+    useEffect(() => {
+        if (!user || !selectedChat || selectedChat === 'kasb-ai-bot') return
+
+        const markAsRead = async () => {
+            const { error } = await supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('sender_id', selectedChat)
+                .eq('receiver_id', user.id)
+                .eq('is_read', false)
+
+            if (!error) {
+                // Locally update messages state so UI updates immediately
+                setMessages(prev => prev.map(m => 
+                    (m.sender_id === selectedChat && m.receiver_id === user.id && !m.is_read)
+                        ? { ...m, is_read: true }
+                        : m
+                ))
+            }
+        }
+        markAsRead()
+    }, [user, selectedChat])
 
     // Effect to update conversations when messages change (e.g. real-time)
     useEffect(() => {
