@@ -53,21 +53,22 @@ export async function resolveAIConfig(userId?: string, feature?: 'review' | 'cha
         apiKey = envReview;
     } else if ((feature === 'eligibility' || feature === 'comparison') && isValid(envEligibility)) {
         apiKey = envEligibility;
-    }  
+    }
+
+    // 2. Check Supabase Global Config (High priority override)
+    if (!apiKey) {
+        const globalKey = await getGlobalConfig('ai_api_key');
+        if (isValid(globalKey)) apiKey = globalKey as string;
+    }
     
+    // 3. Fallback to generic Environment Variables
     if (!apiKey) {
         if (isValid(envGroq)) apiKey = envGroq;
         else if (isValid(envGemini)) apiKey = envGemini;
         else if (isValid(envOpenAI)) apiKey = envOpenAI;
     }
 
-    // 2. Check Supabase Global Config
-    if (!apiKey) {
-        const globalKey = await getGlobalConfig('ai_api_key');
-        if (isValid(globalKey)) apiKey = globalKey as string;
-    }
-
-    // 3. Check User Settings
+    // 4. Final fallback to User Settings
     if (!apiKey && userId) {
         const userKey = await getUserSetting(userId, 'ai_api_key');
         if (isValid(userKey)) apiKey = userKey as string;
