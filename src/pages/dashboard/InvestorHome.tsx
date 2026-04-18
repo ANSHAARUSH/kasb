@@ -241,9 +241,12 @@ export default function InvestorHome() {
         })
 
         enriched.sort((a, b) => {
-            // Randomized feed for free plan on discover tab
+            // Stable randomized feed for free plan on discover tab
             if (!isPaid && activeFeed === 'discover') {
-                return Math.random() - 0.5;
+                const seed = new Date().toDateString()
+                const hashA = (a.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+                const hashB = (b.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+                return hashA - hashB
             }
 
             // High Impact Sort (uses impact points, not the algorithm)

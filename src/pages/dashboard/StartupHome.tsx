@@ -172,8 +172,13 @@ export default function StartupHome() {
             // Top investors tab: sort by investment count
             base.sort((a, b) => (b.investments || 0) - (a.investments || 0))
         } else if (!isPaid) {
-            // Randomized feed for free plan
-            base.sort(() => Math.random() - 0.5)
+            // Stable randomized feed for free plan (consistent within a day)
+            const seed = new Date().toDateString()
+            base.sort((a, b) => {
+                const hashA = (a.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+                const hashB = (b.id + seed).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+                return hashA - hashB
+            })
         } else {
             // Paid Discover: algorithmic sort
             const scored = base.map(inv => {
