@@ -17,11 +17,13 @@ export function SideNav() {
     const profileRoute = isStartupDashboard ? '/dashboard/startup/profile' : '/dashboard/investor/profile'
     const navItems = [
         { icon: Home, label: "Feed", href: dashboardHome },
-        { icon: History, label: "Saved", href: historyRoute },
-        { icon: MessageSquare, label: "Inbox", href: messagesRoute },
         ...(isStartupDashboard ? [
             { icon: Sparkles, label: "Founder GPT", href: '/dashboard/startup/foundergpt' },
-            { icon: Wrench, label: "Kasb Studio", href: '/dashboard/startup/studio' },
+            { icon: Wrench, label: "Kasb Studio", href: '/dashboard/startup/studio' }
+        ] : []),
+        { icon: MessageSquare, label: "Inbox", href: messagesRoute },
+        { icon: History, label: "Saved", href: historyRoute },
+        ...(isStartupDashboard ? [
             { icon: FileText, label: "Cheat Sheet", href: '/dashboard/startup/cheatsheet' }
         ] : [
             { icon: Sparkles, label: "Kasb AI", href: '/dashboard/investor/cheatsheet' }
