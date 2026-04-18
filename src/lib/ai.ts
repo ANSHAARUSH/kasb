@@ -36,6 +36,7 @@ import type { AnalysisResult } from "./documentIntelligence";
  * Centralized logic to resolve the best available AI API key and its corresponding base URL.
  * Priority: Feature-specific Env -> Env (Groq -> Gemini -> OpenAI) -> Supabase Global -> Supabase User
  */
+// Resolves the best available AI API key. Uses VITE_ELIGIBILITY_API_KEY for eligibility/comparison features.
 export async function resolveAIConfig(userId?: string, feature?: 'review' | 'chat' | 'eligibility' | 'comparison') {
     // 1. Check Environment Variables
     const envReview = import.meta.env.VITE_REVIEW_API_KEY;
