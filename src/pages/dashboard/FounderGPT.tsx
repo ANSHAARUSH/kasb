@@ -723,16 +723,21 @@ const getRelativeTimeString = (dateString: string) => {
                 </div>
                 
                 {/* Centered Title */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
                     {isPiranha ? null : (
                         <>
-                            <Sparkles className={cn("h-4 w-4", theme.accentText)} />
-                            <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.textMuted)}>Founder GPT Beta</span>
-                            {hasMessages && (
-                                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full ml-1 pointer-events-auto", "text-indigo-500 bg-indigo-50")}>
-                                    {personalities.find(p => p.id === personality)?.icon} {personality}
-                                </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                                <Sparkles className={cn("h-4 w-4", theme.accentText)} />
+                                <span className={cn("text-[10px] font-black uppercase tracking-widest", theme.textMuted)}>Founder GPT Beta</span>
+                                {hasMessages && (
+                                    <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full ml-1 pointer-events-auto", "text-indigo-500 bg-indigo-50")}>
+                                        {personalities.find(p => p.id === personality)?.icon} {personality}
+                                    </span>
+                                )}
+                            </div>
+                            <span className={cn("text-[8px] font-semibold tracking-[0.2em] uppercase mt-1 opacity-60", theme.textMuted)}>
+                                Trained on your private startup data
+                            </span>
                         </>
                     )}
                 </div>
