@@ -450,7 +450,6 @@ export default function KasbStudio() {
         if (fileInputRef.current) fileInputRef.current.value = "";
     };
 
-    const [isHeaderVisible, setIsHeaderVisible] = useState(true);
     const [isToolsOpen, setIsToolsOpen] = useState(false);
     const [isCopied, setIsCopied] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -487,40 +486,7 @@ export default function KasbStudio() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isLoading]);
 
-    useEffect(() => {
-        let timeout: NodeJS.Timeout;
 
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isSidebarOpen) {
-                setIsHeaderVisible(true);
-                return;
-            }
-
-            // Show if near top (Increase sensitivity to 200px for better UX)
-            if (e.clientY < 200) {
-                setIsHeaderVisible(true);
-                clearTimeout(timeout);
-            } else {
-                // If the pointer is anywhere else, wait 2 seconds before hiding
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    setIsHeaderVisible(false);
-                }, 2000);
-            }
-        };
-
-        window.addEventListener("mousemove", handleMouseMove);
-
-        // Auto collapse after quick setup delay
-        timeout = setTimeout(() => {
-            if (!isSidebarOpen) setIsHeaderVisible(false);
-        }, 1500);
-
-        return () => {
-            window.removeEventListener("mousemove", handleMouseMove);
-            clearTimeout(timeout);
-        };
-    }, [isSidebarOpen]);
 
     // State management for Kasb Studio AI History
     const { user } = useAuth();
@@ -836,21 +802,12 @@ export default function KasbStudio() {
                 )}
             </AnimatePresence>
 
-            {/* Header - Auto Hiding Wrapper */}
+            {/* Header */}
             <div className="sticky top-0 z-50 pointer-events-none w-full h-0">
-                {/* Invisible Top Sensor for Mouse Triggering (Fixes mid-chat visibility) */}
-                <div 
-                    className="fixed top-0 left-0 right-0 h-8 z-[60] pointer-events-auto cursor-ns-resize" 
-                    onMouseEnter={() => setIsHeaderVisible(true)}
-                    onMouseMove={() => setIsHeaderVisible(true)}
-                />
-
                 <motion.div 
                     initial={{ y: 0 }}
-                    animate={{ y: isHeaderVisible || isSidebarOpen || isToolsOpen ? 0 : "-100%" }}
-                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    animate={{ y: 0 }}
                     className="absolute top-0 left-0 right-0 z-50 pointer-events-auto"
-                    onMouseEnter={() => setIsHeaderVisible(true)}
                 >
                     <header className={cn("flex flex-col relative backdrop-blur-md border-b shadow-md", isReview ? "bg-white/80 border-gray-200" : "bg-black/80 border-gray-900")}>
                         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3 z-10 relative">
