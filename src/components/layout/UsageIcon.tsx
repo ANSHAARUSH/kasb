@@ -73,11 +73,11 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                             : { opacity: 0, x: -10, scale: 0.95 }
                         }
                         className={cn(
-                            "absolute p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-indigo-100 z-[100] animate-in fade-in md:w-80 w-72",
-                            placement === 'top' && !isMobile && "bottom-full mb-3 slide-in-from-bottom-2",
-                            placement === 'top' && isMobile && "top-full mt-2 slide-in-from-top-2",
-                            placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : (isMobile ? "right-[-40px] sm:right-0" : "right-0")),
-                            placement === 'right' && "left-full top-1/2 -translate-y-1/2 ml-4 slide-in-from-left-2"
+                            "p-4 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-indigo-100 z-[100] animate-in fade-in md:w-80",
+                            isMobile ? "fixed top-[68px] left-4 right-4 w-auto slide-in-from-top-2" : "absolute w-72",
+                            !isMobile && placement === 'top' && "bottom-full mb-3 slide-in-from-bottom-2",
+                            !isMobile && placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : "right-0"),
+                            !isMobile && placement === 'right' && "left-full top-1/2 -translate-y-1/2 ml-4 slide-in-from-left-2"
                         )}
                     >
                         {/* Tooltip Header */}
@@ -140,10 +140,10 @@ export function UsageIcon({ className, showLabel = false, placement = 'top', isM
                         {/* Arrow */}
                         <div className={cn(
                             "absolute border-8 border-transparent",
-                            placement === 'top' && !isMobile && "top-full border-t-white",
-                            placement === 'top' && isMobile && "bottom-full border-b-white",
-                            placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : (isMobile ? "right-[56px] sm:right-4" : "right-4")),
-                            placement === 'right' && "right-full top-1/2 -translate-y-1/2 border-r-white"
+                            !isMobile && placement === 'top' && "top-full border-t-white",
+                            !isMobile && placement === 'top' && (showLabel ? "left-1/2 -translate-x-1/2" : "right-4"),
+                            !isMobile && placement === 'right' && "right-full top-1/2 -translate-y-1/2 border-r-white",
+                            isMobile && "bottom-full border-b-white right-[88px]"
                         )} />
                     </motion.div>
                 )}
