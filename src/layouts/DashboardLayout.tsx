@@ -74,7 +74,7 @@ export function DashboardLayout() {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 md:pl-64 h-full bg-white">
                 {/* Mobile Header */}
-                <header className="sticky top-0 z-40 flex items-center bg-black border-b border-white/10 px-4 sm:px-6 py-4">
+                <header className="sticky top-0 z-[70] flex items-center bg-black border-b border-white/10 px-4 sm:px-6 py-4">
                     <div className="flex-1 md:hidden">
                         <div className="flex items-center gap-2.5">
                             <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" className="h-7 w-auto rounded-md" />
