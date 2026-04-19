@@ -10,8 +10,6 @@ import {
     getConnectionStatus,
     disconnectConnection,
     sendConnectionRequest,
-    getGlobalConfig,
-    getUserSetting,
     trackProfileView,
     acceptConnectionRequest,
     declineConnectionRequest,
@@ -22,11 +20,12 @@ import {
 } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
+import { sanitizeError } from "../../lib/security"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { calculateImpactScore } from "../../lib/scoring"
 import { type Investor } from "../../data/mockData"
 import { Input } from "../ui/input"
-import { generateValuationInsights, generateFounderAnalysis } from "../../lib/ai"
+import { proxyValuation, proxyFounderAnalysis } from "../../lib/aiProxy"
 import { Avatar } from "../ui/Avatar"
 import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section, type Question } from "../../lib/questionnaire"
 import { cn, parseRevenue, getViewableUrl } from "../../lib/utils"
@@ -188,8 +187,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             onConnectionChange?.(startup.id)
             toast("Connection request sent", "success")
         } catch (error: any) {
-            console.error(error)
-            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsConnecting(false)
         }
@@ -205,8 +203,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             onConnectionChange?.(startup!.id)
             toast("Connection accepted!", "success")
         } catch (error: any) {
-            console.error(error)
-            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsProcessing(false)
         }
@@ -221,8 +218,7 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             onConnectionChange?.(startup!.id)
             toast("Connection declined", "info")
         } catch (error: any) {
-            console.error(error)
-            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsProcessing(false)
         }
@@ -240,54 +236,69 @@ export function StartupDetail({ startup, onClose, onDisconnect, onResize, curren
             onConnectionChange?.(startup.id)
             onClose()
         } catch (error: any) {
-            console.error(error)
-            toast(`Failed to disconnect: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsDisconnecting(false)
         }
     }
 
     const handleGenerateValuation = async () => {
+        if (!startup) return
         setIsGeneratingValuation(true)
         try {
-            let apiKey = import.meta.env.VITE_GROQ_API_KEY
-            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
-            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+            const prompt = `
+    Analyze the following startup data and provide investment valuation insights.
 
-            if (!apiKey) {
-                toast("AI features not configured.", "error")
-                return
-            }
-
-            const insights = await generateValuationInsights(startup, apiKey)
+    Startup: ${startup.name}
+    Stage: ${startup.metrics.stage}
+    Traction: ${startup.metrics.traction}
+    Industry: ${startup.industry || "Not provided"}
+    
+    Provide a professional analysis covering:
+    1. Estimated Valuation Range (based on similar market multiples)
+    2. Key Value Drivers
+    3. Potential Valuation Risks
+    4. Recommendations for Next Round
+    
+    TONE: Conservative, analytical, and data-driven.
+    `;
+            const insights = await proxyValuation(prompt)
             setValuationInsights(insights)
             toast("Valuation insights generated", "success")
         } catch (error: any) {
-            console.error(error)
-            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsGeneratingValuation(false)
         }
     }
 
     const handleGenerateFounderAnalysis = async () => {
+        if (!startup) return
         setIsGeneratingFounderAnalysis(true)
         try {
-            let apiKey = import.meta.env.VITE_GROQ_API_KEY
-            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
-            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+            const prompt = `
+    Analyze the founder's profile for the following startup and provide strategic investor insights.
 
-            if (!apiKey) {
-                toast("AI features not configured.", "error")
-                return
-            }
+    Founder: ${startup.founder.name}
+    Bio: ${startup.founder.bio}
+    Education: ${startup.founder.education}
+    Work History: ${startup.founder.workHistory}
+    Startup: ${startup.name}
+    Industry: ${startup.industry || "Not provided"}
 
-            const insights = await generateFounderAnalysis(startup, apiKey)
+    Provide a professional analysis covering:
+    1. Founder-Market Fit (How their background fits this industry)
+    2. Scalability Potential (Based on past experience)
+    3. Technical/Commercial Strategic Value
+    4. Notable Strengths & Potential Blind Spots
+
+    TONE: Professional, insightful, and oriented towards investor risk/opportunity assessment.
+    `;
+            const insights = await proxyFounderAnalysis(prompt)
             setFounderAnalysis(insights)
             toast("Founder analysis generated", "success")
         } catch (error: any) {
-            console.error(error)
-            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
         } finally {
             setIsGeneratingFounderAnalysis(false)
         }

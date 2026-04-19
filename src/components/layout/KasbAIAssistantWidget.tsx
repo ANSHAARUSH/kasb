@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Sparkles, Home, Minus, Loader2, Search } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
-import { chatWithAIStream } from '../../lib/ai';
+import { proxyChatKasb } from '../../lib/aiProxy';
 import { useAuth } from '../../context/AuthContext';
 import { useStartupProfile } from '../../hooks/useStartupProfile';
 import { buildFounderContext } from '../../lib/founderContext';
@@ -72,34 +72,28 @@ export function KasbAIAssistantWidget() {
         setQuery('');
         setIsLoading(true);
 
-        const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
+        const apiKey = ''; // No longer needed - proxy handles keys
         
         try {
-            let currentAiContent = "";
-            
             // Add placeholder for AI response
-            setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-            await chatWithAIStream(
+            const responseText = await proxyChatKasb(
                 text,
                 newMessages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-                apiKey,
-                (chunk) => {
-                    currentAiContent += chunk;
-                    setMessages(prev => {
-                        const updated = [...prev];
-                        if (updated.length > 0) {
-                            updated[updated.length - 1] = { 
-                                ...updated[updated.length - 1], 
-                                content: currentAiContent 
-                            };
-                        }
-                        return updated;
-                    });
-                },
-                undefined,
                 founderContext || undefined
             );
+
+            setMessages(prev => {
+                const updated = [...prev];
+                if (updated.length > 0) {
+                    updated[updated.length - 1] = { 
+                        ...updated[updated.length - 1], 
+                        content: responseText 
+                    };
+                }
+                return updated;
+            });
 
             // Save to localStorage after completion
             setMessages(prev => {

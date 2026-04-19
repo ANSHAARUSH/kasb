@@ -7,7 +7,7 @@ import type { StartupProfileData } from "../../../hooks/useStartupProfile"
 import { ShieldCheck, Sparkles, Loader2 } from "lucide-react"
 import { saveUserSetting } from "../../../lib/supabase"
 import { extractFullTextFromDocument } from "../../../lib/documentExtraction"
-import { extractStartupDetailsFromPitchDeck, refineProblemStatement } from "../../../lib/ai"
+import { proxyExtractPitch, proxyRefineProblem } from "../../../lib/aiProxy"
 import { Upload, FileText, CheckCircle2 } from "lucide-react"
 import { useRef } from "react"
 import { useToast } from "../../../hooks/useToast"
@@ -39,10 +39,7 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
 
         try {
             const extractedText = await extractFullTextFromDocument(file)
-            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
-            if (!apiKey) throw new Error('System AI key is not configured. Please enter details manually.')
-
-            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+            const details = await proxyExtractPitch(extractedText)
 
             setEditForm(prev => {
                 const newForm = { ...prev }
@@ -106,18 +103,9 @@ export function EditProfileModal({ isOpen, onClose, startup, onSave, saving }: E
     const handleRefineWithAI = async () => {
         if (!editForm.problem_solving) return;
 
-        const apiKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || '';
-        if (!apiKey) {
-            toast("API Key missing. Please check Admin Settings.", "error");
-            return;
-        }
-
         setRefining(true);
         try {
-            const refined = await refineProblemStatement(
-                editForm.problem_solving,
-                apiKey
-            );
+            const refined = await proxyRefineProblem(editForm.problem_solving);
             setEditForm(prev => ({ ...prev, problem_solving: refined }));
             toast("Problem statement refined!", "success");
         } catch (err) {

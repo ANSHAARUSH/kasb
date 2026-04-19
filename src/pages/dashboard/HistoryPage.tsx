@@ -4,12 +4,13 @@ import { StartupDetail } from "../../components/dashboard/StartupDetail"
 import { StartupComparisonView } from "../../components/dashboard/StartupComparisonView"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { supabase, getUserSetting, getGlobalConfig, getClosedDeals } from "../../lib/supabase"
+import { supabase, getClosedDeals } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import type { Startup } from "../../data/mockData"
 import type { StartupDB } from "../../types"
-import { compareStartups, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
+import { type ComparisonResult } from "../../lib/aiProxy"
+import { proxyCompareStartups } from "../../lib/aiProxy"
 import { Button } from "../../components/ui/button"
 import { Sparkles, Lock, X } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
@@ -218,15 +219,7 @@ export default function HistoryPage() {
         setIsComparing(true)
 
         try {
-            const aiConfig = await resolveAIConfig(user.id, 'comparison')
-            if (!aiConfig?.apiKey) {
-                toast("AI features are not setup. Please contact the administrator.", "error")
-                return
-            }
-
-            const apiKey = aiConfig.apiKey
-            const baseUrl = aiConfig.baseUrl
-            const result = await compareStartups(s1, s2, apiKey, baseUrl)
+            const result = await proxyCompareStartups(s1, s2)
 
             // Track successful comparison
             subscriptionManager.trackCompare(s1.id, s2.id)

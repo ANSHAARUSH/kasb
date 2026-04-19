@@ -1,7 +1,7 @@
 import { motion } from "framer-motion"
 import { X, Trophy, AlertTriangle, Target, TrendingUp } from "lucide-react"
 import type { Startup } from "../../data/mockData"
-import type { ComparisonResult } from "../../lib/ai"
+import type { ComparisonResult } from "../../lib/aiProxy"
 import { Button } from "../ui/button"
 import { Avatar } from "../ui/Avatar"
 

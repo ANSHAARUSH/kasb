@@ -3,10 +3,12 @@ import type { Investor } from "../../data/mockData"
 import { X, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Target, Zap, Award, CheckCircle2, ExternalLink, Loader2, ChevronDown, ChevronUp, Landmark } from "lucide-react"
 import { Button } from "../ui/button"
 import { useState, useEffect } from "react"
-import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus, getGlobalConfig, getUserSetting } from "../../lib/supabase"
-import { checkEligibility, identifyMissingEligibilityData, resolveAIConfig, type EligibilityResult, type MissingField } from "../../lib/ai"
+import { supabase, getConnectionStatus, disconnectConnection, sendConnectionRequest, acceptConnectionRequest, declineConnectionRequest, type ConnectionStatus } from "../../lib/supabase"
+import { type EligibilityResult, type MissingField } from "../../lib/aiProxy"
+import { proxyCheckEligibility, proxyMissingFields } from "../../lib/aiProxy"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
+import { sanitizeError } from "../../lib/security"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { Avatar } from "../ui/Avatar"
 import { useNavigate } from "react-router-dom"
@@ -159,22 +161,27 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
 
         try {
             const { data: startupData } = await supabase.from('startups').select('*').eq('id', user.id).single()
-            const aiConfig = await resolveAIConfig(user.id, 'eligibility')
-            
-            if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
-            
-            const envKey = aiConfig.apiKey
-            const baseUrl = aiConfig.baseUrl
-
             const finalCriteria = criteria && criteria.length > 0 
                 ? criteria 
                 : ["Technology sector startup", "Early or growth stage", "Scalable business model"]
 
             // 1. Get Preliminary Match Score first
-            const prelimResult = await checkEligibility(startupData, finalCriteria, envKey, baseUrl)
+            const prelimResult = await proxyCheckEligibility(startupData, finalCriteria)
             
             // 2. Use reasoning to discover missing info more accurately
-            const missing = await identifyMissingEligibilityData(startupData, finalCriteria, envKey, baseUrl, prelimResult.reasoning)
+            const profileSummary = Object.entries(startupData || {})
+                .filter(([key, _]) => !['id', 'created_at', 'user_id', 'logo', 'avatar', 'logo_url'].includes(key))
+                .map(([key, val]) => {
+                    if (val === null || val === undefined || val === '') return `${key}: Unknown/Missing`;
+                    if (Array.isArray(val)) return `${key}: ${val.length > 0 ? val.join(', ') : 'Unknown/Empty'}`;
+                    if (typeof val === 'object') return null;
+                    const stringVal = String(val);
+                    return `${key}: ${stringVal.length > 300 ? stringVal.substring(0, 300) + '...' : stringVal}`;
+                })
+                .filter(Boolean)
+                .join('\n');
+
+            const missing = await proxyMissingFields(profileSummary, finalCriteria)
 
             setEligibilityResult(prelimResult)
             setDynamicQuestions(missing || [])
@@ -185,8 +192,7 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
             setShowImprovementMCQ(false)
 
         } catch (error: any) {
-            console.error(error)
-            toast(`Failed to check eligibility: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
             setIsEligibilityModalOpen(false)
         } finally {
             setIsCheckingEligibility(false)
@@ -198,21 +204,14 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
         try {
             // Merge MCQ answers into startup data
             const mergedData = { ...(pendingStartupData || {}), ...mcqAnswers }
-            const aiConfig = await resolveAIConfig(user?.id, 'eligibility')
-            
-            if (!aiConfig?.apiKey) throw new Error("AI API Key not configured")
-
-            const envKey = aiConfig.apiKey
-            const baseUrl = aiConfig.baseUrl
-            const res = await checkEligibility(mergedData, pendingCriteria, envKey, baseUrl)
+            const res = await proxyCheckEligibility(mergedData, pendingCriteria)
             
             setEligibilityResult(res)
             setEligibilityModalMode('result')
             setShowImprovementMCQ(false)
             toast("Match score updated with new information!", "success")
         } catch (error: any) {
-            console.error(error)
-            toast(`AI refinement failed: ${error.message || 'Unknown error'}`, "error")
+            toast(sanitizeError(error), "error")
             setEligibilityModalMode('result')
         }
     }

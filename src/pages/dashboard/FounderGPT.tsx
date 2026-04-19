@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, Home, FileText, Trophy, Fish, UserCircle, Mic, Skull, Share2 } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../../components/ui/button"
-import { chatWithPersonality } from "../../lib/ai"
+import { proxyChat } from "../../lib/aiProxy"
 import { useAuth } from "../../context/AuthContext"
 import { getUserChatSessions, getChatMessages, createChatSession, saveChatMessage, deleteChatSession, type ChatSession } from "../../lib/aiHistory"
 import { useNavigate } from "react-router-dom"
@@ -192,23 +192,7 @@ const getRelativeTimeString = (dateString: string) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages])
 
-    // Get the correct API key based on selected personality
-    const getApiKeyForPersonality = (selectedPersonality: string) => {
-        if (selectedPersonality === "Melon Tusk") {
-            return import.meta.env.VITE_ELON_MUSK_API_KEY;
-        }
-        if (selectedPersonality === "Steven Dobs") {
-            return import.meta.env.VITE_STEVEN_DOBS_API_KEY;
-        }
-        if (selectedPersonality === "Marek Zane") {
-            return import.meta.env.VITE_MAREK_ZANE_API_KEY;
-        }
-        if (selectedPersonality === "Will Grates") {
-            return import.meta.env.VITE_WILL_GRATES_API_KEY;
-        }
-        // Fallback to the default API key
-        return import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-    }
+
     // Keyword expertise map for each mentor
     const MENTOR_KEYWORDS: Record<string, string[]> = {
         "Steven Dobs": [
@@ -291,22 +275,6 @@ const getRelativeTimeString = (dateString: string) => {
         setIsLoading(true);
 
         try {
-            const apiKey = getApiKeyForPersonality(targetMentor);
-            if (!apiKey) {
-                const errorMsg: ChatMessage = {
-                    id: `ai-err-${Date.now()}`,
-                    role: "assistant",
-                    content: `⚠️ API key not configured for ${targetMentor}.`,
-                    timestamp: new Date().toISOString(),
-                    mentorId: targetMentor,
-                    originalPrompt
-                };
-                setMessages(prev => [...prev, errorMsg]);
-                setIsLoading(false);
-                setIsSwitching(false);
-                return;
-            }
-
             // Build history excluding the removed last AI message
             const currentMessages = messages.filter((_, i) => {
                 const lastAiIndex = [...messages].reverse().findIndex(m => m.role === "assistant");
@@ -317,14 +285,11 @@ const getRelativeTimeString = (dateString: string) => {
                 content: m.content
             }));
 
-            const responseText = await chatWithPersonality(
+            const responseText = await proxyChat(
+                targetMentor,
                 originalPrompt,
                 history,
-                apiKey,
-                targetMentor,
-                undefined,
-                brutalMode,
-                founderContext || undefined
+                { brutalMode, founderContext: founderContext || undefined }
             );
 
             if (currentSessionId) {
@@ -406,33 +371,16 @@ const getRelativeTimeString = (dateString: string) => {
                 await saveChatMessage(sessionId, "user", userText)
             }
 
-            const apiKey = getApiKeyForPersonality(activeMentor)
-            
-            if (!apiKey) {
-                const errorMsg: ChatMessage = {
-                    id: `ai-err-${Date.now()}`,
-                    role: "assistant",
-                    content: "⚠️ API key not configured. Please add your API key to the environment variables.",
-                    timestamp: new Date().toISOString()
-                }
-                setMessages(prev => [...prev, errorMsg])
-                setIsLoading(false)
-                return
-            }
-
             const history = messages.map(m => ({
                 role: m.role,
                 content: m.content
             }))
 
-            const responseText = await chatWithPersonality(
+            const responseText = await proxyChat(
+                activeMentor,
                 userText,
                 history,
-                apiKey,
-                activeMentor,
-                undefined,
-                brutalMode,
-                !isPiranha ? (founderContext || undefined) : undefined
+                { brutalMode, founderContext: !isPiranha ? (founderContext || undefined) : undefined }
             )
 
             if (sessionId) {

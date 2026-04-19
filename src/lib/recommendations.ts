@@ -1,4 +1,4 @@
-import { runInference } from "./ai";
+import { proxyRecommend } from "./aiProxy";
 import type { Startup, Investor } from "../data/mockData";
 
 export interface MatchRecommendation {
@@ -151,7 +151,7 @@ Return a JSON object with this exact structure:
 Rank by match score (highest first). Include all investors.`;
 
     try {
-        const content = await runInference(apiKey, prompt);
+        const content = await proxyRecommend(prompt);
 
         const cleanedContent = cleanJsonString(content);
         console.log('AI Investor Recommendation Response:', cleanedContent);
@@ -257,7 +257,7 @@ Return a JSON object with this exact structure:
 Rank by match score (highest first). Include all startups.`;
 
     try {
-        const content = await runInference(apiKey, prompt);
+        const content = await proxyRecommend(prompt);
 
         const cleanedContent = cleanJsonString(content);
         console.log('AI Startup Recommendation Response:', cleanedContent);

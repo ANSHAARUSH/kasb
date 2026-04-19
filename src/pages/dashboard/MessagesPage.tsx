@@ -7,7 +7,7 @@ import { useAuth } from "../../context/AuthContext"
 import { Avatar } from "../../components/ui/Avatar"
 import { Link } from "react-router-dom"
 import { useToast } from "../../hooks/useToast"
-import { chatWithAIStream, refineMessage } from "../../lib/ai"
+import { proxyChatKasb, proxyRefineMessage } from "../../lib/aiProxy"
 import { Wand2 } from "lucide-react"
 import { subscriptionManager } from "../../lib/subscriptionManager"
 import { useNavigate } from "react-router-dom"
@@ -383,23 +383,10 @@ export default function MessagesPage() {
                     content: m.content
                 })) as { role: 'user' | 'assistant', content: string }[]
 
-                const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
-                console.log("API Key present:", !!apiKey)
+                // Keys are now server-side
+                console.log("Calling proxyChatKasb...")
 
-                if (!apiKey) {
-                    const errorMsg: Message = {
-                        id: 'ai-err-' + Date.now(),
-                        sender_id: 'kasb-ai-bot',
-                        receiver_id: user.id,
-                        content: "I'm sorry, my AI brain is not configured. Please check Admin Settings.",
-                        created_at: new Date().toISOString(),
-                        is_read: true
-                    }
-                    setMessages(prev => [...prev, errorMsg])
-                    return
-                }
-
-                // Create placeholder AI message for streaming
+                // Create placeholder AI message
                 const aiMsgId = 'ai-' + Date.now();
                 const placeholderMsg: Message = {
                     id: aiMsgId,
@@ -411,24 +398,19 @@ export default function MessagesPage() {
                 };
                 setMessages(prev => [...prev, placeholderMsg]);
 
-                console.log("Calling chatWithAIStream...");
-
-                // Use streaming version
-                await chatWithAIStream(
+                const responseText = await proxyChatKasb(
                     newMessage,
-                    historyForAI,
-                    apiKey,
-                    (chunk) => {
-                        // Update message content in real-time
-                        setMessages(prev => prev.map(m =>
-                            m.id === aiMsgId
-                                ? { ...m, content: m.content + chunk }
-                                : m
-                        ));
-                    }
+                    historyForAI
                 );
 
-                console.log("AI stream completed");
+                // Update message with response
+                setMessages(prev => prev.map(m =>
+                    m.id === aiMsgId
+                        ? { ...m, content: responseText }
+                        : m
+                ));
+
+                console.log("AI response completed");
 
                 // Save to localStorage
                 setMessages(prev => {
@@ -485,16 +467,9 @@ export default function MessagesPage() {
             return
         }
 
-        const apiKey = import.meta.env.VITE_KASB_ASSISTANT_API_KEY || import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('groq_api_key') || ''
-        if (!apiKey) {
-            toast("API Key missing. Please check Admin Settings.", "error")
-            return
-        }
-
         setIsRefining(true)
         try {
-            // Call AI to refine the message text
-            const refined = await refineMessage(newMessage, apiKey)
+            const refined = await proxyRefineMessage(newMessage)
             setNewMessage(refined)
             toast("Message refined!", "success")
         } catch (err) {

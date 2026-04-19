@@ -9,7 +9,7 @@ import { supabase } from "../../lib/supabase"
 import { Mail, ArrowRight, Eye, EyeOff, Upload, PenLine, Loader2, FileText, CheckCircle2, Sparkles } from "lucide-react"
 import { StartupFields } from "./signup/StartupFields"
 import { InvestorFields } from "./signup/InvestorFields"
-import { refineProblemStatement, extractStartupDetailsFromPitchDeck } from "../../lib/ai"
+import { proxyRefineProblem, proxyExtractPitch } from "../../lib/aiProxy"
 import { getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import { INDUSTRIES, EXPERTISE_AREAS, APP_URL } from "../../lib/constants"
@@ -93,10 +93,9 @@ export default function SignUp() {
 
         try {
             const extractedText = await extractFullTextFromDocument(file)
-            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
-            if (!apiKey) throw new Error('System AI key is not configured. Please use manual entry.')
-
-            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+            
+            // Call Edge Function to extract details without needing keys in browser
+            const details = await proxyExtractPitch(extractedText)
 
             if (details.companyName) setCompanyName(details.companyName)
             if (details.industry && INDUSTRIES.includes(details.industry as any)) {
@@ -162,17 +161,7 @@ export default function SignUp() {
         if (!problemSolving.trim()) return
         setIsRefining(true)
         try {
-            let apiKey = import.meta.env.VITE_GROQ_API_KEY
-            if (!apiKey) {
-                apiKey = await getGlobalConfig('ai_api_key') || ''
-            }
-
-            if (!apiKey) {
-                toast("AI features are not setup. Please contact the administrator.", "error")
-                return
-            }
-
-            const refined = await refineProblemStatement(problemSolving, apiKey)
+            const refined = await proxyRefineProblem(problemSolving)
             setProblemSolving(refined)
             toast("Problem statement refined!", "success")
         } catch (err: unknown) {

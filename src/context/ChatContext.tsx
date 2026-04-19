@@ -4,15 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../hooks/useToast'
 import { type Message, type ChatUser } from '../types'
 import { ChatContext } from '../hooks/useChat'
-// Lazy-loaded to avoid pulling the entire AI SDK into the main bundle
-let _chatWithAI: typeof import('../lib/ai').chatWithAI | null = null;
-async function getChatWithAI() {
-    if (!_chatWithAI) {
-        const mod = await import('../lib/ai');
-        _chatWithAI = mod.chatWithAI;
-    }
-    return _chatWithAI;
-}
+import { proxyChatKasb } from '../lib/aiProxy'
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth()
@@ -268,30 +260,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 })) as { role: 'user' | 'assistant', content: string }[]
 
                 // Try getting key from all sources
-                const envKey = import.meta.env.VITE_GROQ_API_KEY
-                const localKey = localStorage.getItem('groq_api_key')
-                const apiKey = envKey || localKey || ''
+                // Keys are now server-side — no need for client key resolution
 
-                console.log(`Keys check - Env: ${!!envKey}, Local: ${!!localKey}, Final: ${!!apiKey}`)
-
-                if (!apiKey) {
-                    console.warn("No API key found in ChatContext!")
-                    const errorMsg: Message = {
-                        id: 'ai-err-' + Date.now(),
-                        sender_id: 'kasb-ai-bot',
-                        receiver_id: user.id,
-                        content: "I'm sorry, I am not connected to my brain (API Key missing).",
-                        created_at: new Date().toISOString(),
-                        is_read: true
-                    }
-                    setMessages(prev => [...prev, errorMsg])
-                    return
-                }
-
-                console.log("Calling chatWithAI...")
-                const chatWithAI = await getChatWithAI()
-                const responseText = await chatWithAI(content, historyForAI, apiKey)
-                console.log("chatWithAI returned:", responseText ? responseText.substring(0, 20) + "..." : "EMPTY/NULL")
+                console.log("Calling proxyChatKasb...")
+                const responseText = await proxyChatKasb(
+                    content,
+                    historyForAI
+                )
+                console.log("proxyChatKasb returned:", responseText ? responseText.substring(0, 20) + "..." : "EMPTY/NULL")
 
                 const aiMsg: Message = {
                     id: 'ai-' + Date.now(),

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import { X, Trophy, DollarSign, Briefcase, Award } from "lucide-react"
-import type { ComparisonResult } from "../../lib/ai"
+import type { ComparisonResult } from "../../lib/aiProxy"
 import { Button } from "../ui/button"
 import type { Investor } from "../../data/mockData"
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { generateInvestorRecommendations, generateStartupRecommendations, type RecommendationResult, clearRecommendationCache, getFriendlyErrorMessage } from '../lib/recommendations';
 import type { Startup, Investor } from '../data/mockData';
-import { getGlobalConfig, getUserSetting, getRecentViews } from '../lib/supabase';
+import { getRecentViews } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { subscriptionManager } from '../lib/subscriptionManager';
 
@@ -26,26 +26,15 @@ export function useRecommendations({ type, currentProfile, availableEntities }: 
         setError(null);
 
         try {
-            // Get API key - Prioritize Gemini, but ignore placeholders
-            // Priority: Groq -> Env -> DB Global -> DB User
-            const envKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY;
-            let apiKey = (envKey && !envKey.includes('your_') && !envKey.includes('here')) ? envKey : '';
-
-            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || '';
-            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || '';
-
-            if (!apiKey) {
-                throw new Error('AI API key not configured. Please set it in your environment or settings.');
-            }
+            // API key is now server-side — pass empty string, recommendations module will be refactored
+            const apiKey = 'proxy'; // Placeholder — will be removed when recommendations module is fully proxied
 
             let result: RecommendationResult;
 
             if (type === 'investor') {
-                // Fetch recent views to provide behavioral context
                 const recentViewIds = await getRecentViews(currentProfile.id, 5);
                 const recentViews = (availableEntities as Startup[]).filter(s => recentViewIds.includes(s.id));
 
-                // Current user is an investor, recommend startups
                 result = await generateStartupRecommendations(
                     currentProfile as Investor,
                     availableEntities as Startup[],
@@ -53,7 +42,6 @@ export function useRecommendations({ type, currentProfile, availableEntities }: 
                     recentViews as Startup[]
                 );
             } else {
-                // Current user is a startup, recommend investors
                 result = await generateInvestorRecommendations(
                     currentProfile as Startup,
                     availableEntities as Investor[],
