@@ -18,10 +18,10 @@ import {
   Zap
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { askKasbStudio } from "../../lib/services/studioAiService";
 import { getUserChatSessions, createChatSession, saveChatMessage, getChatMessages, deleteChatSession, type ChatSession } from "../../lib/aiHistory";
 import { useAuth } from "../../context/AuthContext";
-import { proxyStudio, proxyReview } from "../../lib/aiProxy";
-import type { DocumentReviewResult } from "../../lib/aiProxy";
+import { reviewStartupDocument, type DocumentReviewResult } from "../../lib/ai";
 import { CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
 
 import { MobileViewSwitcher } from "../../components/chat/MobileViewSwitcher";
@@ -566,7 +566,7 @@ export default function KasbStudio() {
                 await saveChatMessage(sessionId, 'user', userLabel);
             }
 
-            const result = await proxyReview(typeof content === 'string' ? content : await content.text()) as DocumentReviewResult;
+            const result = await reviewStartupDocument(content, additionalPrompt || undefined);
             
             const stringifiedResult = JSON.stringify({ type: 'document_review', ...result });
             const assistantMsg = { 
@@ -610,6 +610,13 @@ export default function KasbStudio() {
 
         if (!query.trim() || isLoading) return;
 
+        // Exclusively use Groq/Kasb keys for Studio architecture; remove Gemini fallback to avoid 404s
+        const apiKey = import.meta.env.VITE_KASB_STUDIO_API_KEY || import.meta.env.VITE_GROQ_API_KEY;
+
+        if (!apiKey) {
+            setError("Missing Kasb Studio API Key. Please add VITE_KASB_STUDIO_API_KEY (Groq) to your hosting dashboard.");
+            return;
+        }
 
         const userText = query.trim();
         setIsLoading(true);
@@ -647,7 +654,7 @@ export default function KasbStudio() {
                 await saveChatMessage(sessionId, 'user', userText);
             }
 
-            const aiResponse = await proxyStudio(userText, prevContext);
+            const aiResponse = await askKasbStudio(userText, apiKey, prevContext);
             
             const newResult = {
                 tool: aiResponse.suggestedTool,

@@ -5,8 +5,7 @@ import { getGlobalConfig, getUserSetting } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
 import { motion, AnimatePresence } from "framer-motion"
-import { proxyAnalyzeDoc } from "../../lib/aiProxy"
-import { extractFullTextFromDocument } from "../../lib/documentExtraction"
+import { analyzeStartupDocument } from "../../lib/ai"
 import type { AnalysisResult } from "../../lib/documentIntelligence"
 
 interface DocumentUploadItemProps {
@@ -95,39 +94,23 @@ export function DocumentUploadItem({ item, stage, isDone, onVerified }: Document
         setFeedback(null)
         setAnalysis(null)
         try {
+            // Get API Key
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) {
+                apiKey = await getGlobalConfig('ai_api_key') || ''
+            }
+            if (!apiKey) {
+                apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+            }
+
+            if (!apiKey) {
+                toast("AI services not configured. Verification unavailable.", "error")
+                return
+            }
+
             // 1. Intelligent Analysis
             setVerifying('intelligence')
-            const textContent = await extractFullTextFromDocument(selectedFile)
-            
-            const prompt = `
-    Analyze this startup document using investor due-diligence standards. 
-    Startup Stage: ${stage}
-    Document Type: ${item.label}
-    Format: Text-based
-
-    Tasks:
-    1. Summarize key information
-    2. Check alignment with required documents for this stage
-    3. Identify missing or weak sections
-    4. Detect investor risk signals (specifically for ${stage} stage)
-    5. Suggest improvements
-
-    Return the output ONLY as a valid JSON object with this exact structure:
-    {
-        "document_type": "string",
-        "stage_relevance": "Mandatory | Optional",
-        "sections_detected": ["string"],
-        "summary": "string",
-        "missing_sections": ["string"],
-        "risk_signals": ["string"],
-        "suggestions": ["string"]
-    }
-
-    Document Content:
-    ${textContent}
-    `;
-
-            const analysisResult = await proxyAnalyzeDoc(prompt)
+            const analysisResult = await analyzeStartupDocument(selectedFile, item.label, stage, apiKey)
             setAnalysis(analysisResult)
 
             // 2. Official Verification simulation if applicable

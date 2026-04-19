@@ -4,12 +4,11 @@ import { InvestorDetail } from "../../components/dashboard/InvestorDetail"
 import { cn } from "../../lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "../../context/AuthContext"
-import { supabase, getClosedDeals } from "../../lib/supabase"
+import { supabase, getClosedDeals, getUserSetting, getGlobalConfig } from "../../lib/supabase"
 import { useToast } from "../../hooks/useToast"
 import type { Investor } from "../../data/mockData"
 import type { InvestorDB } from "../../types"
-import { type ComparisonResult } from "../../lib/aiProxy"
-import { proxyCompareInvestors } from "../../lib/aiProxy"
+import { compareInvestors, resolveAIConfig, type ComparisonResult } from "../../lib/ai"
 import { InvestorComparisonView } from "../../components/dashboard/InvestorComparisonView"
 import { Button } from "../../components/ui/button"
 import { Sparkles } from "lucide-react"
@@ -191,7 +190,15 @@ export default function StartupHistoryPage() {
       setIsComparing(true)
 
       try {
-         const result = await proxyCompareInvestors(val1, val2)
+         const aiConfig = await resolveAIConfig(user?.id, 'comparison')
+         if (!aiConfig?.apiKey) {
+            toast("AI features are not setup. Please contact the administrator.", "error")
+            return
+         }
+
+         const apiKey = aiConfig.apiKey
+         const baseUrl = aiConfig.baseUrl
+         const result = await compareInvestors(val1, val2, apiKey, baseUrl)
 
          // Track successful comparison
          subscriptionManager.trackCompare(val1.id, val2.id)

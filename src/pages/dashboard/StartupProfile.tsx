@@ -6,14 +6,15 @@ import { useStartupProfile } from "../../hooks/useStartupProfile"
 import { ProfileView } from "./startup/ProfileView"
 import { EditProfileModal } from "./startup/EditProfileModal"
 import { DeleteAccountModal } from "../../components/dashboard/DeleteAccountModal"
-import { supabase } from "../../lib/supabase"
+import { getGlobalConfig, getUserSetting, supabase } from "../../lib/supabase"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
-import { sanitizeError } from "../../lib/security"
+import { subscriptionManager } from "../../lib/subscriptionManager"
 
-
+import { cn } from "../../lib/utils"
 import { 
     Sparkles, 
+    FileText, 
     Loader2, 
     ChevronRight, 
     CheckCircle2,
@@ -21,13 +22,12 @@ import {
 } from "lucide-react"
 import { useRef } from "react"
 import { motion } from "framer-motion"
-import { proxyExtractPitch } from "../../lib/aiProxy"
-import { extractFullTextFromDocument } from "../../lib/documentExtraction"
+import { extractStartupInfoFromPitchDeck } from "../../lib/ai"
 import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
 
 export default function StartupProfile() {
     const { startup, loading, saving, updateProfile, requestReview } = useStartupProfile()
-    const { signOut } = useAuth()
+    const { user, signOut } = useAuth()
     const { toast } = useToast()
     const [isEditOpen, setIsEditOpen] = useState(false)
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -42,11 +42,15 @@ export default function StartupProfile() {
         setIsAutoFilling(true)
         setAutoFillSuccess(false)
         try {
-            // 1. Extract text from document
-            const extractedText = await extractFullTextFromDocument(file)
+            // 1. Get API key
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+            
+            if (!apiKey) throw new Error('System AI key is not configured.')
 
-            // 2. Extract structured details via AI Proxy
-            const details = await proxyExtractPitch(extractedText)
+            // 2. Extract structured details via AI
+            const details = await extractStartupInfoFromPitchDeck(file, apiKey)
 
             // 3. Build questionnaire from extracted data
             const mappedQ: Record<string, Record<string, string>> = { ...(startup?.questionnaire || {}) }
@@ -103,7 +107,8 @@ export default function StartupProfile() {
                 toast('Failed to save extracted data.', 'error')
             }
         } catch (err: any) {
-            toast(sanitizeError(err), 'error')
+            console.error('Profile auto-fill failed:', err)
+            toast(`Auto-fill failed: ${err.message}`, 'error')
         } finally {
             setIsAutoFilling(false)
         }
@@ -120,7 +125,8 @@ export default function StartupProfile() {
             await signOut()
             window.location.href = '/'
         } catch (err: any) {
-            toast(sanitizeError(err), 'error')
+            const message = err?.message || "An unknown error occurred"
+            alert("Error deleting account: " + message)
         }
     }
 

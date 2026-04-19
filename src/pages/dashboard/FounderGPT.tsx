@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, Home, FileText, Trophy, Fish, UserCircle, Mic, Skull, Share2 } from "lucide-react"
+import { Sparkles, Menu, Plus, History, X, Search, Send, MessageSquare, ChevronDown, ChevronLeft, ChevronRight, Loader2, User, Bot, Flame, Trash2, RefreshCw, ArrowUp, FileText, Trophy, Fish, Mic, Skull, Share2 } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../../components/ui/button"
-import { proxyChat } from "../../lib/aiProxy"
+import { chatWithPersonality } from "../../lib/ai"
 import { useAuth } from "../../context/AuthContext"
 import { getUserChatSessions, getChatMessages, createChatSession, saveChatMessage, deleteChatSession, type ChatSession } from "../../lib/aiHistory"
 import { useNavigate } from "react-router-dom"
@@ -54,13 +54,22 @@ export default function FounderGPT() {
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-    const isPiranha = false;
+    const [isPiranha, setIsPiranha] = useState(false)
+    const [ptTab, setPtTab] = useState<'home' | 'chat' | 'hall' | 'pitches' | 'choose_sharks' | 'sharks'>('home')
+    const [selectedSharks, setSelectedSharks] = useState<string[]>(['notam', 'boat', 'push'])
     
     // New Features States
     const [isListening, setIsListening] = useState(false)
     const [allowInterruption, setAllowInterruption] = useState(false)
     const [harshMode, setHarshMode] = useState(false)
     const recognitionRef = useRef<any>(null)
+
+    const ribbonItems = [
+        { id: 'home', label: 'TANK', icon: Fish },
+        { id: 'chat', label: 'PITCH', icon: Flame },
+        { id: 'hall', label: 'HALL', icon: Trophy },
+        { id: 'pitches', label: 'HISTORY', icon: History }
+    ]
 
 
     // Theme Orchestration
@@ -114,6 +123,9 @@ const ptSharks = [
     };
 
     const [sessions, setSessions] = useState<ChatSession[]>([])
+    const piranhaSessions = useMemo(() => {
+        return sessions.filter(s => s.personality_id?.toLowerCase().includes('piranha') || s.personality_id === 'Piranha Panel');
+    }, [sessions]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(() => {
         return sessionStorage.getItem('foundergpt_sessionId') || null;
     })
@@ -192,7 +204,23 @@ const getRelativeTimeString = (dateString: string) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages])
 
-
+    // Get the correct API key based on selected personality
+    const getApiKeyForPersonality = (selectedPersonality: string) => {
+        if (selectedPersonality === "Melon Tusk") {
+            return import.meta.env.VITE_ELON_MUSK_API_KEY;
+        }
+        if (selectedPersonality === "Steven Dobs") {
+            return import.meta.env.VITE_STEVEN_DOBS_API_KEY;
+        }
+        if (selectedPersonality === "Marek Zane") {
+            return import.meta.env.VITE_MAREK_ZANE_API_KEY;
+        }
+        if (selectedPersonality === "Will Grates") {
+            return import.meta.env.VITE_WILL_GRATES_API_KEY;
+        }
+        // Fallback to the default API key
+        return import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+    }
     // Keyword expertise map for each mentor
     const MENTOR_KEYWORDS: Record<string, string[]> = {
         "Steven Dobs": [
@@ -275,6 +303,22 @@ const getRelativeTimeString = (dateString: string) => {
         setIsLoading(true);
 
         try {
+            const apiKey = getApiKeyForPersonality(targetMentor);
+            if (!apiKey) {
+                const errorMsg: ChatMessage = {
+                    id: `ai-err-${Date.now()}`,
+                    role: "assistant",
+                    content: `⚠️ API key not configured for ${targetMentor}.`,
+                    timestamp: new Date().toISOString(),
+                    mentorId: targetMentor,
+                    originalPrompt
+                };
+                setMessages(prev => [...prev, errorMsg]);
+                setIsLoading(false);
+                setIsSwitching(false);
+                return;
+            }
+
             // Build history excluding the removed last AI message
             const currentMessages = messages.filter((_, i) => {
                 const lastAiIndex = [...messages].reverse().findIndex(m => m.role === "assistant");
@@ -285,11 +329,14 @@ const getRelativeTimeString = (dateString: string) => {
                 content: m.content
             }));
 
-            const responseText = await proxyChat(
-                targetMentor,
+            const responseText = await chatWithPersonality(
                 originalPrompt,
                 history,
-                { brutalMode, founderContext: founderContext || undefined }
+                apiKey,
+                targetMentor,
+                undefined,
+                brutalMode,
+                founderContext || undefined
             );
 
             if (currentSessionId) {
@@ -371,16 +418,33 @@ const getRelativeTimeString = (dateString: string) => {
                 await saveChatMessage(sessionId, "user", userText)
             }
 
+            const apiKey = getApiKeyForPersonality(activeMentor)
+            
+            if (!apiKey) {
+                const errorMsg: ChatMessage = {
+                    id: `ai-err-${Date.now()}`,
+                    role: "assistant",
+                    content: "⚠️ API key not configured. Please add your API key to the environment variables.",
+                    timestamp: new Date().toISOString()
+                }
+                setMessages(prev => [...prev, errorMsg])
+                setIsLoading(false)
+                return
+            }
+
             const history = messages.map(m => ({
                 role: m.role,
                 content: m.content
             }))
 
-            const responseText = await proxyChat(
-                activeMentor,
+            const responseText = await chatWithPersonality(
                 userText,
                 history,
-                { brutalMode, founderContext: !isPiranha ? (founderContext || undefined) : undefined }
+                apiKey,
+                activeMentor,
+                undefined,
+                brutalMode,
+                !isPiranha ? (founderContext || undefined) : undefined
             )
 
             if (sessionId) {
@@ -464,7 +528,7 @@ const getRelativeTimeString = (dateString: string) => {
 
     const handleNewChat = () => {
         if (isPiranha) {
-            setPtMessages([])
+            setMessages([])
             setQuery("")
             setIsSidebarOpen(false)
             if (ptTab === 'chat') setPtTab('home')
@@ -606,6 +670,34 @@ const getRelativeTimeString = (dateString: string) => {
 
                             <div className="flex-1 overflow-y-auto space-y-6">
                                 {/* Mode Switcher (GPT vs Tank) */}
+                                <div className="px-2 mb-6">
+                                    <div className={cn("p-1.5 rounded-2xl flex items-center gap-1", isPiranha ? "bg-red-950/20 border border-red-900/30" : "bg-white/5 border border-white/10")}>
+                                        <button
+                                            onClick={() => setIsPiranha(false)}
+                                            className={cn(
+                                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                !isPiranha ? "bg-white text-black shadow-lg" : "text-gray-500 hover:text-gray-300"
+                                            )}
+                                        >
+                                            <Bot className="h-3.5 w-3.5" />
+                                            Mentor
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsPiranha(true)
+                                                if (ptTab === 'home') setPtTab('home')
+                                            }}
+                                            className={cn(
+                                                "flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                                isPiranha ? "bg-red-600 text-white shadow-[0_0_15px_rgba(255,0,0,0.3)]" : "text-gray-500 hover:text-gray-300"
+                                            )}
+                                        >
+                                            <Fish className="h-3.5 w-3.5" />
+                                            Tank
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* Unified Mobile View Switcher */}
                                 <MobileViewSwitcher currentView="foundergpt" />
 

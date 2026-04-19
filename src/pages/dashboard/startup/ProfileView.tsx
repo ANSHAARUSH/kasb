@@ -12,7 +12,7 @@ import { getStartupBoosts, supabase } from "../../../lib/supabase"
 import { useAuth } from "../../../context/AuthContext"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
-import { proxyInvestorSummary } from "../../../lib/aiProxy"
+import { generateInvestorSummary } from "../../../lib/ai"
 import { useToast } from "../../../hooks/useToast"
 import { COUNTRIES } from "../../../lib/locationData"
 import { ValuationCalculator } from "../../../components/dashboard/ValuationCalculator"
@@ -147,43 +147,11 @@ export function ProfileView({ startup, onRequestReview, onSave, saving, readOnly
                 }
             })
 
-            const prompt = `
-    TASK: Convert the following structured startup questionnaire answers into a professional, high-impact investor summary.
-    
-    CONTEXT:
-    Startup Stage: ${localStartup.stage || startup.stage || 'Ideation'}
-    Data: ${JSON.stringify(filteredAnswers)}
-
-    The data is organized into 10 critical investor sections:
-    1. Founder Snapshot (Background & Motivation)
-    2. Problem Clarity (Pain point & underserved segments)
-    3. Solution & Product Thinking (Core value prop & roadmap)
-    4. Market Understanding (TAM/SAM/SOM & competition)
-    5. Validation Signals (Experiments & early feedback)
-    6. Business Model Logic (Revenue streams & pricing)
-    7. Execution Readiness (Unit economics & milestones)
-    8. Legal & Ownership (Structure & IP)
-    9. Founder Integrity (Ethics & compliance)
-    10. Final Commitment (Burn rate & goals)
-
-    CORE PRINCIPLES (STRICT ADHERENCE REQUIRED):
-    1. Use ONLY provided information. Do not infer, assume, or fabricate facts.
-    2. Omit sections where information is missing.
-    3. Rewrite for clarity, professional flow, and investor impact.
-    4. TONE: Objective, factual, and analytical. Avoid marketing hype.
-    5. STANDARDIZATION: Use clear headings. Use bullet points for key data points.
-
-    OUTPUT STRUCTURE:
-    - Executive Summary (Strong 2-3 sentence overview)
-    - Problem & Solution (Context and value proposition)
-    - Market & Competition (Scale and differentiation)
-    - Traction & Milestones (Current progress and near-term goals)
-    - Team & Vision (Why these founders?)
-
-    Provide the summary as a structured professional narrative.
-    `;
-
-            const summary = await proxyInvestorSummary(prompt)
+            const summary = await generateInvestorSummary(
+                filteredAnswers,
+                localStartup.stage || startup.stage || 'Ideation',
+                import.meta.env.VITE_GROQ_API_KEY
+            )
             const updatedData = {
                 ...localStartup,
                 questionnaire: localAnswers,

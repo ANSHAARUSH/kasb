@@ -12,7 +12,7 @@ import { InvestorFields } from "./signup/InvestorFields"
 import { INDUSTRIES, EXPERTISE_AREAS } from "../../lib/constants"
 import { useAuth } from "../../context/AuthContext"
 import { useToast } from "../../hooks/useToast"
-import { proxyRefineProblem, proxyExtractPitch } from "../../lib/aiProxy"
+import { refineProblemStatement, extractStartupDetailsFromPitchDeck } from "../../lib/ai"
 import { getGlobalConfig, getUserSetting } from "../../lib/supabase"
 import { LoadingScreen } from "../../components/ui/LoadingScreen"
 import { extractFullTextFromDocument } from "../../lib/documentExtraction"
@@ -111,8 +111,14 @@ export default function Onboarding() {
             // 1. Extract full text from the document
             const extractedText = await extractFullTextFromDocument(file)
 
-            // 2. Call Edge Function to extract details without needing keys in browser
-            const details = await proxyExtractPitch(extractedText)
+            // 2. Use the universal system API key
+            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            if (!apiKey) {
+                throw new Error('System AI key is not configured. Please use manual entry.')
+            }
+
+            // 3. Send to AI for structured extraction
+            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
             console.log('[Onboarding] Extracted details:', details)
 
             // 4. Auto-populate form fields
@@ -188,7 +194,15 @@ export default function Onboarding() {
         if (!problemSolving.trim()) return
         setIsRefining(true)
         try {
-            let refined = await proxyRefineProblem(problemSolving)
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI Refinement is not configured. Please check your settings.", "error")
+                return
+            }
+            let refined = await refineProblemStatement(problemSolving, apiKey)
 
             // Try to parse if it's JSON, otherwise use as is
             try {

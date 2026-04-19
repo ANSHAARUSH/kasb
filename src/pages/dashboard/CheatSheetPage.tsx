@@ -10,8 +10,10 @@ import { FieldDetailPanel } from "../../components/dashboard/FieldDetailPanel"
 import { motion } from "framer-motion"
 import { Input } from "../../components/ui/input"
 import { Search, Loader2, Sparkles, Zap } from "lucide-react"
-import { proxyIndustryInsights } from "../../lib/aiProxy"
+import { getIndustryInsights } from "../../lib/ai"
 import { useToast } from "../../hooks/useToast"
+import { useAuth } from "../../context/AuthContext"
+import { getUserSetting, getGlobalConfig } from "../../lib/supabase"
 
 interface CheatSheetField {
     title: string
@@ -104,6 +106,7 @@ export default function CheatSheetPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isGenerating, setIsGenerating] = useState(false)
     const { toast } = useToast()
+    const { user } = useAuth()
 
     const handleAISearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -111,7 +114,22 @@ export default function CheatSheetPage() {
 
         setIsGenerating(true)
         try {
-            const insight = await proxyIndustryInsights(searchQuery)
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) {
+                const globalKey = await getGlobalConfig('ai_api_key')
+                if (globalKey) apiKey = globalKey
+            }
+            if (!apiKey && user) {
+                const storedKey = await getUserSetting(user.id, 'ai_api_key')
+                if (storedKey) apiKey = storedKey
+            }
+
+            if (!apiKey) {
+                toast("AI features are not setup. Please contact the administrator.", "error")
+                return
+            }
+
+            const insight = await getIndustryInsights(searchQuery, apiKey)
 
             // Map IndustryInsight to Field structure for the Panel
             setSelectedField({

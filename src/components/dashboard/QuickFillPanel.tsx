@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useDebounce } from '../../hooks/useDebounce';
-import { proxySemanticMatch } from '../../lib/aiProxy';
+import { resolveAIConfig, findSemanticQuestionMatch } from '../../lib/ai';
 import { useStartupProfile } from '../../hooks/useStartupProfile';
 import { cn } from '../../lib/utils';
 import { Button } from '../ui/button';
@@ -247,28 +247,11 @@ export function QuickFillPanel({ isOpen, onClose, isRedirecting, redirectTarget 
 
     const performSearch = async () => {
       try {
+        const config = await resolveAIConfig(user?.id);
+        if (!config || !isMounted) return;
+
         const allQuestions = displaySections.flatMap(s => s.fields.map(f => ({ key: f.key, label: f.label })));
-        
-        const prompt = `
-    You are an intelligent semantic matching assistant.
-    A user is searching through a form using their own words.
-
-    USER QUERY: "${debouncedSearchQuery}"
-
-    AVAILABLE FORM QUESTIONS:
-    ${allQuestions.map((q, i) => `[${i}] Key: ${q.key} | Label: ${q.label}`).join('\n')}
-
-    TASK:
-    Identify which form question optimally matches the user's query contextually.
-    If the user's query clearly implies one of the available questions, return its "Key".
-    If there is strictly no relevant match, return null.
-
-    OUTPUT FORMAT:
-    Return valid JSON ONLY:
-    { "matchKey": "the_key_here" } (or set to null)
-    `;
-        
-        const { matchKey } = await proxySemanticMatch(prompt);
+        const { matchKey } = await findSemanticQuestionMatch(debouncedSearchQuery, allQuestions, config.apiKey, config.baseUrl);
         
         if (isMounted) {
             setSearchMatchKey(matchKey || null);

@@ -20,13 +20,26 @@ export function AdminSettings() {
     const [saving, setSaving] = useState(false)
 
     // AI Config State
+    const [apiKey, setApiKey] = useState("")
     const [testing, setTesting] = useState(false)
     const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle')
     const [testMessage, setTestMessage] = useState("")
 
     useEffect(() => {
         fetchConfigs()
+        const storedKey = localStorage.getItem('groq_api_key')
+        if (storedKey) setApiKey(storedKey)
     }, [])
+
+    const saveApiKey = () => {
+        if (!apiKey.trim()) {
+            localStorage.removeItem('groq_api_key')
+            alert("API Key removed from browser storage.")
+        } else {
+            localStorage.setItem('groq_api_key', apiKey.trim())
+            alert("API Key saved to browser storage.")
+        }
+    }
 
     const handleTestAI = async () => {
         setTesting(true)
@@ -34,9 +47,15 @@ export function AdminSettings() {
         setTestMessage("")
 
         try {
-            const { proxyChatKasb } = await import("../../lib/aiProxy")
+            const keyToUse = apiKey || import.meta.env.VITE_GROQ_API_KEY
+            if (!keyToUse) throw new Error("No API Key available to test.")
 
-            const response = await proxyChatKasb("Hello, are you online?", [])
+            // Import dynamically or use the function if available in scope. 
+            // Since we are in pages/..., we can import from lib.
+            // We need to add the import statement at the top of the file separately.
+            const { chatWithAI } = await import("../../lib/ai")
+
+            const response = await chatWithAI("Hello, are you online?", [], keyToUse)
             if (response) {
                 setTestStatus('success')
                 setTestMessage(`Success! AI replied: "${response.substring(0, 50)}..."`)
@@ -157,10 +176,19 @@ export function AdminSettings() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="space-y-2">
-                            <Label>API Key Management</Label>
-                            <p className="text-sm text-gray-500">
-                                AI API Keys are now securely managed in the server environment (Supabase Secrets).
-                                You no longer need to configure them in the browser.
+                            <Label htmlFor="apiKey">Groq API Key</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="apiKey"
+                                    type="password"
+                                    placeholder={import.meta.env.VITE_GROQ_API_KEY ? "Using ENV Variable (Hidden)" : "Enter API Key"}
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                />
+                                <Button onClick={saveApiKey} variant="outline">Save to Browser</Button>
+                            </div>
+                            <p className="text-xs text-gray-400">
+                                Current Data Source: {apiKey ? "Custom (Browser)" : (import.meta.env.VITE_GROQ_API_KEY ? "Environment Variable" : "Missing")}
                             </p>
                         </div>
 
