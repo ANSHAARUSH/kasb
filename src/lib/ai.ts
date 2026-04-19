@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import { extractFullTextFromDocument } from './documentExtraction';
 
 /**
- * Common configuration for Groq AI
+ * Common configuration for Groq AI - Trigger Run
  */
 const getGroqClient = (apiKey: string) => {
     return new OpenAI({
