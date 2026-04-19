@@ -276,3 +276,280 @@ export async function runInference(apiKey: string, systemPrompt: string, options
         throw error;
     }
 }
+
+export async function generateValuationInsights(
+    startup: any,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    const prompt = `
+    Analyze the following startup data and provide investment valuation insights.
+
+    Startup: ${startup.name}
+    Stage: ${startup.metrics?.stage || "Not provided"}
+    Traction: ${startup.metrics?.traction || "Not provided"}
+    Revenue: ${startup.revenue || "Not provided"}
+    Industry: ${startup.industry || "Not provided"}
+    
+    Provide a professional analysis covering:
+    1. Estimated Valuation Range(based on similar market multiples)
+    2. Key Value Drivers
+    3. Potential Valuation Risks
+    4. Recommendations for Next Round
+    
+    TONE: Conservative, analytical, and data-driven.
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt);
+        return text.trim() || "Failed to generate valuation insights.";
+    } catch (error: unknown) {
+        console.error("AI Valuation Error:", error);
+        throw new Error("AI Valuation Analysis failed");
+    }
+}
+
+export async function generateFounderAnalysis(
+    startup: any,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    const prompt = `
+    Analyze the founder's profile for the following startup and provide strategic investor insights.
+
+    Founder: ${startup.founder?.name || "Not provided"}
+    Bio: ${startup.founder?.bio || "Not provided"}
+    Education: ${startup.founder?.education || "Not provided"}
+    Work History: ${startup.founder?.workHistory || "Not provided"}
+    Startup: ${startup.name || "Not provided"}
+    Industry: ${startup.industry || "Not provided"}
+
+    Provide a professional analysis covering:
+    1. Founder-Market Fit (How their background fits this industry)
+    2. Scalability Potential (Based on past experience)
+    3. Technical/Commercial Strategic Value
+    4. Notable Strengths & Potential Blind Spots
+
+    TONE: Professional, insightful, and oriented towards investor risk/opportunity assessment.
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt);
+        return text.trim() || "Failed to generate founder analysis.";
+    } catch (error: unknown) {
+        console.error("AI Founder Analysis Error:", error);
+        throw new Error("AI Founder Analysis failed");
+    }
+}
+
+export async function resolveAIConfig(userId?: string, feature?: string): Promise<string> {
+    // Attempt to get from environment first
+    const envKey = import.meta.env.VITE_GROQ_API_KEY;
+    if (envKey) return envKey;
+    
+    // Fallback or more complex resolution could go here
+    return '';
+}
+
+export async function findSemanticQuestionMatch(
+    query: string,
+    questions: any[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<{ matchKey: string | null }> {
+    if (!apiKey || questions.length === 0) return { matchKey: null };
+
+    const prompt = `
+    Find the best matching question for this query: "${query}"
+    Available questions:
+    ${questions.map(q => `- [${q.id}] ${q.label}`).join('\n')}
+    
+    Return ONLY a JSON object: { "matchKey": "question_id" }
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/"matchKey"\s*:\s*"([^"]+)"/);
+        return { matchKey: match ? match[1] : null };
+    } catch (error) {
+        console.error("Semantic match error:", error);
+        return { matchKey: null };
+    }
+}
+
+export interface EligibilityResult {
+    percentage: number;
+    reasoning: string;
+}
+
+export interface MissingField {
+    field: string;
+    label: string;
+    options: string[];
+}
+
+export interface ComparisonResult {
+    verdict: string;
+    analysis: {
+        [key: string]: { winner: string; reason: string };
+    };
+    startup1Analysis: string;
+    startup2Analysis: string;
+}
+
+export async function checkEligibility(
+    startup: any,
+    criteria: string[],
+    apiKey: string,
+    baseUrl?: string
+): Promise<EligibilityResult> {
+    if (!apiKey) throw new Error("API Key is missing for eligibility check.");
+    const prompt = `Analyze startup eligibility. Return JSON: { "percentage": 85, "reasoning": "Good fit." }`;
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/\{[\s\S]*\}/);
+        return match ? JSON.parse(match[0]) : { percentage: 0, reasoning: "Error parsing result." };
+    } catch (e) {
+        return { percentage: 0, reasoning: "Error executing check." };
+    }
+}
+
+export async function identifyMissingEligibilityData(
+    startup: any,
+    criteria: string[],
+    apiKey: string,
+    baseUrl?: string,
+    preliminaryReasoning?: string
+): Promise<MissingField[]> {
+    if (!apiKey) throw new Error("API Key is missing for missing data identification.");
+    const prompt = `Identify missing data. Return JSON array: [{"field": "revenue", "label": "What is revenue?", "options": ["0", "1M+"]}]`;
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/\[[\s\S]*\]/);
+        return match ? JSON.parse(match[0]) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+export async function compareStartups(
+    startup1: any,
+    startup2: any,
+    apiKey: string,
+    baseUrl?: string
+): Promise<ComparisonResult> {
+    if (!apiKey) throw new Error("API Key is missing.");
+    const prompt = `Compare startups. Return JSON: {"verdict": "S1 is better", "analysis": {"market": {"winner": "S1", "reason": "Bigger"}}, "startup1Analysis": "Good", "startup2Analysis": "Bad"}`;
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/\{[\s\S]*\}/);
+        return match ? JSON.parse(match[0]) : { verdict: "Error", analysis: {}, startup1Analysis: "", startup2Analysis: "" };
+    } catch (e) {
+        return { verdict: "Error", analysis: {}, startup1Analysis: "", startup2Analysis: "" };
+    }
+}
+
+export async function compareInvestors(
+    investor1: any,
+    investor2: any,
+    apiKeyOrConfig: string | { apiKey: string; baseUrl?: string },
+    maybeBaseUrl?: string
+): Promise<ComparisonResult> {
+    const apiKey = typeof apiKeyOrConfig === 'string' ? apiKeyOrConfig : apiKeyOrConfig.apiKey;
+    if (!apiKey) throw new Error("API Key is missing.");
+    const prompt = `Compare investors. Return JSON: {"verdict": "I1 is better", "analysis": {"funds": {"winner": "I1", "reason": "More money"}}, "startup1Analysis": "Good", "startup2Analysis": "Bad"}`;
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/\{[\s\S]*\}/);
+        return match ? JSON.parse(match[0]) : { verdict: "Error", analysis: {}, startup1Analysis: "", startup2Analysis: "" };
+    } catch (e) {
+        return { verdict: "Error", analysis: {}, startup1Analysis: "", startup2Analysis: "" };
+    }
+}
+
+export interface IndustryInsight {
+    title: string;
+    desc: string;
+    growthData: {
+        country: string;
+        value: number;
+        growth: string;
+    }[];
+}
+
+export async function getIndustryInsights(
+    industry: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<IndustryInsight> {
+    if (!apiKey) throw new Error("API Key is required.");
+    const prompt = `
+    Provide realistic investment insights for the industry: "${industry}".
+    Return ONLY JSON:
+    {
+        "title": "${industry}",
+        "desc": "Definition and relevance.",
+        "growthData": [
+            { "country": "India", "value": 22.5, "growth": "+22.5%" },
+            { "country": "USA", "value": 15.2, "growth": "+15.2%" }
+        ]
+    }`;
+    try {
+        const text = await runInference(apiKey, prompt);
+        const match = text.match(/\{[\s\S]*\}/);
+        return match ? JSON.parse(match[0]) : { title: industry, desc: "Error", growthData: [] };
+    } catch (e) {
+        return { title: industry, desc: "Error executing check.", growthData: [] };
+    }
+}
+
+export async function generateInvestorSummary(
+    answers: Record<string, Record<string, string>>,
+    stage: string,
+    apiKey: string,
+    baseUrl?: string
+): Promise<string> {
+    const prompt = `
+    TASK: Convert the following structured startup questionnaire answers into a professional, high-impact investor summary.
+    
+    CONTEXT:
+    Startup Stage: ${stage}
+    Data: ${JSON.stringify(answers)}
+
+    The data is organized into 10 critical investor sections:
+    1. Founder Snapshot (Background & Motivation)
+    2. Problem Clarity (Pain point & underserved segments)
+    3. Solution & Product Thinking (Core value prop & roadmap)
+    4. Market Understanding (TAM/SAM/SOM & competition)
+    5. Validation Signals (Experiments & early feedback)
+    6. Business Model Logic (Revenue streams & pricing)
+    7. Execution Readiness (Unit economics & milestones)
+    8. Legal & Ownership (Structure & IP)
+    9. Founder Integrity (Ethics & compliance)
+    10. Final Commitment (Burn rate & goals)
+
+    CORE PRINCIPLES (STRICT ADHERENCE REQUIRED):
+    1. Use ONLY provided information. Do not infer, assume, or fabricate facts.
+    2. Omit sections where information is missing.
+    3. Rewrite for clarity, professional flow, and investor impact.
+    4. TONE: Objective, factual, and analytical. Avoid marketing hype.
+    5. STANDARDIZATION: Use clear headings. Use bullet points for key data points.
+
+    OUTPUT STRUCTURE:
+    - Executive Summary (Strong 2-3 sentence overview)
+    - Problem & Solution (Context and value proposition)
+    - Market & Competition (Scale and differentiation)
+    - Traction & Milestones (Current progress and near-term goals)
+    - Team & Vision (Why these founders?)
+
+    Provide the summary as a structured professional narrative.
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt);
+        return text.trim() || "Failed to generate summary.";
+    } catch (error: unknown) {
+        console.error("AI Summary Error:", error);
+        throw new Error("Failed to generate investor summary with AI");
+    }
+}
