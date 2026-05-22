@@ -1,0 +1,998 @@
+import { motion, AnimatePresence } from "framer-motion"
+import type { Startup } from "../../data/mockData"
+import { X, GraduationCap, Briefcase, UserMinus, Maximize2, Minimize2, Minus, Sparkles, TrendingUp, BarChart3, ShieldCheck, Lock, FileText, ExternalLink, Download, FileUp } from "lucide-react"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { useState, useEffect, useMemo } from "react"
+import { useNavigate } from "react-router-dom"
+import {
+    supabase,
+    getConnectionStatus,
+    disconnectConnection,
+    sendConnectionRequest,
+    getGlobalConfig,
+    getUserSetting,
+    trackProfileView,
+    acceptConnectionRequest,
+    declineConnectionRequest,
+    type ConnectionStatus,
+    hasInvestorBoosted,
+    boostStartup,
+    getStartupBoosts
+} from "../../lib/supabase"
+import { useAuth } from "../../context/AuthContext"
+import { useToast } from "../../hooks/useToast"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { calculateImpactScore } from "../../lib/scoring"
+import { type Investor } from "../../data/mockData"
+import { Input } from "../ui/input"
+import { generateValuationInsights, generateFounderAnalysis } from "../../lib/ai"
+import { Avatar } from "../ui/Avatar"
+import { QUESTIONNAIRE_CONFIG, DEFAULT_STAGE_CONFIG, type Section, type Question } from "../../lib/questionnaire"
+import { cn, parseRevenue, getViewableUrl } from "../../lib/utils"
+import { ValuationCalculator } from "./ValuationCalculator"
+
+export type PanelSize = 'default' | 'full' | 'minimized'
+
+interface StartupDetailProps {
+    startup: Startup | null
+    onClose: () => void
+    onDisconnect?: () => void
+    onResize?: (size: PanelSize) => void
+    currentSize?: PanelSize
+    triggerUpdate?: { startupId: string; timestamp: number } | null
+    onConnectionChange?: (startupId: string) => void
+}
+
+export function StartupDetail({ startup, onClose, onDisconnect, onResize, currentSize = 'default', triggerUpdate, onConnectionChange }: StartupDetailProps) {
+    const { user, role } = useAuth()
+    const navigate = useNavigate()
+    const { toast } = useToast()
+    const [activeTab, setActiveTab] = useState<'questions' | 'metrics'>('questions')
+    const [connStatus, setConnStatus] = useState<ConnectionStatus | null>(null)
+    const [isDisconnecting, setIsDisconnecting] = useState(false)
+    const [isConnecting, setIsConnecting] = useState(false)
+    const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false)
+    const [valuationInsights, setValuationInsights] = useState<string | null>(null)
+    const [isGeneratingValuation, setIsGeneratingValuation] = useState(false)
+    const [isProcessing, setIsProcessing] = useState(false)
+    const [hasBoosted, setHasBoosted] = useState(false)
+    const [isBoosting, setIsBoosting] = useState(false)
+    const [boostAmount, setBoostAmount] = useState(50)
+    const [investorBudget, setInvestorBudget] = useState(0)
+    const [impactPoints, setImpactPoints] = useState(startup?.impactPoints || 0)
+    const [founderAnalysis, setFounderAnalysis] = useState<string | null>(null)
+    const [isGeneratingFounderAnalysis, setIsGeneratingFounderAnalysis] = useState(false)
+    const [documents, setDocuments] = useState<any[]>([])
+    const [prevStartupId, setPrevStartupId] = useState(startup?.id)
+
+    if (startup?.id !== prevStartupId) {
+        setPrevStartupId(startup?.id)
+        setShowDisconnectConfirm(false)
+        setValuationInsights(null)
+        setFounderAnalysis(null)
+        setIsGeneratingValuation(false)
+        setIsGeneratingFounderAnalysis(false)
+        setIsProcessing(false)
+        setConnStatus(null)
+        if (startup) setImpactPoints(startup.impactPoints || 0)
+    }
+
+    const stageConfig = useMemo(() => {
+        const stage = startup?.metrics.stage || 'Ideation'
+        let config = QUESTIONNAIRE_CONFIG[stage]
+        if (!config) {
+            config = DEFAULT_STAGE_CONFIG
+        }
+        return config
+    }, [startup?.metrics.stage])
+
+    const answers = startup?.questionnaire || {}
+
+    useEffect(() => {
+        if (!user || !startup?.id) return
+
+        async function checkStatus() {
+            try {
+                const [status, boosted, points] = await Promise.all([
+                    getConnectionStatus(user!.id, startup!.id),
+                    hasInvestorBoosted(user!.id, startup!.id),
+                    getStartupBoosts(startup!.id)
+                ])
+                setConnStatus(status)
+                setHasBoosted(boosted)
+
+                // Calculate TOTAL impact points (Base + Boosts)
+                const total = calculateImpactScore({
+                    ...startup!,
+                    communityBoosts: points
+                }).total
+                setImpactPoints(total)
+
+                // Fetch budget if investor
+                if (role === 'investor') {
+                    const [
+                        investorRes,
+                        boostRes,
+                        purchaseRes,
+                        docsRes
+                    ] = await Promise.all([
+                        supabase.from('investors').select('*').eq('id', user!.id).single(),
+                        supabase.from('investor_boosts').select('points_awarded').eq('investor_id', user!.id),
+                        supabase.from('point_purchases').select('points').eq('investor_id', user!.id),
+                        supabase.from('startup_documents').select('*').eq('startup_id', startup!.id).eq('status', 'verified')
+                    ])
+
+                    if (investorRes.error) console.error('Investor fetch error:', investorRes.error)
+                    if (boostRes.error) console.error('Boost fetch error:', boostRes.error)
+                    if (purchaseRes.error) console.error('Purchase fetch error:', purchaseRes.error)
+                    if (docsRes.error) console.error('Docs fetch error:', docsRes.error)
+
+                    if (docsRes.data) {
+                        setDocuments(docsRes.data)
+                    }
+
+                    if (investorRes.data) {
+                        const spent = boostRes.data?.reduce((sum: number, b: any) => sum + (b.points_awarded || 0), 0) || 0
+                        const purchased = purchaseRes.data?.reduce((sum: number, p: any) => sum + (p.points || 0), 0) || 0
+                        const totalEarned = calculateImpactScore({
+                            ...investorRes.data,
+                            fundsAvailable: investorRes.data.funds_available,
+                            investments: investorRes.data.investments_count,
+                            expertise: investorRes.data.expertise || []
+                        } as Investor).total
+
+                        const finalBudget = Math.max(0, totalEarned + purchased - spent)
+                        console.log('Budget Calculation Success:', { totalEarned, purchased, spent, finalBudget })
+                        setInvestorBudget(finalBudget)
+                    }
+                }
+            } catch (err) {
+                console.error('Critical error in checkStatus:', err)
+            }
+        }
+        checkStatus()
+    }, [user, startup?.id, triggerUpdate, role])
+
+    const canView = true // Unlimited viewing for everyone
+
+    useEffect(() => {
+        if (startup?.id && canView && user) {
+            // Create a unique key for this view session
+            const viewKey = `view_${user.id}_${startup.id}`
+            const hasTracked = sessionStorage.getItem(viewKey)
+
+            if (!hasTracked) {
+                subscriptionManager.trackView(startup.id)
+                // Track in database for analytics (only once per session)
+                trackProfileView(user.id, startup.id, 'Unknown')
+                sessionStorage.setItem(viewKey, 'true')
+            }
+        }
+    }, [startup?.id, canView, user])
+
+    const handleConnect = async () => {
+        if (!user || !startup) return
+
+        if (!subscriptionManager.canContact(startup.id)) {
+            toast("Connection limit reached or plan doesn't include direct contact. Upgrade to connect!", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
+
+        setIsConnecting(true)
+        try {
+            await sendConnectionRequest(user.id, startup.id)
+            subscriptionManager.trackContact(startup.id)
+            setConnStatus({ status: 'pending', isIncoming: false })
+            onConnectionChange?.(startup.id)
+            toast("Connection request sent", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to connect: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsConnecting(false)
+        }
+    }
+
+    const handleAccept = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await acceptConnectionRequest(connStatus.connectionId)
+            const status = await getConnectionStatus(user!.id, startup!.id)
+            setConnStatus(status)
+            onConnectionChange?.(startup!.id)
+            toast("Connection accepted!", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to accept: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    const handleDecline = async () => {
+        if (!connStatus?.connectionId) return
+        setIsProcessing(true)
+        try {
+            await declineConnectionRequest(connStatus.connectionId)
+            setConnStatus(null)
+            onConnectionChange?.(startup!.id)
+            toast("Connection declined", "info")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to decline: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsProcessing(false)
+        }
+    }
+
+    const handleDisconnect = async () => {
+        if (!user || !startup) return
+
+        setIsDisconnecting(true)
+        try {
+            await disconnectConnection(user.id, startup.id)
+            setConnStatus(null)
+            toast("Connection removed", "info")
+            onDisconnect?.()
+            onConnectionChange?.(startup.id)
+            onClose()
+        } catch (error: any) {
+            console.error(error)
+            toast(`Failed to disconnect: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsDisconnecting(false)
+        }
+    }
+
+    const handleGenerateValuation = async () => {
+        setIsGeneratingValuation(true)
+        try {
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI features not configured.", "error")
+                return
+            }
+
+            const insights = await generateValuationInsights(startup, apiKey)
+            setValuationInsights(insights)
+            toast("Valuation insights generated", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsGeneratingValuation(false)
+        }
+    }
+
+    const handleGenerateFounderAnalysis = async () => {
+        setIsGeneratingFounderAnalysis(true)
+        try {
+            let apiKey = import.meta.env.VITE_GROQ_API_KEY
+            if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+            if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+            if (!apiKey) {
+                toast("AI features not configured.", "error")
+                return
+            }
+
+            const insights = await generateFounderAnalysis(startup, apiKey)
+            setFounderAnalysis(insights)
+            toast("Founder analysis generated", "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(`Generation failed: ${error.message || 'Unknown error'}`, "error")
+        } finally {
+            setIsGeneratingFounderAnalysis(false)
+        }
+    }
+
+    const handleBoost = async () => {
+        if (!user || !startup || role !== 'investor') return
+
+        const currentTier = subscriptionManager.getTier()
+        const isFreeTier = currentTier === 'explore'
+
+        if (isFreeTier) {
+            toast("Investor Basic plan required to boost startups.", "error")
+            navigate('/dashboard/pricing')
+            return
+        }
+
+        if (boostAmount <= 0) {
+            toast("Please enter a valid amount of points.", "error")
+            return
+        }
+
+        if (boostAmount > investorBudget) {
+            toast(`Insufficient points! Your budget is ${investorBudget}.`, "error")
+            return
+        }
+
+        setIsBoosting(true)
+        try {
+            await boostStartup(user.id, startup.id, boostAmount)
+            setHasBoosted(true)
+            setInvestorBudget(prev => prev - boostAmount)
+
+            // Refresh impact points
+            const boostCount = await getStartupBoosts(startup.id)
+            const total = calculateImpactScore({
+                ...startup,
+                communityBoosts: boostCount
+            }).total
+            setImpactPoints(total)
+
+            onConnectionChange?.(startup.id) // Trigger refresh in feed
+            toast(`Startup boosted! +${boostAmount} Impact Points awarded.`, "success")
+        } catch (error: any) {
+            console.error(error)
+            toast(error.message || "Failed to boost startup", "error")
+        } finally {
+            setIsBoosting(false)
+        }
+    }
+
+    if (!startup) {
+        return (
+            <div className="hidden lg:flex h-full items-center justify-center text-gray-400 p-8 text-center border-l border-gray-200">
+                <div>
+                    <div className="bg-gray-100 p-4 rounded-full inline-block mb-4">
+                        <Briefcase className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p>Select a startup to view details</p>
+                </div>
+            </div>
+        )
+    }
+
+    // Determine if we are on a large screen (panel mode) or small screen (modal mode)
+    // For simplicity, we can reuse this component. Ideally, the parent controls the rendering mode.
+    // However, to keep it clean, let's export the inner content as a separate component or just handle it here.
+    // Given the request, let's treat the 'panel' usage by checking if it's being rendered inside the new layout.
+    // But since this is a shared component, let's allow it to adapt or be clean.
+
+    // Better approach: New Prop `isPanel`?
+    // Let's assume the parent handles the layout. We just need to ensure this component RENDERS the content.
+    // The previous implementation had fixed position and modal logic.
+    // We will separate the Content from the Modal Wrapper.
+
+
+    return (
+        <div className="h-full flex flex-col bg-white overflow-hidden">
+            {/* Header */}
+            <div className="flex-none px-6 pt-6 pb-4 border-b border-gray-50">
+                <div className="flex items-start justify-between mt-2">
+                    <div className="flex items-center gap-4">
+                        <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
+                            <Avatar
+                                src={startup.logo}
+                                name={startup.name}
+                                fallbackClassName="text-2xl text-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <h2 className="text-2xl font-bold">{startup.name}</h2>
+                                <div className="bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest border border-indigo-100">
+                                    {startup.metrics.stage}
+                                </div>
+                                {startup.last_active_at && (
+                                    <span className="flex items-center gap-1 font-bold text-[10px] text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        Active {(() => {
+                                            const diff = Date.now() - new Date(startup.last_active_at).getTime()
+                                            const minutes = Math.floor(diff / 60000)
+                                            if (minutes < 5) return 'now'
+                                            if (minutes < 60) return `${minutes}m ago`
+                                            const hours = Math.floor(minutes / 60)
+                                            if (hours < 24) return `${hours}h ago`
+                                            return `${Math.floor(hours / 24)}d ago`
+                                        })()}
+                                    </span>
+                                )}
+                            </div>
+                            <span className="text-sm text-gray-500">{startup.industry || 'No industry set'} • {startup.metrics.valuation}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        {onResize && (
+                            <>
+                                <Button variant="ghost" size="icon" onClick={() => onResize('minimized')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                    <Minus className="h-4 w-4" />
+                                </Button>
+                                {currentSize === 'full' ? (
+                                    <Button variant="ghost" size="icon" onClick={() => onResize('default')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                        <Minimize2 className="h-4 w-4" />
+                                    </Button>
+                                ) : (
+                                    <Button variant="ghost" size="icon" onClick={() => onResize('full')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                        <Maximize2 className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                            <X className="h-5 w-5" />
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Tab Navigation */}
+                <div className="flex mt-6 -mb-4">
+                    <button
+                        onClick={() => setActiveTab('questions')}
+                        className={cn(
+                            "flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                            activeTab === 'questions' ? "border-black text-black" : "border-transparent text-gray-400"
+                        )}
+                    >
+                        Stage Questions
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('metrics')}
+                        className={cn(
+                            "flex-1 py-3 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2",
+                            activeTab === 'metrics' ? "border-black text-black" : "border-transparent text-gray-400"
+                        )}
+                    >
+                        Metrics
+                    </button>
+                </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                {activeTab === 'questions' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Summary Section (Prioritized) */}
+                        {startup.aiSummary ? (
+                            subscriptionManager.canViewAISummary() ? (
+                                <section className="bg-amber-50/50 rounded-3xl p-6 border border-amber-100 relative overflow-hidden">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Sparkles className="h-4 w-4 text-amber-600" />
+                                        <h3 className="text-xs font-bold text-amber-900 uppercase tracking-widest">
+                                            {startup.summaryStatus === 'final' ? 'Professional Summary' : 'AI Draft Summary'}
+                                        </h3>
+                                    </div>
+
+                                    <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-line font-medium">
+                                        {startup.aiSummary}
+                                    </div>
+                                </section>
+                            ) : (
+                                <section className="bg-gray-50 rounded-3xl p-6 border border-gray-100 border-dashed text-center">
+                                    <Lock className="h-5 w-5 text-gray-400 mx-auto mb-2" />
+                                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">AI Professional Summary</h3>
+                                    <p className="text-xs text-gray-500 mb-4">Upgrade to Investor Pro to unlock AI-verified summaries.</p>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => navigate('/dashboard/pricing')}
+                                        className="rounded-full h-8 text-[10px] uppercase font-bold"
+                                    >
+                                        Upgrade Now
+                                    </Button>
+                                </section>
+                            )
+                        ) : (
+                            <section className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
+                                <Sparkles className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
+                                <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Summary Pending</h4>
+                                <p className="text-indigo-800/60 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
+                                    This startup is currently finalizing its AI-verified investor summary.
+                                </p>
+                            </section>
+                        )}
+
+                        {/* Founder Section (Identity) */}
+                        <section>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span className="bg-gray-100 text-gray-500 h-5 w-5 rounded-full flex items-center justify-center text-[10px]">F</span>
+                                Founder Profile
+                            </h3>
+                            <div className="flex items-start gap-4 p-5 rounded-[2rem] bg-gray-50 border border-gray-100">
+                                <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                                    <Avatar
+                                        src={startup.founder.avatar}
+                                        name={startup.founder.name}
+                                        fallbackClassName="text-xl text-gray-400"
+                                    />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                        <h4 className="font-bold text-sm truncate">{startup.founder.name}</h4>
+                                        {subscriptionManager.canViewFounderDetails() && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={handleGenerateFounderAnalysis}
+                                                disabled={isGeneratingFounderAnalysis}
+                                                className="h-7 px-2 text-[9px] font-bold uppercase tracking-tight text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-full border border-indigo-100/50"
+                                            >
+                                                {isGeneratingFounderAnalysis ? (
+                                                    <span className="flex items-center gap-1">
+                                                        <Sparkles className="h-3 w-3 animate-pulse" /> Analyzing...
+                                                    </span>
+                                                ) : "Deep Analysis"}
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">{startup.founder.bio}</p>
+
+                                    {subscriptionManager.canViewFounderDetails() ? (
+                                        <div className="mt-3 flex flex-wrap gap-2 text-[10px] text-gray-500 font-medium">
+                                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                                <GraduationCap className="h-3 w-3" /> {startup.founder.education}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 bg-white px-2 py-1 rounded-full border border-gray-100">
+                                                <Briefcase className="h-3 w-3" /> {startup.founder.workHistory}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 w-fit cursor-pointer hover:bg-indigo-100 transition-colors" onClick={() => navigate('/dashboard/pricing')}>
+                                            <Lock className="h-3 w-3" />
+                                            Upgrade for Deep Founder Analysis
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Founder Analysis Result */}
+                            {founderAnalysis && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="mt-4 p-6 rounded-[2rem] bg-indigo-900 text-white shadow-xl border border-indigo-800"
+                                >
+                                    <div className="flex items-center gap-2 mb-4 text-indigo-300">
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Founder Strategic Analysis</span>
+                                    </div>
+                                    <div className="text-xs text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                                        {founderAnalysis}
+                                    </div>
+                                    <p className="mt-4 text-[9px] text-gray-500 italic border-t border-indigo-800 pt-3">
+                                        * Confidential AI assessment for Pro users.
+                                    </p>
+                                </motion.div>
+                            )}
+                        </section>
+
+                        {/* Literal Answers Toggle */}
+                        <div className="pt-4">
+                            <Button
+                                variant="outline"
+                                onClick={() => window.open(`/#/dashboard/startup/${startup.id}`, '_blank')}
+                                className="w-full rounded-2xl border-dashed border-2 text-gray-400 hover:text-black hover:bg-gray-50 h-14 font-bold text-xs uppercase tracking-widest"
+                            >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                View literal answers & Full Profile
+                            </Button>
+                        </div>
+
+                        {/* Problem & Description */}
+                        <section className="space-y-6">
+                            <div>
+                                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Problem Statement</h3>
+                                <p className="text-[15px] text-gray-900 leading-relaxed font-medium bg-white p-4 rounded-2xl border border-gray-50">
+                                    {startup.problemSolving}
+                                </p>
+                            </div>
+
+                            {startup.description && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Solution Context</h3>
+                                    <p className="text-[14px] text-gray-600 leading-relaxed bg-white p-4 rounded-2xl border border-gray-50">
+                                        {startup.description}
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Product Gallery */}
+                        {documents.filter(d =>
+                            d.document_type === 'product_photo' ||
+                            d.document_type?.toLowerCase().includes('product photo')
+                        ).length > 0 && (
+                                <section className="mt-8">
+                                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 px-1 flex items-center gap-2">
+                                        <Sparkles className="h-3 w-3" />
+                                        Product Gallery
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {documents.filter(d =>
+                                            d.document_type === 'product_photo' ||
+                                            d.document_type?.toLowerCase().includes('product photo')
+                                        ).map((doc) => (
+                                            <div key={doc.id} className="aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-100 shadow-sm transition-transform hover:scale-[1.02] cursor-pointer group relative">
+                                                <img
+                                                    src={getViewableUrl(doc.file_url)}
+                                                    alt="Product"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+                            )}
+
+                        {/* Stage Specific Questions */}
+                        <section className="space-y-8">
+                            {stageConfig.map((section: Section) => {
+                                const sectionAnswers = answers[section.id] || {}
+                                const hasAnswers = section.questions.some((q: Question) => sectionAnswers[q.id])
+                                if (!hasAnswers) return null
+
+                                return (
+                                    <div key={section.id} className="space-y-4">
+                                        <h4 className="text-[11px] font-bold text-black uppercase tracking-widest border-b border-gray-100 pb-2">
+                                            {section.title}
+                                        </h4>
+                                        <div className="grid gap-6">
+                                            {section.questions.map((q: Question) => {
+                                                const answer = sectionAnswers[q.id]
+                                                if (!answer) return null
+                                                return (
+                                                    <div key={q.id} className={cn(
+                                                        "transition-all duration-300 rounded-2xl",
+                                                        q.id === 'funding_amount' ? "bg-indigo-50/50 p-6 border-2 border-indigo-100/50 shadow-sm ring-1 ring-indigo-50" : ""
+                                                    )}>
+                                                        <div className="flex items-center justify-between mb-1.5">
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{q.label}</p>
+                                                            {q.id === 'funding_amount' && (
+                                                                <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-tighter text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-100 shadow-xs">
+                                                                    <Sparkles className="h-2.5 w-2.5" />
+                                                                    Strategic Metric
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className={cn(
+                                                            "text-gray-900 whitespace-pre-line leading-relaxed text-[15px] font-medium",
+                                                            q.id === 'funding_amount' ? "text-indigo-900 text-lg" : ""
+                                                        )}>
+                                                            {answer}
+                                                        </p>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </section>
+                    </div>
+                )}
+                {activeTab === 'metrics' && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Key Metrics Grid */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <TrendingUp className="h-5 w-5 text-indigo-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Traction</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.traction}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <BarChart3 className="h-5 w-5 text-emerald-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Valuation</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.valuation}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-orange-50/50 border border-orange-100 text-center">
+                                <Sparkles className="h-5 w-5 text-orange-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">Impact Points</p>
+                                <p className="text-xl font-bold text-orange-900">{impactPoints.toLocaleString()}</p>
+                            </div>
+                            <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100 text-center">
+                                <ShieldCheck className="h-5 w-5 text-blue-600 mx-auto mb-2" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Stage</p>
+                                <p className="text-xl font-bold text-gray-900">{startup.metrics.stage}</p>
+                            </div>
+                        </div>
+
+                        {/* AI Valuation Insights */}
+                        <section>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Strategic Insights</h3>
+                            {!valuationInsights ? (
+                                <Button
+                                    variant="outline"
+                                    onClick={handleGenerateValuation}
+                                    disabled={isGeneratingValuation}
+                                    className="w-full rounded-[2rem] border-dashed border-2 hover:bg-gray-50 h-20 flex flex-col items-center justify-center gap-1"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="h-4 w-4 text-indigo-600" />
+                                        <span className="font-bold text-sm">
+                                            {isGeneratingValuation ? "Analyzing Market Data..." : "Generate AI Valuation Insights"}
+                                        </span>
+                                    </div>
+                                </Button>
+                            ) : (
+                                <div className="p-8 rounded-[2rem] bg-gray-900 text-white animate-in zoom-in-95 duration-500 shadow-xl border border-gray-800">
+                                    <div className="flex items-center gap-2 mb-4 text-indigo-400">
+                                        <Sparkles className="h-4 w-4" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">Market Valuation Analysis</span>
+                                    </div>
+                                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 whitespace-pre-line leading-relaxed font-medium">
+                                        {valuationInsights}
+                                    </div>
+                                    <p className="mt-6 text-[9px] text-gray-500 italic border-t border-gray-800 pt-4">
+                                        * This is an AI-generated estimate based on provided metrics and typical sector multiples.
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Valuation Calculator */}
+                        <div className="mb-8">
+                            <ValuationCalculator
+                                initialRevenue={parseRevenue(startup.metrics.traction).toString()}
+                                initialIndustry={startup.industry}
+                                readOnly={role === 'investor'}
+                            />
+                        </div>
+
+                        {/* Additional Metrics Placeholder */}
+                        <div className="p-8 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 text-center">
+                            <BarChart3 className="h-6 w-6 text-indigo-400 mx-auto mb-3" />
+                            <h4 className="text-xs font-bold text-indigo-900 uppercase tracking-widest mb-2">Growth Charts</h4>
+                            <p className="text-indigo-800/60 text-xs leading-relaxed max-w-[200px] mx-auto font-medium">
+                                Visual traction charts and burn rate analysis will appear as the startup updates its monthly records.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {startup.history && (
+                    <section className="mt-8 px-1">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">History</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed font-sm">
+                            {startup.history}
+                        </p>
+                    </section>
+                )}
+
+                {/* Documents Section */}
+                <section className="mt-12 pt-12 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold flex items-center gap-2">
+                            <FileText className="h-6 w-6 text-indigo-500" />
+                            Data Room
+                        </h3>
+                    </div>
+
+                    <div className="space-y-4">
+                        {/* Pitch Deck - Prominent */}
+                        {documents.find(d => d.document_type === 'pitch_deck') ? (
+                            <a
+                                href={getViewableUrl(documents.find(d => d.document_type === 'pitch_deck').file_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group relative block p-6 rounded-[2rem] bg-indigo-50 border-2 border-indigo-100 hover:border-black transition-all cursor-pointer overflow-hidden shadow-sm no-underline"
+                            >
+                                <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:scale-110 transition-transform">
+                                    <FileText className="h-24 w-24" />
+                                </div>
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="h-16 w-16 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                        <FileText className="h-8 w-8 text-indigo-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <h4 className="font-black text-lg text-indigo-900">Pitch Deck (PPTX)</h4>
+                                            <Badge className="bg-indigo-600 text-white hover:bg-indigo-700 text-[9px] uppercase tracking-tighter">Essential</Badge>
+                                        </div>
+                                        <p className="text-xs font-bold text-indigo-800/60 uppercase tracking-widest mt-1">Core Business Strategy & Presentation</p>
+                                    </div>
+                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center text-indigo-600 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <ExternalLink className="h-4 w-4" />
+                                    </div>
+                                </div>
+                            </a>
+                        ) : (
+                            <div className="p-8 rounded-[2rem] bg-gray-50 border-2 border-dashed border-gray-100 text-center">
+                                <FileText className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Pitch Deck Not Uploaded</p>
+                            </div>
+                        )}
+
+                        {/* Additional Documents List */}
+                        {documents.filter(d => d.document_type !== 'pitch_deck').length > 0 && (
+                            <div className="grid gap-3 pt-4">
+                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1 px-2">Supporting Documents</h4>
+                                {documents.filter(d => d.document_type !== 'pitch_deck').map((doc) => (
+                                    <a
+                                        key={doc.id}
+                                        href={getViewableUrl(doc.file_url)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer group shadow-xs no-underline"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-lg bg-gray-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                                                <FileUp className="h-4 w-4 text-gray-400 group-hover:text-indigo-500" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-gray-900">{doc.document_type}</p>
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{doc.file_name.split('.').pop()?.toUpperCase()} Document</p>
+                                            </div>
+                                        </div>
+                                        <Download className="h-4 w-4 text-gray-300 group-hover:text-black transition-colors" />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* Investor Boost Section */}
+                {
+                    role === 'investor' && (
+                        <section className="mt-12 pt-8 border-t border-gray-100 mb-12">
+                            <div className="bg-orange-50/50 rounded-[2.5rem] p-8 border border-orange-100 text-center relative overflow-hidden group/boost">
+                                <div className="absolute top-0 right-0 p-4 opacity-10">
+                                    <TrendingUp className="h-24 w-24 text-orange-600 rotate-12" />
+                                </div>
+
+                                <TrendingUp className="h-8 w-8 text-orange-600 mx-auto mb-4" />
+                                <h3 className="text-sm font-bold text-orange-900 uppercase tracking-[0.2em] mb-2">Push this startup up</h3>
+                                <p className="text-orange-800/60 text-xs leading-relaxed max-w-[240px] mx-auto font-medium mb-6">
+                                    Believe in this team? Award them Impact Points to help them climb the High Impact rankings.
+                                </p>
+
+                                <div className="flex flex-col items-center gap-4">
+                                    {hasBoosted && (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/50 text-orange-600 rounded-full border border-orange-100 text-[10px] font-bold shadow-sm mb-2 animate-in fade-in slide-in-from-top-1">
+                                            <Sparkles className="h-3 w-3" />
+                                            You have previously boosted this team
+                                        </div>
+                                    )}
+                                    <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                                        <div className="flex justify-between items-center px-1">
+                                            <span className="text-[10px] font-bold text-orange-900/50 uppercase tracking-widest">Amount</span>
+                                            <span className="text-[10px] font-bold text-orange-600 uppercase tracking-widest">Budget: {investorBudget}</span>
+                                        </div>
+                                        <div className="relative">
+                                            <Input
+                                                type="number"
+                                                value={boostAmount}
+                                                onChange={(e) => setBoostAmount(parseInt(e.target.value) || 0)}
+                                                className="bg-white/50 border-orange-200 focus:border-orange-500 rounded-2xl h-12 text-center font-bold text-orange-900"
+                                                min={1}
+                                                max={investorBudget}
+                                            />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-orange-400 uppercase">Pts</div>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        onClick={handleBoost}
+                                        disabled={isBoosting || boostAmount <= 0}
+                                        className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8 h-12 text-sm font-bold shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95 translate-y-0 w-full max-w-[200px]"
+                                    >
+                                        {isBoosting ? "Boosting..." : hasBoosted ? "Boost Again" : "Award Impact Points"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </section>
+                    )
+                }
+            </div >
+
+
+            {/* Sticky Action Footer */}
+            < div className="flex-none p-6 border-t border-gray-100 bg-white" >
+                {connStatus?.status === 'accepted' ? (
+                    showDisconnectConfirm ? (
+                        <div className="flex gap-3 animate-in fade-in zoom-in-95 duration-200">
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                onClick={() => setShowDisconnectConfirm(false)}
+                                className="flex-1 rounded-2xl h-12 text-base border-gray-200 text-gray-600 hover:bg-gray-50 bg-white"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                onClick={handleDisconnect}
+                                disabled={isDisconnecting}
+                                className="flex-1 rounded-2xl h-12 text-base bg-red-50 border-2 border-red-500 text-red-600 hover:bg-red-100"
+                            >
+                                {isDisconnecting ? "Disconnecting..." : "Confirm"}
+                            </Button>
+                        </div>
+                    ) : (
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={() => setShowDisconnectConfirm(true)}
+                            disabled={isDisconnecting}
+                            className="w-full rounded-2xl h-12 text-base border-2 border-red-200 text-red-600 hover:bg-red-50"
+                        >
+                            <UserMinus className="h-4 w-4 mr-2" />
+                            Disconnect
+                        </Button>
+                    )
+                ) : (connStatus?.status === 'pending' && connStatus.isIncoming) ? (
+                    <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <Button
+                            size="lg"
+                            onClick={handleAccept}
+                            disabled={isProcessing}
+                            className="flex-1 rounded-2xl h-12 text-base bg-black text-white hover:bg-gray-800 shadow-lg shadow-black/5"
+                        >
+                            {isProcessing ? "Processing..." : "Accept Request"}
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={handleDecline}
+                            disabled={isProcessing}
+                            className="flex-1 rounded-2xl h-12 text-base border-2 border-gray-100 hover:bg-gray-50 text-gray-600"
+                        >
+                            Decline
+                        </Button>
+                    </div>
+                ) : connStatus?.status === 'pending' ? (
+                    <Button size="lg" disabled className="w-full rounded-2xl h-12 text-base bg-gray-100 text-gray-400">
+                        Request Pending
+                    </Button>
+                ) : (
+                    <Button
+                        size="lg"
+                        onClick={handleConnect}
+                        disabled={isConnecting}
+                        className="w-full rounded-2xl h-12 text-base"
+                    >
+                        {isConnecting ? "Connecting..." : "Connect with Founder"}
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
+}
+
+// Wrapper for Modal behavior if needed (legacy support or mobile specifics)
+export function StartupDetailModal(props: StartupDetailProps) {
+    return (
+        <AnimatePresence>
+            {props.startup && (
+                <>
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={props.onClose}
+                        className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm lg:hidden"
+                    />
+                    <motion.div
+                        initial={{ y: "100%" }}
+                        animate={{ y: "0%" }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                        className="fixed bottom-0 left-0 right-0 z-50 h-[85vh] rounded-t-[2.5rem] bg-white shadow-2xl overflow-hidden flex flex-col lg:hidden"
+                    >
+                        <div className="relative flex-none px-6 pt-6 pb-4 border-b border-gray-50">
+                            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-gray-200" />
+                            {/* Re-use Header logic or simplify */}
+                            <div className="flex justify-end">
+                                <Button variant="ghost" size="icon" onClick={props.onClose} className="rounded-full hover:bg-gray-100">
+                                    <X className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        </div>
+                        <StartupDetail {...props} />
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    )
+}

@@ -1,0 +1,491 @@
+import { Button } from "../../components/ui/button"
+import { useState } from "react"
+import { Pencil, Trash2, Zap, LogOut, Upload } from "lucide-react"
+import { Link } from "react-router-dom"
+import { useStartupProfile } from "../../hooks/useStartupProfile"
+import { ProfileView } from "./startup/ProfileView"
+import { EditProfileModal } from "./startup/EditProfileModal"
+import { DeleteAccountModal } from "../../components/dashboard/DeleteAccountModal"
+import { getGlobalConfig, getUserSetting, supabase } from "../../lib/supabase"
+import { useAuth } from "../../context/AuthContext"
+import { useToast } from "../../hooks/useToast"
+import { subscriptionManager } from "../../lib/subscriptionManager"
+import { reviewPitchDeck, extractStartupDetailsFromPitchDeck, type PitchDeckScorecard } from "../../lib/ai"
+import { extractFullTextFromDocument } from "../../lib/documentExtraction"
+import { IDEATION_CONFIG } from "../../lib/questionnaires/ideation"
+import { Progress } from "../../components/ui/ScorecardProgress"
+import { Badge } from "../../components/ui/badge"
+import { ContactSupport } from "../../components/layout/ContactSupport"
+import { cn } from "../../lib/utils"
+import { motion } from "framer-motion"
+import { 
+    Sparkles, 
+    FileText, 
+    Loader2, 
+    AlertCircle, 
+    ChevronRight, 
+    TrendingUp, 
+    Users, 
+    Target, 
+    Layout, 
+    Lightbulb,
+    Briefcase,
+    CheckCircle2
+} from "lucide-react"
+import { useRef } from "react"
+
+export default function StartupProfile() {
+    const { startup, loading, saving, updateProfile, requestReview } = useStartupProfile()
+    const { user, signOut } = useAuth()
+    const { toast } = useToast()
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+    const [deckReview, setDeckReview] = useState<PitchDeckScorecard | string | null>(null)
+    const [isReviewing, setIsReviewing] = useState(false)
+    const fileRef = useRef<HTMLInputElement>(null)
+
+    // Pitch Deck Auto-fill State
+    const [isAutoFilling, setIsAutoFilling] = useState(false)
+    const [autoFillSuccess, setAutoFillSuccess] = useState(false)
+    const autoFillRef = useRef<HTMLInputElement>(null)
+
+    const handlePitchDeckAutoFill = async (file: File) => {
+        setIsAutoFilling(true)
+        setAutoFillSuccess(false)
+        try {
+            // 1. Extract text from document
+            const extractedText = await extractFullTextFromDocument(file)
+
+            // 2. Get API key
+            const apiKey = import.meta.env.VITE_PITCHDECK_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY
+            if (!apiKey) throw new Error('System AI key is not configured.')
+
+            // 3. Extract structured details via AI
+            const details = await extractStartupDetailsFromPitchDeck(extractedText, apiKey)
+
+            // 4. Build questionnaire from extracted data
+            const mappedQ: Record<string, Record<string, string>> = { ...(startup?.questionnaire || {}) }
+            IDEATION_CONFIG.forEach(sec => {
+                if (!mappedQ[sec.id]) mappedQ[sec.id] = {}
+            })
+            if (mappedQ.core_problem_solution) {
+                if (details.problemSolving) mappedQ.core_problem_solution.problem_statement = details.problemSolving
+                if (details.solutionOverview) mappedQ.core_problem_solution.solution_overview = details.solutionOverview
+            }
+            if (mappedQ.market_customers) {
+                if (details.targetCustomer) mappedQ.market_customers.target_customer = details.targetCustomer
+                if (details.marketSize) mappedQ.market_customers.market_size = details.marketSize
+                if (details.whyNow) mappedQ.market_customers.why_now = details.whyNow
+            }
+            if (mappedQ.traction_gtm) {
+                if (details.tractionRevenue) mappedQ.traction_gtm.traction_revenue = details.tractionRevenue
+                if (details.gtmPlan) mappedQ.traction_gtm.gtm_plan = details.gtmPlan
+            }
+            if (mappedQ.competition_business) {
+                if (details.competitiveAdvantage) mappedQ.competition_business.competitive_advantage = details.competitiveAdvantage
+                if (details.businessModel) mappedQ.competition_business.business_model = details.businessModel
+            }
+            if (mappedQ.team) {
+                if (details.founderName) mappedQ.team.founder_details = details.whyYou ? (details.founderName + "\nWhy You: " + details.whyYou) : details.founderName
+                if (details.whyYou) mappedQ.team.why_you = details.whyYou
+            }
+            if (mappedQ.funding_milestones) {
+                if (details.fundingAsk) mappedQ.funding_milestones.funding_amount = details.fundingAsk
+                if (details.useOfFunds) mappedQ.funding_milestones.fund_allocation = details.useOfFunds
+                if (details.milestones) mappedQ.funding_milestones.milestones_12m = details.milestones
+            }
+
+            // 5. Build the update payload (only non-empty fields)
+            const updatePayload: Record<string, any> = { questionnaire: mappedQ }
+            if (details.companyName) updatePayload.name = details.companyName
+            if (details.industry) updatePayload.industry = details.industry
+            if (details.stage) updatePayload.stage = details.stage
+            if (details.teamSize) updatePayload.traction = `${details.teamSize} employees`
+            if (details.problemSolving) updatePayload.problem_solving = details.problemSolving
+            if (details.founderName) updatePayload.founder_name = details.founderName
+            if (details.state) updatePayload.state = details.state
+            if (details.city) updatePayload.city = details.city
+            if (details.solutionOverview) updatePayload.description = details.solutionOverview
+
+            // 6. Save to database
+            const success = await updateProfile(updatePayload)
+            if (success) {
+                setAutoFillSuccess(true)
+                toast('Profile auto-filled from pitch deck!', 'success')
+                setTimeout(() => setAutoFillSuccess(false), 5000)
+            } else {
+                toast('Failed to save extracted data.', 'error')
+            }
+        } catch (err: any) {
+            console.error('Profile auto-fill failed:', err)
+            toast(`Auto-fill failed: ${err.message}`, 'error')
+        } finally {
+            setIsAutoFilling(false)
+        }
+    }
+
+    const handleDeleteAccount = async () => {
+        try {
+            const { error } = await supabase.rpc('delete_user_account')
+            if (error) {
+                console.error('Account deletion error:', error)
+                const detailedError = error.details || error.hint || error.message
+                throw new Error(detailedError)
+            }
+            await signOut()
+            window.location.href = '/'
+        } catch (err: any) {
+            const message = err?.message || "An unknown error occurred"
+            alert("Error deleting account: " + message)
+        }
+    }
+
+    if (loading) {
+        return (
+            <div className="p-12 text-center text-gray-500 font-medium">
+                <div className="animate-pulse flex flex-col items-center gap-4">
+                    <div className="h-20 w-20 bg-gray-200 rounded-3xl" />
+                    <div className="h-8 w-48 bg-gray-200 rounded-lg" />
+                    <div className="h-4 w-32 bg-gray-200 rounded-md" />
+                </div>
+            </div>
+        )
+    }
+
+    if (!startup) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+                <div className="h-16 w-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                    <span className="text-2xl">⚠️</span>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Startup Profile Not Found</h3>
+                <p className="text-gray-500 max-w-md mb-6">
+                    We couldn't load your startup profile. This usually happens if the account setup wasn't completed properly.
+                </p>
+                <div className="flex gap-4">
+                    <Button onClick={() => window.location.reload()} variant="outline">
+                        Retry
+                    </Button>
+                    <Button onClick={() => signOut()} variant="default">
+                        Sign Out
+                    </Button>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="pb-24 w-full bg-white md:max-w-4xl md:mx-auto pt-4 md:pt-8 min-h-screen">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4 px-4 sm:px-0">
+                <div>
+                    <h1 className="text-3xl font-extrabold tracking-tight">Profile</h1>
+                    <p className="text-gray-400 text-sm font-medium">Manage your startup identity</p>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                    <ContactSupport />
+                    <Link to="/dashboard/pricing">
+                        <Button
+                            variant="outline"
+                            className="rounded-xl h-9 font-bold border-gray-200 gap-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                        >
+                            <Zap className="h-4 w-4 fill-indigo-600" />
+                            Manage Plan
+                        </Button>
+                    </Link>
+                    <Button
+                        onClick={() => signOut()}
+                        variant="outline"
+                        className="rounded-xl h-9 font-bold border-gray-200 gap-2 text-gray-600 hover:text-red-600 hover:bg-red-50"
+                    >
+                        <LogOut className="h-4 w-4" />
+                        Sign Out
+                    </Button>
+                    <Button
+                        onClick={() => setIsEditOpen(true)}
+                        className="bg-black text-white hover:bg-gray-800 h-9 rounded-xl font-bold gap-2"
+                    >
+                        <Pencil className="h-4 w-4" />
+                        Edit Profile
+                    </Button>
+                </div>
+            </div>
+
+            {/* Auto-fill from Pitch Deck — Prominent Banner */}
+            <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="mb-6 px-4 sm:px-0"
+            >
+                {/* Hidden file input */}
+                <input
+                    ref={autoFillRef}
+                    type="file"
+                    accept=".pdf,.pptx,.docx"
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handlePitchDeckAutoFill(file)
+                        e.target.value = ''
+                    }}
+                />
+
+                {isAutoFilling ? (
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gray-900 border border-white/10">
+                        <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+                            <Loader2 className="h-5 w-5 text-white animate-spin" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white">Analyzing your pitch deck...</p>
+                            <p className="text-xs text-gray-400">AI is extracting and mapping your startup details</p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <div className="h-1.5 w-1.5 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <div className="h-1.5 w-1.5 bg-white/30 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                    </div>
+                ) : autoFillSuccess ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.97 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200"
+                    >
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-emerald-800">Profile auto-filled successfully!</p>
+                            <p className="text-xs text-emerald-600">All fields have been updated from your pitch deck.</p>
+                        </div>
+                        <Button
+                            onClick={() => autoFillRef.current?.click()}
+                            variant="ghost"
+                            size="sm"
+                            className="text-emerald-600 hover:bg-emerald-100 text-xs font-bold"
+                        >
+                            Upload Another
+                        </Button>
+                    </motion.div>
+                ) : (
+                    <button
+                        onClick={() => autoFillRef.current?.click()}
+                        className="w-full group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-gray-900 to-black border border-white/10 hover:border-white/25 transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,255,255,0.08)] text-left"
+                    >
+                        <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform">
+                            <Upload className="h-5 w-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-bold text-white">Auto-fill Profile from Pitch Deck</p>
+                            <p className="text-xs text-gray-400">Upload your deck and let AI populate your entire profile instantly</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <div className="hidden sm:flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full">
+                                <Sparkles className="h-3 w-3 text-white" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-white">AI</span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-gray-500 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                        </div>
+                    </button>
+                )}
+            </motion.div>
+
+            <ProfileView
+                id={startup.id}
+                startup={startup}
+                onRequestReview={requestReview}
+                onSave={updateProfile}
+                saving={saving}
+                onMarkAsLive={() => { }}
+            />
+
+            {/* AI Pitch Deck Review Section */}
+            <div className="mt-8 sm:mt-12 p-5 sm:p-8 rounded-3xl sm:rounded-[2.5rem] bg-indigo-50 border border-indigo-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4">
+                    <Sparkles className="h-8 w-8 text-indigo-200" />
+                </div>
+
+                <h3 className="text-xl font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    AI Pitch Deck Review
+                </h3>
+                <p className="text-indigo-700/70 text-sm mb-6 max-w-md">
+                    Get critical, constructive feedback on your pitch deck from an investor's perspective.
+                </p>
+
+                {!deckReview ? (
+                    <div className="space-y-4">
+                        <input
+                            type="file"
+                            accept=".pdf,.pptx,image/*"
+                            className="hidden"
+                            ref={fileRef}
+                            onChange={async (e) => {
+                                const file = e.target.files?.[0]
+                                if (!file) return
+                                setIsReviewing(true)
+                                try {
+                                    let apiKey = import.meta.env.VITE_GROQ_API_KEY
+                                    if (!apiKey) apiKey = await getGlobalConfig('ai_api_key') || ''
+                                    if (!apiKey && user) apiKey = await getUserSetting(user.id, 'ai_api_key') || ''
+
+                                    if (!apiKey) {
+                                        toast("AI API Key not configured.", "error")
+                                        return
+                                    }
+
+                                    const review = await reviewPitchDeck(file, apiKey)
+                                    setDeckReview(review)
+                                    toast("AI Analysis Complete", "success")
+                                } catch (err: any) {
+                                    toast(`Analysis failed: ${err.message}`, "error")
+                                } finally {
+                                    setIsReviewing(false)
+                                }
+                            }}
+                        />
+                        <Button
+                            onClick={() => fileRef.current?.click()}
+                            disabled={isReviewing}
+                            className="rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-12 px-8"
+                        >
+                            {isReviewing ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Analyzing Deck...
+                                </>
+                            ) : (
+                                "Upload & Analyze Deck"
+                            )}
+                            {!subscriptionManager.hasFeature('Pitch Deck') && (
+                                <span className="ml-2 text-[10px] bg-white/20 px-2 py-0.5 rounded-full">PRO</span>
+                            )}
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center justify-between mb-4">
+                            <span className="text-xs font-black uppercase tracking-widest text-indigo-400">Analysis Report</span>
+                            <Button variant="ghost" size="sm" onClick={() => setDeckReview(null)} className="text-indigo-600">Analyze New Deck</Button>
+                        </div>
+
+                        {typeof deckReview === 'string' ? (
+                            <div className="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100 prose prose-sm max-w-none text-indigo-900 leading-relaxed whitespace-pre-line font-medium">
+                                {deckReview}
+                            </div>
+                        ) : (
+                            <div className="grid gap-6">
+                                {/* Recommendation Header */}
+                                <div className={cn(
+                                    "p-6 rounded-[2rem] border-2 flex items-center justify-between gap-4",
+                                    deckReview.investor_recommendation === 'high_priority' ? "bg-emerald-50 border-emerald-100 text-emerald-900" :
+                                        deckReview.investor_recommendation === 'potential_investment' ? "bg-blue-50 border-blue-100 text-blue-900" :
+                                            deckReview.investor_recommendation === 'monitor' ? "bg-amber-50 border-amber-100 text-amber-900" :
+                                                "bg-red-50 border-red-100 text-red-900"
+                                )}>
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-12 w-12 rounded-2xl bg-white/80 flex items-center justify-center shadow-sm">
+                                            <Sparkles className="h-6 w-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Investor Verdict</p>
+                                            <h4 className="text-lg font-bold capitalize">{deckReview.investor_recommendation.replace('_', ' ')}</h4>
+                                        </div>
+                                    </div>
+                                    <Badge className="bg-white/50 text-current border-current/20 font-bold px-4 py-1.5 rounded-full uppercase text-[10px] tracking-tight">AI Assessment</Badge>
+                                </div>
+
+                                {/* Main Sentiment */}
+                                <div className="bg-white rounded-[2rem] p-8 border border-indigo-100 shadow-sm">
+                                    <h5 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">Executive Summary</h5>
+                                    <p className="text-indigo-900 font-medium leading-relaxed">{deckReview.overall_sentiment}</p>
+                                </div>
+
+                                {/* Scorecard Grid */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {[
+                                        { key: 'problem', label: 'Problem', icon: Lightbulb },
+                                        { key: 'solution', label: 'Solution', icon: Layout },
+                                        { key: 'market', label: 'Market', icon: Target },
+                                        { key: 'traction', label: 'Traction', icon: TrendingUp },
+                                        { key: 'team', label: 'Team', icon: Users },
+                                        { key: 'business_model', label: 'Business Model', icon: Briefcase }
+                                    ].map((item: any) => {
+                                        const data = (deckReview as any)[item.key];
+                                        return (
+                                            <div key={item.key} className="bg-white p-6 rounded-[2rem] border border-indigo-50 shadow-sm hover:shadow-md transition-shadow group">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-8 w-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:rotate-6 transition-transform">
+                                                            <item.icon className="h-4 w-4" />
+                                                        </div>
+                                                        <h5 className="font-bold text-gray-900">{item.label}</h5>
+                                                    </div>
+                                                    <span className="text-sm font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{data.score}/10</span>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <Progress value={data.score * 10} className="h-1.5 bg-indigo-100" />
+                                                    <p className="text-xs text-gray-600 leading-relaxed font-medium">{data.feedback}</p>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                {/* Missing Info */}
+                                {deckReview.critical_missing_info.length > 0 && (
+                                    <div className="bg-amber-50/50 border border-amber-200 rounded-[2rem] p-8">
+                                        <div className="flex items-center gap-2 text-amber-900 font-bold mb-4">
+                                            <AlertCircle className="h-5 w-5" />
+                                            Critical Missing Information
+                                        </div>
+                                        <ul className="grid sm:grid-cols-2 gap-3">
+                                            {deckReview.critical_missing_info.map((info: string, idx: number) => (
+                                                <li key={idx} className="flex items-start gap-2 text-xs text-amber-800 font-medium">
+                                                    <ChevronRight className="h-4 w-4 shrink-0 mt-0.5" />
+                                                    {info}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Danger Zone */}
+            <div className="mt-12 pt-8 border-t border-gray-100">
+                <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Danger Zone</h3>
+                <div className="bg-red-50 border border-red-100 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h4 className="font-bold text-red-900">Delete Account</h4>
+                        <p className="text-sm text-red-700/80 mt-1">Permanently remove your profile and all data. This action cannot be undone.</p>
+                    </div>
+                    <Button
+                        onClick={() => setIsDeleteOpen(true)}
+                        variant="ghost"
+                        className="text-red-600 hover:bg-red-100 hover:text-red-700 font-bold whitespace-nowrap"
+                    >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Profile
+                    </Button>
+                </div>
+            </div>
+
+            <EditProfileModal
+                isOpen={isEditOpen}
+                onClose={() => setIsEditOpen(false)}
+                startup={startup}
+                onSave={updateProfile}
+                saving={saving}
+            />
+
+            <DeleteAccountModal
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={handleDeleteAccount}
+                expectedName={startup.name}
+            />
+        </div>
+    )
+}

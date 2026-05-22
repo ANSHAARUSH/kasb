@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /admin-portal-v3x8z1
+
+Sitemap: https://www.kasbai.online/sitemap.xml

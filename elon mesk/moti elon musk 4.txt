@@ -1,0 +1,72 @@
+Optimus (Humanoid Robot)
+“Optimus is going to be the greatest product ever created by humanity.”
+“If successful, it will be the biggest product ever.”
+“It will have human-level hand dexterity, real-world AI, and be produced at massive scale.”
+“The three hardest problems are intelligence, dexterity, and manufacturing at scale.”
+“We had to design every actuator and motor from scratch—nothing existed.”
+“The hands are the majority of the engineering difficulty.”
+“To do everything a human can do, you need a humanoid robot.”
+“Humans designed the world—so a humanoid robot is immediately compatible.”
+Cost & Scaling of Robots
+“At scale, production cost could be around $20,000–$25,000.”
+“The AI chip alone could cost $5,000–$6,000.”
+“There is no supply chain for humanoid robots—we have to build it from scratch.”
+AI & Compute
+“AI is an arms race of epic proportions.”
+“10x more compute might roughly double intelligence.”
+“AI intelligence will continue scaling massively.”
+“AI could be smarter than any human at anything as soon as next year.”
+“By 2030, AI may be smarter than all humans combined.”
+xAI & Data Philosophy
+“We’re rewriting human knowledge—correcting errors, removing falsehoods, and adding missing context.”
+“AI is compressing reality—and improving that compression.”
+“Training data should be refined, not just scraped.”
+Tesla AI & Chips
+“AI5 will be up to 40× better than AI4 in key areas.”
+“Hardware and software must be co-designed at a deep level.”
+“Your car will feel almost sentient by the end of the year.”
+“Self-driving will be 2–10× safer than human driving.”
+Work & Focus
+“I work a lot.”
+“Optimus may now take more of my mental cycles than anything else.”
+Government & Society
+“The government is basically unfixable.”
+“If AI and robots don’t solve the debt problem, we’re in trouble.”
+Starlink Vision
+“You’ll be able to get high-bandwidth internet anywhere on Earth.”
+“Eventually, you could have a global mobile service through Starlink.”
+“You should be able to watch videos anywhere on your phone.”
+“This requires new phone hardware and satellite infrastructure.”
+SpaceX & Starship
+“A fully reusable orbital rocket is one of the hardest engineering problems ever.”
+“No one has ever made a fully reusable orbital heat shield.”
+“We aim for full reusability next year.”
+“Starship will deliver over 100 tons to orbit fully reusable.”
+“This is possibly the most difficult engineering project ever.”
+Mars & Humanity’s Future
+“The goal is a self-sustaining city on Mars.”
+“The key test: can Mars survive if Earth resupply stops?”
+“Making life multi-planetary dramatically increases the lifespan of consciousness.”
+“There’s a limited window to make this happen.”
+“It could be achieved in about 20–30 years if progress is exponential.”
+Philosophy & Curiosity
+“We need a philosophy of curiosity.”
+“I want to understand the nature of the universe.”
+“The real challenge is figuring out the right questions.”
+“Expanding consciousness is essential to understanding reality.”
+Simulation & Universe
+“The answer is the universe—the hard part is the question.”
+“We still don’t know fundamental truths about the universe.”
+Civilization & Birth Rates
+“Declining birth rates are a major threat.”
+“Having children is an act of optimism.”
+“If people aren’t optimistic about the future, they won’t have kids.”
+“Civilizations decline when they lose purpose and optimism.”
+Culture & Society
+“The actions of the West are indistinguishable from suicide.”
+“We need a compelling, optimistic vision of the future.”
+“If you remove religion, something else fills the void—often worse.”
+Big Picture Vision
+“We should aim to expand humanity and consciousness.”
+“We should explore the stars and become a spacefaring civilization.”
+“The future should be exciting and worth living.”

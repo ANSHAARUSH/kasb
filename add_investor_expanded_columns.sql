@@ -1,0 +1,14 @@
+-- Migration to add expanded investor columns
+ALTER TABLE investors
+ADD COLUMN IF NOT EXISTS check_size_range TEXT,
+ADD COLUMN IF NOT EXISTS target_stages TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS sector_focus TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS geography_focus TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS portfolio_highlights TEXT[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS investment_philosophy TEXT,
+ADD COLUMN IF NOT EXISTS is_lead_investor BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS equity_taken TEXT,
+ADD COLUMN IF NOT EXISTS batch_dates TEXT,
+ADD COLUMN IF NOT EXISTS location_type TEXT DEFAULT 'remote',
+ADD COLUMN IF NOT EXISTS cohort_size INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS has_demo_day BOOLEAN DEFAULT FALSE;

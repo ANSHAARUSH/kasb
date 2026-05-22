@@ -1,0 +1,89 @@
+1. Build quickly and launch early
+“I built the first version and launched it pretty quickly.”
+“It spread because people wanted it.”
+
+👉 Core idea: Speed + real demand > perfect planning.
+
+2. Follow user demand to grow
+“We didn’t start with a grand plan—we expanded because people kept asking for it.”
+
+👉 Core idea: Let users pull the product forward.
+
+3. Learn what you need, when you need it
+“You can pick up new technologies very quickly if you need them.”
+“Most of what we learned, we figured out along the way.”
+
+👉 Core idea: Just-in-time learning beats over-preparation.
+
+4. Hire for intelligence, not just skills
+“We look for people who are really smart and can learn quickly.”
+“Skills can be taught—how people think matters more.”
+
+👉 Core idea: Adaptability > static expertise.
+
+5. Focus on building, not bureaucracy
+“It’s better to build things and fix them than to overthink everything upfront.”
+
+👉 Core idea: Action creates momentum.
+
+6. Simple ideas can be powerful
+“The idea was just to make it easy to look people up.”
+“That’s something people naturally want to do.”
+
+👉 Core idea: Great products tap into basic human behavior.
+
+7. Design for scale early
+“We structured things so they could grow without breaking.”
+“Breaking problems into smaller pieces made scaling manageable.”
+
+👉 Core idea: Architecture decisions matter early.
+
+8. Iterate instead of waiting for perfection
+“You can always improve things later.”
+“Getting something working is more important than getting it perfect.”
+
+👉 Core idea: Progress over perfection.
+
+9. Technology amplifies individuals
+“A small group of people can build something used by millions.”
+
+👉 Core idea: Leverage is everything in tech.
+
+10. Ignore competitors, focus on execution
+“We focused on what we were building instead of worrying about others.”
+
+👉 Core idea: Execution wins more than strategy debates.
+
+11. Long-term thinking matters
+“We care more about building something valuable over time than short-term gains.”
+
+👉 Core idea: Optimize for durability, not quick wins.
+
+12. Give users control
+“People should control what they share and who sees it.”
+
+👉 Core idea: Trust is built through user control.
+
+13. Social design solves technical problems
+“When people use real identities, behavior improves naturally.”
+
+👉 Core idea: Product design can shape behavior better than rules.
+
+14. Meritocracy drives progress
+“The people who build the best things have the most influence.”
+
+👉 Core idea: Reward impact, not hierarchy.
+
+15. Solve problems as they appear
+“We didn’t have everything figured out—we just kept solving the next problem.”
+
+👉 Core idea: Success is iterative problem-solving.
+
+16. Great companies start with simple goals
+“We weren’t trying to build a company—we were trying to build something useful.”
+
+👉 Core idea: Utility first, business later.
+
+🧠 One-Line Summary
+
+Build something simple that people naturally want, launch fast, learn as you go, and scale it by focusing on smart people, strong fundamentals, and continuous iteration.
