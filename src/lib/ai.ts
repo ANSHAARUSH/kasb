@@ -2062,3 +2062,56 @@ Return ONLY valid JSON, no markdown:
     }
 }
 
+export interface AutoFillAnswerResult {
+    answer: string;
+    notes: string | null;
+}
+
+export async function answerAutoFillQuestion(
+    question: string,
+    profileData: Record<string, string | null>,
+    apiKey: string,
+    baseUrl?: string
+): Promise<AutoFillAnswerResult> {
+    if (!apiKey) {
+        throw new Error("AI services are not configured. Please ensure API key is set.");
+    }
+
+    const profileSummary = Object.entries(profileData)
+        .filter(([_, val]) => val !== null && val !== '')
+        .map(([key, val]) => `${key}: ${val}`)
+        .join('\n');
+
+    const prompt = `
+    You are an AI assistant helping a startup founder fill out an application form.
+    The founder has asked a question about how to fill out a specific field or what information to provide.
+    
+    Here is the startup's profile data:
+    ${profileSummary || "No profile data provided."}
+
+    User Question: "${question}"
+
+    Instructions:
+    1. Provide an answer that can be DIRECTLY COPY-PASTED into the application form. Do not include introductory or concluding remarks in the main answer.
+    2. If the data is missing from the profile or you are confused, provide the best possible direct answer or leave it blank, but explain the confusion or give instructions on what they should provide.
+    3. Return your response ONLY in the following JSON format:
+    {
+        "answer": "The exact text to be copy-pasted into the form.",
+        "notes": "Any confusions, instructions, warnings, or missing information. If none, set this to null or an empty string."
+    }
+    `;
+
+    try {
+        const text = await runInference(apiKey, prompt, { baseUrl });
+        try {
+            return extractJSON<AutoFillAnswerResult>(text);
+        } catch (jsonError) {
+            // Fallback if AI fails to return strict JSON
+            return { answer: text.trim(), notes: null };
+        }
+    } catch (error: unknown) {
+        console.error("AI Auto-Fill QA Error:", error);
+        throw new Error("Failed to generate an answer.");
+    }
+}
+

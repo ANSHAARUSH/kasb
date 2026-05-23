@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/useToast';
 import { LiquidRedirectBar } from './LiquidRedirectBar';
 import { getQuestionsForVC } from '../../lib/vcQuestionsMap';
+import { answerAutoFillQuestion } from '../../lib/ai';
 
 interface AutoFillModalProps {
     isOpen: boolean;
@@ -23,6 +24,11 @@ export function AutoFillModal({ isOpen, onClose, onProceed, targetUrl }: AutoFil
     const [copiedField, setCopiedField] = useState<string | null>(null);
     const [isPaused, setIsPaused] = useState(false);
     const [timeLeft, setTimeLeft] = useState(3000); // 3 seconds in ms
+
+    // AI Search States
+    const [searchQuery, setSearchQuery] = useState("");
+    const [aiResult, setAiResult] = useState<{ answer: string; notes: string | null } | null>(null);
+    const [isSearching, setIsSearching] = useState(false);
 
     // Extract hostname nicely
     const websiteName = React.useMemo(() => {
@@ -110,6 +116,26 @@ export function AutoFillModal({ isOpen, onClose, onProceed, targetUrl }: AutoFil
         onProceed(targetUrl);
     };
 
+    const handleSearchSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
+        e.preventDefault();
+        if (!searchQuery.trim() || Object.keys(profileData).length === 0) return;
+
+        setIsSearching(true);
+        setAiResult(null);
+        setIsPaused(true); // Pause timer while interacting with AI
+
+        try {
+            const apiKey = import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+            const result = await answerAutoFillQuestion(searchQuery, profileData, apiKey);
+            setAiResult(result);
+        } catch (error) {
+            console.error("AI Search failed", error);
+            toast("Failed to get AI answer. Please try again.", "error");
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -183,14 +209,65 @@ export function AutoFillModal({ isOpen, onClose, onProceed, targetUrl }: AutoFil
                             </div>
 
                             {/* Search Bar */}
-                            <div className="w-full max-w-2xl relative mb-12">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
-                                <input 
-                                    type="text"
-                                    placeholder="Search your answers..."
-                                    className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder:text-gray-500 focus:outline-none focus:border-white/30 transition-colors focus:bg-white/10 shadow-inner"
-                                />
+                            <div className="w-full max-w-2xl mb-8">
+                                <form onSubmit={handleSearchSubmit} className="relative w-full">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                                    <input 
+                                        type="text"
+                                        placeholder="Ask any application question. AI will answer using your profile."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleSearchSubmit(e)}
+                                        className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-12 text-white placeholder:text-gray-400 focus:outline-none focus:border-white/30 transition-colors focus:bg-white/10 shadow-inner text-sm sm:text-base"
+                                    />
+                                    <button 
+                                        type="submit"
+                                        disabled={isSearching || !searchQuery.trim()}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-colors disabled:opacity-50"
+                                    >
+                                        {isSearching ? <div className="animate-spin h-4 w-4 border-2 border-white/50 border-t-white rounded-full" /> : <Sparkles className="h-4 w-4 text-white" />}
+                                    </button>
+                                </form>
                             </div>
+
+                            {/* AI Answer Display */}
+                            {aiResult && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="w-full max-w-2xl mb-8 space-y-4"
+                                >
+                                    <div className="w-full p-6 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-100 relative group">
+                                        <div className="flex items-start gap-4">
+                                            <div className="p-2 rounded-full bg-indigo-500/20">
+                                                <Sparkles className="h-5 w-5 text-indigo-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-sm font-bold text-indigo-300 mb-1">AI Answer</h3>
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{aiResult.answer}</p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleCopy('AI Answer', aiResult.answer)}
+                                                className="h-8 px-3 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-200 text-[10px] font-bold uppercase transition-all"
+                                            >
+                                                {copiedField === 'AI Answer' ? "Copied" : "Copy"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                    
+                                    {aiResult.notes && (
+                                        <div className="w-full p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-200/90 flex gap-3 items-start">
+                                            <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                                            <div className="text-sm leading-relaxed">
+                                                <span className="font-bold text-amber-400 mb-1 block">Notes & Instructions</span>
+                                                {aiResult.notes}
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            )}
 
                             {/* Data Grid */}
                             <div className="w-full pb-20">
