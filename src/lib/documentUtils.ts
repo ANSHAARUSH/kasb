@@ -163,7 +163,7 @@ export async function verifyDocumentWithAI(
 
     try {
         const response = await client.chat.completions.create({
-            model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini',
+            model: apiKey.startsWith('gsk_') ? 'llama-3.3-70b-versatile' : 'gpt-4o',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.1, // Low temp for strict analysis
             response_format: { type: 'json_object' }

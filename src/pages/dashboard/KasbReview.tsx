@@ -721,6 +721,20 @@ export default function KasbReview() {
                             <motion.div 
                                 className="relative w-full max-w-2xl mx-auto group"
                             >
+                                {selectedFile && (
+                                    <div className={cn("mb-3 flex items-center gap-3 p-3 rounded-xl border-2 scale-in-center overflow-hidden text-left shadow-md relative z-10 bg-white border-gray-200")}>
+                                        <div className="h-10 w-10 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0 border border-indigo-100">
+                                            <FileText className="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <p className="text-xs font-black truncate text-gray-900">{selectedFile.name}</p>
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                                        </div>
+                                        <button onClick={removeFile} className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                                            <X className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                )}
                                 <div className={cn("absolute -inset-1 rounded-md blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none", isReview ? "bg-gray-200" : "bg-gradient-to-r from-indigo-500/20 to-purple-500/20")} />
                                 <div className={cn("relative flex items-center border rounded-xl p-1 shadow-xl transition-all duration-300 overflow-hidden shrink", isReview ? "bg-white border-gray-200 shadow-sm" : "bg-[#161616] border-gray-800 shadow-2xl group-focus-within:border-gray-500 group-focus-within:ring-2 group-focus-within:ring-white/10")}>
                                     <div className="pl-3 sm:pl-4 pr-1 sm:pr-3 shrink-0">

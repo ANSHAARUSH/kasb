@@ -326,11 +326,11 @@ export default function InvestorHome() {
     }
 
     return (
-        <div className="h-[calc(100dvh-100px)] md:h-[calc(100vh-61px)] flex flex-col lg:flex-row overflow-hidden md:-mt-6 md:-mb-6">
+        <div className="h-[calc(100dvh-100px)] md:h-[calc(100vh-61px)] flex flex-col lg:flex-row overflow-hidden md:-mt-6 md:-mb-6 relative">
             {/* Middle Panel: Feed */}
             <div className={`
-                relative flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out
-                ${panelSize === 'full' ? 'hidden w-0' : 'flex-1 flex'}
+                relative flex-col min-w-0 overflow-hidden bg-gray-50/50 transition-all duration-300 ease-in-out flex-1 flex
+                ${panelSize === 'full' ? 'opacity-0' : 'opacity-100'}
             `}>
                 {/* Filters Header (Minimized) */}
                 <div className={cn("flex-none transition-all duration-300", showFilters ? "p-6 pb-2 relative z-50" : "p-0")}>
@@ -701,30 +701,27 @@ export default function InvestorHome() {
 
 
             {/* Right Panel: Details (Desktop) */}
-            <div className={`
-                hidden lg:block border-l border-gray-200 bg-white h-full relative z-10 shadow-xl overflow-hidden transition-all duration-300 ease-in-out
-                ${panelSize === 'minimized' ? 'w-0 border-l-0 opacity-0 pointer-events-none' : ''}
-                ${panelSize === 'full' ? 'flex-1 border-l-0' : (panelSize === 'minimized' ? '' : 'w-[450px] xl:w-[500px]')}
-            `}>
+            <div
+                className="hidden lg:block bg-white h-full overflow-hidden"
+                style={
+                    panelSize === 'full'
+                        ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh', zIndex: 9999, borderLeft: 'none' }
+                        : panelSize === 'minimized'
+                            ? { width: 0, opacity: 0, pointerEvents: 'none', overflow: 'hidden', borderLeft: 'none', position: 'relative', zIndex: 10 }
+                            : { width: 450, flexShrink: 0, borderLeft: '1px solid #e5e7eb', position: 'relative', zIndex: 10, boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }
+                }
+            >
                 <StartupDetail
                     startup={detailStartup}
                     currentSize={panelSize}
                     onResize={(size) => {
-                        if (size === 'minimized') {
-                            // Option 1: Just hide panel
-                            setPanelSize('minimized')
-                            // Option 2: Deselect (matches "X" behavior mostly, but let's keep it as "minimized state" so we can restore?)
-                            // User asked for "minimize". Usually that implies it goes somewhere or hides.
-                            // If we deselect, we lose state of who was selected.
-                            // Let's just set minimized state.
-                        } else {
-                            setPanelSize(size)
-                        }
+                        console.log('[InvestorHome] StartupDetail onResize called with:', size, '| current panelSize:', panelSize);
+                        setPanelSize(size);
                     }}
                     onClose={() => {
                         setDetailStartup(null)
                         setSelectedId(null)
-                        setPanelSize('default') // Reset size on close
+                        setPanelSize('default')
                     }}
                     triggerUpdate={connectionUpdate}
                     onConnectionChange={handleConnectionChange}

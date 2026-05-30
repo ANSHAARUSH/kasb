@@ -161,12 +161,12 @@ export function KasbAIAssistantWidget() {
                             setIsOpen(true);
                         }}
                         className={cn(
-                            "fixed bottom-28 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border-2 border-white/10 bg-black text-white backdrop-blur-md transition-shadow duration-300 overflow-hidden touch-none",
+                            "fixed bottom-28 md:bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl flex items-center justify-center z-[1000] border-2 border-white/10 bg-black text-white backdrop-blur-md transition-shadow duration-300 touch-none",
                             "hover:shadow-indigo-500/20"
                         )}
                         title="Kasb AI Assistant"
                     >
-                        <img src={`${import.meta.env.BASE_URL}floating-bot.webp`} alt="Kasb Bot" className="h-full w-full object-cover pointer-events-none" />
+                        <img src={`${import.meta.env.BASE_URL}floating-bot.webp`} alt="Kasb Bot" className="h-full w-full object-cover pointer-events-none rounded-full" />
                         <div className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                     </motion.button>
                 )}

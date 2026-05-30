@@ -51,7 +51,7 @@ function getAIClient(apiKey: string, baseUrl?: string) {
     return { type: 'openai', client: openai };
 }
 
-export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string; isJSON?: boolean } = {}) {
+export async function runInference(apiKey: string, prompt: string, options: { model?: string; vision?: boolean; file?: File; baseUrl?: string; isJSON?: boolean; temperature?: number } = {}) {
     const { type, client } = getAIClient(apiKey, options.baseUrl);
 
     // GROQ / OPENAI PATH (Primary)
@@ -71,7 +71,8 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
                             { type: "image_url", image_url: { url: `data:${options.file.type};base64,${base64}` } }
                         ]
                     }
-                ]
+                ],
+                ...(options.temperature !== undefined && { temperature: options.temperature })
             });
             return response.choices[0].message.content || "";
         }
@@ -80,7 +81,8 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
         const completion = await openai.chat.completions.create({
             messages: [{ role: "user", content: prompt }],
             model: options.model || "llama-3.3-70b-versatile",
-            response_format: options.isJSON ? { type: "json_object" } : undefined
+            response_format: options.isJSON ? { type: "json_object" } : undefined,
+            ...(options.temperature !== undefined && { temperature: options.temperature })
         });
         return completion.choices[0].message.content || "";
     }
@@ -94,17 +96,18 @@ export async function runInference(apiKey: string, prompt: string, options: { mo
 
         const fallbackModels = [
             preferredModel,
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro",
-            "gemini-1.5-pro-latest",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-pro-exp-02-05",
         ].filter(Boolean) as string[];
 
         let lastError: any = null;
 
         for (const modelName of fallbackModels) {
             try {
-                const model = genAI.getGenerativeModel({ model: modelName });
+                const generationConfig = options.temperature !== undefined ? { temperature: options.temperature } : undefined;
+                const model = genAI.getGenerativeModel({ model: modelName, ...(generationConfig && { generationConfig }) });
                 if (options.vision && options.file) {
                     const base64 = await fileToBase64(options.file);
                     const result = await model.generateContent([
@@ -167,38 +170,54 @@ export interface IndustryInsight {
 
 /**
  * Robustly extracts and parses JSON from a string that might contain conversational text.
+ * Handles cases where LLMs embed LaTeX, markdown, or other non-JSON formatting.
  */
 function extractJSON<T>(text: string): T {
     try {
-        // 1. Remove markdown code blocks if present
-        const cleaned = text.replace(/```json\n?|\n?```/g, '').trim();
+        // 1. Remove markdown code blocks if present (any language tag)
+        const cleaned = text.replace(/```(?:json|text|latex)?\n?|\n?```/g, '').trim();
         try {
             return JSON.parse(cleaned) as T;
         } catch (e) {
-            // Continue to regex-based extraction
+            // Continue to sanitization
         }
 
-        // 2. Try to find the first '{' or '[' and matching last brace
-        const braceStart = text.indexOf('{');
-        const braceEnd = text.lastIndexOf('}');
-        const bracketStart = text.indexOf('[');
-        const bracketEnd = text.lastIndexOf(']');
+        // 2. Sanitize LaTeX expressions that contain braces (e.g. \text{...}, \frac{}{}, \left( \right))
+        //    This prevents LaTeX braces from being mistaken for JSON structure.
+        const sanitized = text
+            .replace(/\\(?:text|frac|left|right|mathrm|mathbf|mathit|textbf|textit|operatorname)\{[^}]*\}/g, '""')
+            .replace(/\\\[.*?\\\]/gs, '')   // Remove display math \[...\]
+            .replace(/\\\(.*?\\\)/gs, '')   // Remove inline math \(...\)
+            .replace(/\\times/g, 'x');      // Remove \times
 
-        const start = (braceStart !== -1 && bracketStart !== -1)
-            ? (braceStart < bracketStart ? braceStart : bracketStart)
-            : (braceStart !== -1 ? braceStart : bracketStart);
-
-        const end = (braceEnd !== -1 && bracketEnd !== -1)
-            ? (braceEnd > bracketEnd ? braceEnd : bracketEnd)
-            : (braceEnd !== -1 ? braceEnd : bracketEnd);
-
-        if (start !== -1 && end !== -1 && end > start) {
-            const jsonPart = text.substring(start, end + 1);
-            return JSON.parse(jsonPart) as T;
+        // 3. Try direct parse of sanitized text
+        try {
+            const reCleaned = sanitized.replace(/```(?:json|text|latex)?\n?|\n?```/g, '').trim();
+            return JSON.parse(reCleaned) as T;
+        } catch (e) {
+            // Continue to brace-matching
         }
+
+        // 4. Try each '{' position as potential JSON start (handles LaTeX braces before actual JSON)
+        for (let i = 0; i < sanitized.length; i++) {
+            if (sanitized[i] === '{' || sanitized[i] === '[') {
+                const closingChar = sanitized[i] === '{' ? '}' : ']';
+                const lastClose = sanitized.lastIndexOf(closingChar);
+                if (lastClose > i) {
+                    try {
+                        const candidate = sanitized.substring(i, lastClose + 1);
+                        return JSON.parse(candidate) as T;
+                    } catch (e) {
+                        // Try next position
+                        continue;
+                    }
+                }
+            }
+        }
+
         throw new Error("No JSON structure found in text");
     } catch (e) {
-        console.error("JSON Extraction Error:", e, "\nOriginal Text:", text);
+        console.error("JSON Extraction Error:", e, "\nOriginal Text:", text.substring(0, 500));
         throw e;
     }
 }
@@ -595,7 +614,7 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
         "title": "${industry}",
         "desc": "A concise (2-3 sentences) definition of the industry and its current relevance in India.",
         "growthData": [
-            { "country": "India", "value": realistic_2024_2030_CAGR_percentage, "growth": "+XX.X%" },
+            { "country": "India", "value": realistic_2026_2032_CAGR_percentage, "growth": "+XX.X%" },
             { "country": "USA", "value": realistic_CAGR_percentage, "growth": "+XX.X%" },
             { "country": "Europe", "value": realistic_CAGR_percentage, "growth": "+XX.X%" },
             { "country": "SE Asia", "value": realistic_CAGR_percentage, "growth": "+XX.X%" }
@@ -603,7 +622,7 @@ export async function getIndustryInsights(industry: string, apiKey: string, base
     }
     
     STRICT GUIDELINES:
-    1. Focus on the 2024-2030 forecast period.
+    1. Focus on the 2026-2032 forecast period.
     2. The 'value' must be a NUMBER representing the realistic Compound Annual Growth Rate (CAGR) (e.g., 22.5).
     3. The 'growth' must be the formatted string (e.g., "+22.5%").
     4. Ensure India shows realistic strong growth based on current market reports for "${industry}".
@@ -1169,6 +1188,39 @@ export interface DynamicDocumentReview {
     risks: string[];
 }
 
+// Content-based cache for document reviews to ensure score consistency
+const reviewCache: Record<string, DynamicDocumentReview> = loadCache('review_cache_v1');
+
+/**
+ * Generate a simple hash from content string for cache keys
+ */
+function hashContent(content: string): string {
+    let hash = 0;
+    for (let i = 0; i < content.length; i++) {
+        const char = content.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return `review_${Math.abs(hash).toString(36)}_${content.length}`;
+}
+
+/** Strict scoring rubric injected into all review prompts for consistency */
+const REVIEW_SCORING_RUBRIC = `
+SCORING RUBRIC (YOU MUST FOLLOW THIS EXACTLY — scores must be justified by evidence in the content):
+- 1-4 (POOR): Critical element is missing entirely, or fundamentally flawed. No evidence of effort.
+- 5-8 (BELOW AVERAGE): Element exists but has major gaps, vague claims, or lacks specifics. Needs significant rework.
+- 9-12 (AVERAGE): Element is present and reasonable but lacks depth, data, or differentiation. Passable but not compelling.
+- 13-16 (GOOD): Element is well-developed with supporting evidence, clear logic, and competitive awareness. Minor improvements needed.
+- 17-20 (EXCELLENT): Element is outstanding — data-driven, specific, differentiated, and investor-ready. Very few improvements possible.
+
+CRITICAL RULES FOR CONSISTENT SCORING:
+1. Score ONLY based on what is explicitly present in the content. Do NOT assume or infer missing information.
+2. Each score MUST be justified by specific evidence from the content.
+3. If a critical section is completely absent, that category MUST score between 1-4.
+4. Be precise: use the FULL range (1-20). Do NOT cluster all scores around 10-14.
+5. The same content must always receive the same score — be objective, not creative.
+`;
+
 export async function reviewDocumentDynamic(
     content: string | File,
     apiKey: string,
@@ -1176,50 +1228,125 @@ export async function reviewDocumentDynamic(
 ): Promise<DynamicDocumentReview | string> {
     if (!apiKey) throw new Error("API Key is required for document review");
 
-    try {
+    // Timeout wrapper to prevent infinite hangs
+    const timeoutMs = 60000; // 60 seconds
+    const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Review timed out. The AI took too long to respond. Please try again.")), timeoutMs)
+    );
+
+    const reviewPromise = (async () => {
         const isFile = content instanceof File;
-        let extractionType: 'image' | 'text' = 'text';
-        let extractionContent: string | File = content as string;
+        let extractionContent: string = '';
 
         if (isFile) {
-            const extraction = await extractDocumentContent(content as File);
-            if (extraction.type === 'unsupported') {
-                return "Unsupported file format for deep analysis.";
+            const file = content as File;
+            const mimeType = file.type;
+
+            // For review, ALWAYS prioritize text extraction — it's much faster
+            // Only fall back to vision for raw image files
+            if (mimeType.startsWith('image/')) {
+                // Image file: use vision directly
+                const prompt = `
+You are a brutally honest AI reviewer. Analyze this image/document.
+Determine the EXACT type of document, identify 5 critical grading categories, and score each from 1 to 20.
+
+${REVIEW_SCORING_RUBRIC}
+
+Return ONLY a JSON object:
+{
+    "document_type": "Determined type",
+    "categories": [
+        { "name": "Category 1", "score": 15, "feedback": "Feedback with specific evidence" },
+        { "name": "Category 2", "score": 8, "feedback": "Feedback with specific evidence" },
+        { "name": "Category 3", "score": 12, "feedback": "Feedback with specific evidence" },
+        { "name": "Category 4", "score": 18, "feedback": "Feedback with specific evidence" },
+        { "name": "Category 5", "score": 5, "feedback": "Feedback with specific evidence" }
+    ],
+    "verdict": "Brutally honest summary.",
+    "strengths": ["Strength 1", "Strength 2"],
+    "risks": ["Flaw 1", "Flaw 2"]
+}`;
+                const text = await runInference(apiKey, prompt, { vision: true, file, baseUrl, temperature: 0 });
+                try {
+                    const result = extractJSON<DynamicDocumentReview>(text);
+                    const total_score = result.categories.reduce((acc, cat) => acc + cat.score, 0);
+                    return { ...result, total_score } as DynamicDocumentReview;
+                } catch (e) {
+                    return text;
+                }
             }
-            extractionType = extraction.type as 'image' | 'text';
-            extractionContent = extraction.content;
+
+            // For all document types (PDF, PPTX, DOCX, etc.), extract text first
+            try {
+                const { extractFullTextFromDocument } = await import('./documentExtraction');
+                extractionContent = await extractFullTextFromDocument(file);
+                console.log(`[Review] Text extraction succeeded: ${extractionContent.length} chars`);
+            } catch (fullTextErr) {
+                console.warn('[Review] Full text extraction failed, trying basic extraction...', fullTextErr);
+                // Fallback to basic extractDocumentContent
+                const extraction = await extractDocumentContent(file);
+                if (extraction.type === 'unsupported') {
+                    return "Unsupported file format for deep analysis.";
+                }
+                if (extraction.type === 'image') {
+                    // Last resort: use vision for scanned PDFs
+                    const prompt = `You are a brutally honest AI reviewer. Analyze this document image. Determine the type, identify 5 grading categories, score each 1-20.\n${REVIEW_SCORING_RUBRIC}\nReturn ONLY JSON: {"document_type":"...","categories":[{"name":"...","score":0,"feedback":"..."}],"verdict":"...","strengths":["..."],"risks":["..."]}`;
+                    const text = await runInference(apiKey, prompt, { vision: true, file: extraction.content as File, baseUrl, temperature: 0 });
+                    try {
+                        const result = extractJSON<DynamicDocumentReview>(text);
+                        const total_score = result.categories.reduce((acc, cat) => acc + cat.score, 0);
+                        return { ...result, total_score } as DynamicDocumentReview;
+                    } catch (e) {
+                        return text;
+                    }
+                }
+                extractionContent = extraction.content as string;
+            }
+        } else {
+            extractionContent = content as string;
+        }
+
+        // Truncate content to avoid token limit errors (keep it under ~8000 chars)
+        const maxContentLength = 8000;
+        if (extractionContent.length > maxContentLength) {
+            console.log(`[Review] Truncating content from ${extractionContent.length} to ${maxContentLength} chars`);
+            extractionContent = extractionContent.substring(0, maxContentLength) + "\n\n[...content truncated for analysis...]";
+        }
+
+        // Check cache for identical content
+        const contentHash = hashContent(extractionContent);
+        if (reviewCache[contentHash]) {
+            console.log(`[Review] Cache hit for content hash: ${contentHash}`);
+            return reviewCache[contentHash];
         }
 
         const prompt = `
-        You are a brutally honest AI reviewer analyzing a user-provided document or text.
-        First, determine the EXACT type of document (e.g., "Pitch Deck", "Cold Email", "Financial Model", "UI Mockup", "Business Plan").
-        Then, identify the 5 MOST CRITICAL grading categories relevant to that specific document type.
-        For each category, BRUTALLY assess flaws and score it from 1 to 20. Total score will be the sum of these.
+You are a brutally honest AI reviewer analyzing a user-provided document or text.
+First, determine the EXACT type of document (e.g., "Pitch Deck", "Cold Email", "Financial Model", "UI Mockup", "Business Plan").
+Then, identify the 5 MOST CRITICAL grading categories relevant to that specific document type.
+For each category, BRUTALLY assess flaws and score it from 1 to 20. Total score will be the sum of these (max 100).
 
-        Output MUST be ONLY a JSON object in this format:
-        {
-            "document_type": "Determined type here",
-            "categories": [
-                { "name": "Category 1", "score": 15, "feedback": "Brutal feedback here" },
-                { "name": "Category 2", "score": 8, "feedback": "Brutal feedback here" },
-                { "name": "Category 3", "score": 12, "feedback": "Brutal feedback here" },
-                { "name": "Category 4", "score": 18, "feedback": "Brutal feedback here" },
-                { "name": "Category 5", "score": 5, "feedback": "Brutal feedback here" }
-            ],
-            "verdict": "A harsh, brutally honest summary of the document's overall quality.",
-            "strengths": ["Strength 1", "Strength 2"], // If there are absolutely no strengths, explicitly return ["No strengths"]
-            "risks": ["Flaw 1", "Flaw 2"] // If there are absolutely no risks, return ["No risks"]
-        }
+${REVIEW_SCORING_RUBRIC}
 
-        Analysis content follows:
-        `;
+Output MUST be ONLY a JSON object in this format:
+{
+    "document_type": "Determined type here",
+    "categories": [
+        { "name": "Category 1", "score": 15, "feedback": "Brutal feedback citing specific evidence from the content" },
+        { "name": "Category 2", "score": 8, "feedback": "Brutal feedback citing specific evidence from the content" },
+        { "name": "Category 3", "score": 12, "feedback": "Brutal feedback citing specific evidence from the content" },
+        { "name": "Category 4", "score": 18, "feedback": "Brutal feedback citing specific evidence from the content" },
+        { "name": "Category 5", "score": 5, "feedback": "Brutal feedback citing specific evidence from the content" }
+    ],
+    "verdict": "A harsh, brutally honest summary of the document's overall quality.",
+    "strengths": ["Strength 1", "Strength 2"],
+    "risks": ["Flaw 1", "Flaw 2"]
+}
 
-        let text: string;
-        if (extractionType === 'image') {
-            text = await runInference(apiKey, prompt, { vision: true, file: extractionContent as File, baseUrl });
-        } else {
-            text = await runInference(apiKey, `${prompt}\n\nCONTENT:\n${extractionContent as string}`, { baseUrl });
-        }
+CONTENT:
+${extractionContent}`;
+
+        const text = await runInference(apiKey, prompt, { baseUrl, isJSON: true, temperature: 0 });
 
         try {
             const result = extractJSON<DynamicDocumentReview>(text);
@@ -1227,13 +1354,24 @@ export async function reviewDocumentDynamic(
             // Validate and sum
             const total_score = result.categories.reduce((acc, cat) => acc + cat.score, 0);
             
-            return {
+            const finalResult = {
                 ...result,
                 total_score
             } as DynamicDocumentReview;
+
+            // Cache the result for this content
+            reviewCache[contentHash] = finalResult;
+            saveCache('review_cache_v1', reviewCache);
+            console.log(`[Review] Cached result for content hash: ${contentHash}`);
+
+            return finalResult;
         } catch (e) {
             return text;
         }
+    })();
+
+    try {
+        return await Promise.race([reviewPromise, timeoutPromise]);
     } catch (error: unknown) {
         console.error("Document Review Error:", error);
         throw new Error(`Failed to review document: ${error instanceof Error ? error.message : "Unknown error"}`);
@@ -1893,7 +2031,7 @@ export async function chatWithAIStream(
             // GEMINI PATH (Secondary Fallback)
             else if (type === 'gemini') {
                 const genAI = client as GoogleGenerativeAI;
-                const fallbackModels = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro", "gemini-pro"];
+                const fallbackModels = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-1.5-flash"];
                 let lastError = null;
 
                 for (const modelName of fallbackModels) {
@@ -1944,7 +2082,7 @@ export async function refineMessage(
     `;
 
     try {
-        const text = await runInference(apiKey, prompt, { model: 'llama-3.1-8b-instant', baseUrl });
+        const text = await runInference(apiKey, prompt, { model: 'llama-3.3-70b-versatile', baseUrl });
         return text.trim() || message;
     } catch (error: unknown) {
         console.error("AI Refinement Error:", error);

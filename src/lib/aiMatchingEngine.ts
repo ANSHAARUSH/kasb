@@ -40,10 +40,12 @@ interface CacheEntry {
 
 const CACHE_KEY = 'kasb_ai_match_cache_v2'
 const CACHE_TTL_MS = 60 * 60 * 1000  // 1 hour
-const MAX_INVESTORS_PER_BATCH = 40   // Keep prompts within token limits
+const MAX_INVESTORS_PER_BATCH = 25   // Reduced to stay within token limits
 const AI_WEIGHT = 0.65
 const PLAN_WEIGHT = 0.20
 const PROFILE_WEIGHT = 0.15
+const BATCH_DELAY_MS = 3000          // Delay between batches to avoid rate limits
+const MAX_RETRIES = 3                // Max retries on rate limit errors
 
 // ─── Plan Tier Scoring ───────────────────────────────────────────────────────
 
@@ -108,8 +110,16 @@ function saveCache(startupId: string, scores: AIMatchMap) {
 // ─── AI Batch Scoring ────────────────────────────────────────────────────────
 
 /**
+ * Sleep utility for rate-limit backoff.
+ */
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
  * Calls the AI to score a batch of investors against the startup.
  * Returns a map of investorId → { score, reason }
+ * Retries with exponential backoff on 429 rate limit errors.
  */
 async function scoreInvestorBatchWithAI(
     startupContext: string,
@@ -153,20 +163,38 @@ OUTPUT FORMAT (use the exact investor IDs from the list):
   "another_id": { "score": 42, "reason": "Wrong stage focus, prefers Series B+" }
 }`
 
-    try {
-        const text = await runInference(apiKey, prompt, { isJSON: true })
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const text = await runInference(apiKey, prompt, { isJSON: true })
 
-        // Extract JSON from response
-        const jsonStart = text.indexOf('{')
-        const jsonEnd = text.lastIndexOf('}')
-        if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON in response')
+            // Extract JSON from response
+            const jsonStart = text.indexOf('{')
+            const jsonEnd = text.lastIndexOf('}')
+            if (jsonStart === -1 || jsonEnd === -1) throw new Error('No JSON in response')
 
-        const parsed = JSON.parse(text.substring(jsonStart, jsonEnd + 1))
-        return parsed
-    } catch (err) {
-        console.error('[AI Match] Batch scoring failed:', err)
-        return {}
+            const parsed = JSON.parse(text.substring(jsonStart, jsonEnd + 1))
+            return parsed
+        } catch (err: any) {
+            const isRateLimit = err?.status === 429 ||
+                err?.message?.includes('429') ||
+                err?.message?.includes('Rate limit') ||
+                err?.message?.includes('rate limit')
+
+            if (isRateLimit && attempt < MAX_RETRIES - 1) {
+                // Extract wait time from error message if available, otherwise use exponential backoff
+                const waitMatch = err?.message?.match(/try again in (\d+\.?\d*)/i)
+                const waitSeconds = waitMatch ? Math.ceil(parseFloat(waitMatch[1])) + 2 : (10 * Math.pow(2, attempt))
+                console.warn(`[AI Match] Rate limited (attempt ${attempt + 1}/${MAX_RETRIES}), waiting ${waitSeconds}s...`)
+                await sleep(waitSeconds * 1000)
+                continue
+            }
+
+            console.error('[AI Match] Batch scoring failed:', err)
+            return {}
+        }
     }
+
+    return {}
 }
 
 // ─── Main Export ─────────────────────────────────────────────────────────────
@@ -219,6 +247,11 @@ export async function computeAIMatchScores(
 
     // Process in batches to stay within token limits
     for (let i = 0; i < investors.length; i += MAX_INVESTORS_PER_BATCH) {
+        if (i > 0) {
+            console.log(`[AI Match] Waiting ${BATCH_DELAY_MS}ms before next batch...`)
+            await sleep(BATCH_DELAY_MS)
+        }
+
         const batch = investors.slice(i, i + MAX_INVESTORS_PER_BATCH)
         const aiResults = await scoreInvestorBatchWithAI(startupContext, batch, apiKey)
 

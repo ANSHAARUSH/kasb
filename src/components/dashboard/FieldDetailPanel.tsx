@@ -89,7 +89,7 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
         }
     }, [field])
 
-    // Accurate Research-Backed India CAGR (Compound Annual Growth Rate) data for 2024-2030
+    // Accurate Research-Backed India CAGR (Compound Annual Growth Rate) data for 2026-2032
     const getIndustryGrowthData = (title: string) => {
         const lowerTitle = title.toLowerCase()
 
@@ -268,7 +268,7 @@ export function FieldDetailPanel({ field, onClose }: FieldDetailPanelProps) {
                                         <TrendingUp className="h-5 w-5 text-green-500" />
                                         Global Growth Trends
                                     </h3>
-                                    <span className="text-sm font-bold text-gray-400">Expected CAGR (2024-2027)</span>
+                                    <span className="text-sm font-bold text-gray-400">Expected CAGR (2026-2032)</span>
                                 </div>
 
                                 <div className="grid gap-4">

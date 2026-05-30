@@ -141,20 +141,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             // Run all checks in parallel to minimize latency
             const [
-                { data: adminRows },
-                { data: startupRows, error: startupError },
-                { data: investorRows, error: investorError },
-                { data: subRows }
+                { data: adminData },
+                { data: startupData, error: startupError },
+                { data: investorData, error: investorError },
+                { data: subData }
             ] = await Promise.all([
-                supabase.from('admins').select('id').eq('id', userId).limit(1),
-                supabase.from('startups').select('id, kyc_status').eq('id', userId).limit(1),
-                supabase.from('investors').select('id, kyc_status').eq('id', userId).limit(1),
-                supabase.from('user_subscriptions').select('tier').eq('user_id', userId).limit(1)
+                supabase.from('admins').select('id').eq('id', userId).maybeSingle(),
+                supabase.from('startups').select('id, kyc_status').eq('id', userId).maybeSingle(),
+                supabase.from('investors').select('id, kyc_status').eq('id', userId).maybeSingle(),
+                supabase.from('user_subscriptions').select('tier').eq('user_id', userId).maybeSingle()
             ]);
 
             // 1. Check Admin
             console.log('[AuthContext] Checking admin status for:', userId);
-            if (adminRows && adminRows.length > 0) {
+            if (adminData) {
                 console.log('[AuthContext] Admin confirmed');
                 setRole('admin');
                 setKycStatus('verified');
@@ -162,11 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             console.log('[AuthContext] Not an admin in DB');
 
-            const subData = subRows?.[0];
-
             // 2. Check Startup
-            if (startupRows && startupRows.length > 0) {
-                const startupData = startupRows[0];
+            if (startupData) {
                 setRole('startup');
                 setKycStatus(startupData.kyc_status as KYCStatus || 'pending');
                 const tier = (subData?.tier || 'discovery') as SubscriptionTier;
@@ -175,8 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             // 3. Check Investor
-            if (investorRows && investorRows.length > 0) {
-                const investorData = investorRows[0];
+            if (investorData) {
                 setRole('investor');
                 setKycStatus(investorData.kyc_status as KYCStatus || 'pending');
                 const tier = (subData?.tier || 'explore') as SubscriptionTier;

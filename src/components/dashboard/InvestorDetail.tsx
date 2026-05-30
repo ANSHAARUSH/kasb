@@ -312,15 +312,15 @@ export function InvestorDetail({ investor, onClose, onDisconnect, onResize, curr
                     <div className="flex items-center gap-1">
                         {onResize && (
                             <>
-                                <Button variant="ghost" size="icon" onClick={() => onResize('minimized')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                <Button variant="ghost" size="icon" onClick={() => { console.log('[InvestorDetail] Minimize clicked'); onResize('minimized'); }} className="rounded-full hover:bg-gray-100 hidden lg:flex">
                                     <Minus className="h-4 w-4" />
                                 </Button>
                                 {currentSize === 'full' ? (
-                                    <Button variant="ghost" size="icon" onClick={() => onResize('default')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                    <Button variant="ghost" size="icon" onClick={() => { console.log('[InvestorDetail] Restore clicked'); onResize('default'); }} className="rounded-full hover:bg-gray-100 hidden lg:flex">
                                         <Minimize2 className="h-4 w-4" />
                                     </Button>
                                 ) : (
-                                    <Button variant="ghost" size="icon" onClick={() => onResize('full')} className="rounded-full hover:bg-gray-100 hidden lg:flex">
+                                    <Button variant="ghost" size="icon" onClick={() => { console.log('[InvestorDetail] MAXIMIZE clicked, currentSize=', currentSize); onResize('full'); }} className="rounded-full hover:bg-gray-100 hidden lg:flex">
                                         <Maximize2 className="h-4 w-4" />
                                     </Button>
                                 )}
